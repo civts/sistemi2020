@@ -1,9 +1,10 @@
 OPTS = -std=gnu90
 COMPILE = gcc $(OPTS)
 SOURCEFOLDER = ./src
-DESTFOLDER = ./build
+DESTFOLDER = ./bin
 mainFile = $(SOURCEFOLDER)/main.c
 
+.PHONY: build
 build: $(mainFile)
 #	Create the build directory if needed
 	@if [ ! -d $(DESTFOLDER) ]; then \
@@ -18,11 +19,13 @@ help:
 
 .PHONY: clean
 clean:
-	@rm -fr ./build
+	@rm -fr $(DESTFOLDER)
 
 
 #From now on these are not required ones, just for conveniency
+.PHONY: rebuild
 rebuild: clean build
 
+.PHONY: run
 run: build
 	@$(DESTFOLDER)/main.o
