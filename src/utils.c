@@ -1,7 +1,11 @@
 #define INT_SIZE 4
+#define true 1
+#define false 0
+
 typedef unsigned int uint;
 typedef unsigned char byte;
 typedef char* string;
+typedef int bool;
 
 uint fromBytesToInt(byte[]);
 void fromIntToBytes(uint, byte[]);
