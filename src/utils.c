@@ -1,8 +1,9 @@
 #define INT_SIZE 4
 typedef unsigned int uint;
 typedef unsigned char byte;
+typedef char* string;
 
-uint fromBytesToInt(byte*);
+uint fromBytesToInt(byte[]);
 void fromIntToBytes(uint, byte[]);
 
 // convert 4 bytes in unsigned int (little endian)
