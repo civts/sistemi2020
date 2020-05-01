@@ -1,17 +1,11 @@
-#include "../utils.c";
-#include "./file_with_stats_data_structure.c";
-#include "./file_with_stats_node.h";
-#include <string.h> //strlen, strcpy
+#include "../utils.c"
+#include "./file_with_stats_data_structure.c"
+#include "./file_with_stats_node.h"
 #include <stdio.h>  //print etc
 #include <stdlib.h> // malloc, free
+#include <string.h> //strlen, strcpy
 /*  File where we define the structure of the list with all the fileWithStats
- * nodes
- *
- * We have:
- *  - a constructor
- *  - a destructor
- *  - a method for adding additional stats (that may come from other chunks of
- *    the same file)
+ *  nodes
 */
 
 // List of the fileWithStats nodes.

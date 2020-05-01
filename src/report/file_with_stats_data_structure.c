@@ -1,7 +1,7 @@
-#include "../utils.c";
-#include <string.h> //strlen e strcpy
+#include "../utils.c"
 #include <stdio.h>  //print etc
 #include <stdlib.h> // malloc & free
+#include <string.h> //strlen e strcpy
 
 /*  File where we define the structure of a fileWithStats and the functions that
  * enable us to work with it. (The representation of a File and its stats)
@@ -41,8 +41,7 @@ typedef struct {
 // -------------------------------
 // TODO: ensure that **deleteFWS** frees path and fs correctly
 fileWithStats *constructorFWS(char *path, int totalCharacters,
-                              int occorrenze[ASCII_LENGTH], bool fromFolder,
-                              fileWithStats *prev, fileWithStats *next) {
+                              int occorrenze[ASCII_LENGTH], bool fromFolder) {
   fileWithStats *fs = malloc(sizeof(fileWithStats));
   fs->path = malloc(strlen(path));
   strcpy(fs->path, path);
