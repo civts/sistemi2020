@@ -9,6 +9,8 @@
 #define READ 0
 #define WRITE 1
 #define SIZE_OF_BUFFER_TO_READ_PIPE 256
+// TODO: check stinky lengths
+#define MAX_SIZE_OF_FOLDER_NAME 256
 
 void printFileList(string fileList[], int numFiles){
     int i;
@@ -28,13 +30,17 @@ int getOutputFromLS(int readDescriptor, string fileList[], string folder){
 
     // TODO: check if 256 as limit can be a problem for file names
     string buffer = (string) malloc(SIZE_OF_BUFFER_TO_READ_PIPE);
-
+    
     while(fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead) != NULL){
 
         string fileName = strtok(buffer, "\n"); // delete ending \n in filename string
-
+        
+        /**
+        Little fix below here, fileName can also be null, tehrefore we must check that condition, and in case it is
+        NULL if it enters isDirectory() it causes segmentation fault
+        **/
         // do not include subdirectories
-        if (!isDirectory(fileName, '/')){
+        if (fileName!=NULL && !isDirectory(fileName, '/')){
             fileList[numOfFileNamesProcessed] = (string) malloc(strlen(fileName) + strlen(folder) + 1);
             addFolderToFileName(fileList[numOfFileNamesProcessed], folder, fileName);
             // strcpy(fileList[numOfFileNamesProcessed], buffer);
@@ -45,27 +51,36 @@ int getOutputFromLS(int readDescriptor, string fileList[], string folder){
     return numOfFileNamesProcessed;
 }
 
-int getOutputFromLSRec(int readDescriptor, string fileList[], string folder){
+int getOutputFromLSRec(int readDescriptor, string fileList[]){
     FILE *pipeToRead = fdopen(readDescriptor, "r");
     int numOfFileNamesProcessed = 0;
     // TODO: check if 256 as limit can be a problem for file names
     string buffer = (string)malloc(SIZE_OF_BUFFER_TO_READ_PIPE);
+    string currentFolder = (string)malloc(MAX_SIZE_OF_FOLDER_NAME);
 
     while(fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead) != NULL){
-        string justRead = strtok(buffer, "\n");
+        string stringRead = strtok(buffer, "\n");
         // check if the string ends with ":"
-        if (isDirectory(justRead, ':')){
+        if (stringRead != NULL && isDirectory(stringRead, ':')){
             // that's a new foldah
-            printf("I found folder: %s", justRead);
-        } else {
-            // that's a file
-            // Truncate the buffer
-            string fileName = strtok(buffer, "\n");
-            // addFolderToFileName(folder, fileName);
-            fileList[numOfFileNamesProcessed] = (string) malloc(strlen(fileName) + 1);
-            strcpy(fileList[numOfFileNamesProcessed], buffer);
-            // printf("buffer: %s\n", fileName);
-            numOfFileNamesProcessed++;
+            // printf("I found folder  '%s'\n", stringRead);
+            if(stringRead[strlen(stringRead)-2]!='/'){
+                // we must add / in place of :
+                stringRead[strlen(stringRead)-1]='/';
+            } else {
+                // if the folder is ./ we must not add /, but only delete :
+                stringRead[strlen(stringRead)-1]='\0';
+            }
+            strcpy(currentFolder, stringRead);  
+        } else if (stringRead!=NULL) {
+            // if it ends with '/' it's a folder, then we'll inspect it later 
+            if(!isDirectory(stringRead, '/')){
+                // that's a file
+                fileList[numOfFileNamesProcessed] = (string) malloc(strlen(stringRead) + strlen(currentFolder) + 1);
+                addFolderToFileName(fileList[numOfFileNamesProcessed], currentFolder, stringRead);
+                numOfFileNamesProcessed++;
+            }
+            
         }
     }
 
@@ -79,8 +94,8 @@ int getOutputFromLSRec(int readDescriptor, string fileList[], string folder){
 int crawler(string folder, string fileList[], int* outNumFilesFound){
     *outNumFilesFound = -1; // in case of error;
     int returnCode = 0;
-    string lsArgs[] = {"ls", "-p", folder, NULL}; // test is just a placeholder because we can't pass only NULL
-    // string lsArgs[] = {"ls", "-p", "-R", NULL};
+    // string lsArgs[] = {"ls", "-p", folder, NULL}; // test is just a placeholder because we can't pass only NULL
+    string lsArgs[] = {"ls", folder, "-p", "-R", NULL};
     int fds[2];
     pipe(fds);
 
@@ -107,15 +122,17 @@ int crawler(string folder, string fileList[], int* outNumFilesFound){
         // TODO change to PID
         int pid = waitpid(f, &out, 0);
         
-        *outNumFilesFound = getOutputFromLS(fds[READ], fileList, folder);
+        *outNumFilesFound = getOutputFromLSRec(fds[READ], fileList);
     }
 
     return returnCode;
 }
 
+
+// TODO: delete main when crawler is completely tested
 // int main(){
 //     int numFilesFound = 0;
-//     string folder = "./";
+//     string folder = "../test/";
 //     string fileList[50];
 //     crawler(folder, fileList, &numFilesFound);
 //     printf("num files2: %d\n", numFilesFound);
