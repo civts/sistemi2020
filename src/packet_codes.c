@@ -27,8 +27,8 @@ uint -> lunghezza pathname
 pathname
 */
 
-#define MAXFILE 20
+// #define MAXFILE 20
 
-[ "ciao.txt", {"mario.txt", total = 40, occorenze[256]}, ... ]
+// [ "ciao.txt", {"mario.txt", total = 40, occorenze[256]}, ... ]
 
-    [file, file, cartelle = {[fiel1, file2, cartella = {}]}]
+//     [file, file, cartelle = {[fiel1, file2, cartella = {}]}]

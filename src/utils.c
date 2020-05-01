@@ -1,4 +1,6 @@
 #define INT_SIZE 4
+// How many characters we are considering
+#define ASCII_LENGTH 256
 #ifndef bool
 typedef unsigned char bool;
 #define false 0
@@ -30,4 +32,17 @@ void fromIntToBytes(uint value, byte out[]) {
     out[i] = ((value >> base) & 0xFF);
     base += 8;
   }
+}
+
+// Util function for knowing if two paths (or strings in general) are the same
+bool comparePaths(char *p1, char *p2) {
+  while (*p1 != '\0' && *p2 != '\0') {
+    if (*p1 != *p2) {
+      return false;
+    }
+    p1 += sizeof(char);
+    p2 += sizeof(char);
+  }
+  // I've reached \0 of one of the two strings
+  return *p2 == *p1;
 }
