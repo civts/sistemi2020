@@ -36,14 +36,15 @@ bool isValidMode(string mode){
 int getFilePathsFromArgv(string argv[], string fileLists[], int numPaths){
     const int padding = 4;    // index inside argv from which filenames occur
     unsigned long numFiles=0; // number of files recognized
+    int out;
 
     int i;
     for (i=0; i<numPaths; i++){
-        if (isDirectory(argv[i+padding], '/')){
+        if (isDirectory(argv[i+padding], '/', &out) && out==0){
             int outNewFiles = 0;
             crawler(argv[i+padding], fileLists+numFiles, &outNewFiles);
             numFiles += outNewFiles;
-        } else {
+        } else if(out==0) {
             fileLists[numFiles] = (string) malloc(strlen(argv[i+padding]) + 1);
             strcpy(fileLists[numFiles], argv[i+padding]);
             numFiles++;

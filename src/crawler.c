@@ -24,44 +24,18 @@ void addFolderToFileName(string out, string folder, string fileName){
     strcat(out, fileName);
 }
 
-int getOutputFromLS(int readDescriptor, string fileList[], string folder){
-    FILE *pipeToRead = fdopen(readDescriptor, "r");
-    int numOfFileNamesProcessed = 0;
-
-    // TODO: check if 256 as limit can be a problem for file names
-    string buffer = (string) malloc(SIZE_OF_BUFFER_TO_READ_PIPE);
-    
-    while(fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead) != NULL){
-
-        string fileName = strtok(buffer, "\n"); // delete ending \n in filename string
-        
-        /**
-        Little fix below here, fileName can also be null, tehrefore we must check that condition, and in case it is
-        NULL if it enters isDirectory() it causes segmentation fault
-        **/
-        // do not include subdirectories
-        if (fileName!=NULL && !isDirectory(fileName, '/')){
-            fileList[numOfFileNamesProcessed] = (string) malloc(strlen(fileName) + strlen(folder) + 1);
-            addFolderToFileName(fileList[numOfFileNamesProcessed], folder, fileName);
-            // strcpy(fileList[numOfFileNamesProcessed], buffer);
-            numOfFileNamesProcessed++;
-        }
-
-    }
-    return numOfFileNamesProcessed;
-}
-
 int getOutputFromLSRec(int readDescriptor, string fileList[]){
     FILE *pipeToRead = fdopen(readDescriptor, "r");
     int numOfFileNamesProcessed = 0;
     // TODO: check if 256 as limit can be a problem for file names
     string buffer = (string)malloc(SIZE_OF_BUFFER_TO_READ_PIPE);
     string currentFolder = (string)malloc(MAX_SIZE_OF_FOLDER_NAME);
+    int out;
 
     while(fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead) != NULL){
         string stringRead = strtok(buffer, "\n");
         // check if the string ends with ":"
-        if (stringRead != NULL && isDirectory(stringRead, ':')){
+        if (isDirectory(stringRead, ':', &out) && out==0){
             // that's a new foldah
             // printf("I found folder  '%s'\n", stringRead);
             if(stringRead[strlen(stringRead)-2]!='/'){
@@ -72,9 +46,9 @@ int getOutputFromLSRec(int readDescriptor, string fileList[]){
                 stringRead[strlen(stringRead)-1]='\0';
             }
             strcpy(currentFolder, stringRead);  
-        } else if (stringRead!=NULL) {
+        } else {
             // if it ends with '/' it's a folder, then we'll inspect it later 
-            if(!isDirectory(stringRead, '/')){
+            if(!isDirectory(stringRead, '/', &out) && out==0){
                 // that's a file
                 fileList[numOfFileNamesProcessed] = (string) malloc(strlen(stringRead) + strlen(currentFolder) + 1);
                 addFolderToFileName(fileList[numOfFileNamesProcessed], currentFolder, stringRead);
@@ -94,13 +68,11 @@ int getOutputFromLSRec(int readDescriptor, string fileList[]){
 int crawler(string folder, string fileList[], int* outNumFilesFound){
     *outNumFilesFound = -1; // in case of error;
     int returnCode = 0;
-    // string lsArgs[] = {"ls", "-p", folder, NULL}; // test is just a placeholder because we can't pass only NULL
     string lsArgs[] = {"ls", folder, "-p", "-R", NULL};
     int fds[2];
     pipe(fds);
 
-    // TODO change type of f to pid
-    int f = fork();
+    pid_t f = fork();
     if (f < 0){
         printf("\nError creating little brittle crawler-son\n");
         returnCode = 1;
@@ -109,7 +81,6 @@ int crawler(string folder, string fileList[], int* outNumFilesFound){
         close(fds[READ]);
         dup2(fds[WRITE], 1); // substitute stdout with fds[WRITE] for ls
         execvp("ls", lsArgs);
-        // system("ls ../");
         printf("Error: it is not possibile to inspect folder: %s\n", folder);
         returnCode = 2; // should never be here if exec works fine
     } else {
@@ -119,23 +90,10 @@ int crawler(string folder, string fileList[], int* outNumFilesFound){
         // TODO check out == 0
         int out; // return code from ls
 
-        // TODO change to PID
-        int pid = waitpid(f, &out, 0);
+        pid_t pid = waitpid(f, &out, 0);
         
         *outNumFilesFound = getOutputFromLSRec(fds[READ], fileList);
     }
 
     return returnCode;
 }
-
-
-// TODO: delete main when crawler is completely tested
-// int main(){
-//     int numFilesFound = 0;
-//     string folder = "../test/";
-//     string fileList[50];
-//     crawler(folder, fileList, &numFilesFound);
-//     printf("num files2: %d\n", numFilesFound);
-//     printFileList(fileList, numFilesFound);
-//     return 0;
-// }

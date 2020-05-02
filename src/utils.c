@@ -13,7 +13,7 @@ typedef int bool;
 
 uint fromBytesToInt(byte[]);
 void fromIntToBytes(uint, byte[]);
-bool isDirectory(string, char);
+bool isDirectory(string, char, int *out);
 
 // convert 4 bytes in unsigned int (little endian)
 uint fromBytesToInt(byte *bytes){
@@ -40,14 +40,22 @@ void fromIntToBytes(uint value, byte out[]){
 
 // check is a given path is a folder or not. You need
 // to specify the endingChar (: or /).
-bool isDirectory(string path, char endingChar){
+// out: 0 for ok, 1 for path null pointer
+bool isDirectory(string path, char endingChar, int *out){
     bool isDirectory = false;
-    int pathLen = strlen(path);
 
-    if (pathLen == 0){
-        isDirectory = false;
+    if (path != NULL){
+        int pathLen = strlen(path);
+        *out = 0;
+
+        if (pathLen == 0){
+            isDirectory = false;
+        } else {
+            isDirectory = (path[pathLen-1] == endingChar);
+        }
+
     } else {
-        isDirectory = (path[pathLen-1] == endingChar);
+        *out = 1;
     }
 
     return isDirectory;
