@@ -1,8 +1,12 @@
 .vscode/
 .vsCode/
+.directory
+
+#Build folders
 build/
 bin/
 
+#binaries
 *.exe
 *.o
 *.a
