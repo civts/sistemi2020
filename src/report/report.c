@@ -1,5 +1,7 @@
-#include "../packetCodes.c"
+#include "../packet_codes.c"
 #include "../utils.c"
+#include "./report_utils.h"
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,8 +20,6 @@ const int BATCH_SIZE = 128;
 // TODO: candidate for ../utils.c
 // Returns if argv contains "--help" or not
 bool doesTheUserNeedHelp(int argc, char *argv[]);
-// Returns a NULL pointer if args are valid, else the pointer to the message
-char *argsAreValid(int argc, char *argv[]);
 
 int main(int argc, char *argv[]) {
   int retCode = 0;
@@ -95,15 +95,6 @@ bool doesTheUserNeedHelp(int argc, char *argv[]) {
     }
   }
   return result;
-}
-
-char *argsAreValid(int argc, char *argv[]) {
-  char *result = NULL;
-  // no arguments is ok
-  if (argc > 1) {
-    // TODO
-  }
-  return *result;
 }
 
 // Stampa su stdout le statistiche di un file
