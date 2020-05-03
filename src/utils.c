@@ -14,6 +14,8 @@ typedef int bool;
 uint fromBytesToInt(byte[]);
 void fromIntToBytes(uint, byte[]);
 bool isDirectory(string, char, int *out);
+long min_l(long, long);
+long max_l(long, long);
 
 // convert 4 bytes in unsigned int (little endian)
 uint fromBytesToInt(byte *bytes){
@@ -60,5 +62,14 @@ bool isDirectory(string path, char endingChar, int *out){
 
     return isDirectory;
 }
+
+long min_l(long a, long b){
+    return a < b ? a : b;
+}
+
+long max_l(long a, long b){
+    return a > b ? a : b;
+}
+
 
 #endif
