@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "utils.c"
 #include "crawler.c"
+#include "controller.c"
 
 #define MAX_FILES 50
 
@@ -141,6 +142,7 @@ void interactiveMode(){
 
 void staticMode(int numOfP, int numOfQ, int numOfFiles, string listFilePaths[]){
     printf("Static mode\n");
-    printf("Files to process:\n");
-    printFileList(listFilePaths, numOfFiles);
+    // printf("Files to process:\n");
+    // printFileList(listFilePaths, numOfFiles);
+    controller(numOfP, numOfQ, listFilePaths, true);
 }
