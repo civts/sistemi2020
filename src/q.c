@@ -3,7 +3,10 @@
 #include <sys/types.h>
 #include "utils.c"
 
-void q(int numPartToSlit, int myIndex){
+#define READ 0
+#define WRITE 1
+
+void q(int numPartToSlit, int myIndex, int *pipeToP, int *pipeFromP){
     while (true){
         // wait message from controller
     }

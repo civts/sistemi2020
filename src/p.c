@@ -4,11 +4,26 @@
 #include "utils.c"
 #include "q.c"
 
-void p(int m){
+#define READ 0
+#define WRITE 1
+
+void p(int m, int *pipeFromController){
     pid_t *pids = (pid_t*) malloc(m*sizeof(pid_t));
+    // Here I am building 2 pipes for each Q, one for the communication P->Q
+    // and the other for the communication Q->P
+    int **pipeListToQ = (int **) malloc(m*sizeof(int*));
+    int **pipeListFromQ = (int **) malloc(m*sizeof(int*));
 
     int i, f=1;
     for (i = 0; i < m && f != 0; i++){
+        int pipeToQ[2];
+        int pipeFromQ[2];
+        // TODO: check syscall return
+        pipe(pipeToQ);
+        pipe(pipeFromQ);
+        pipeListToQ[i] = pipeToQ;
+        pipeListFromQ[i] = pipeFromQ;
+
         f = fork();
 
         if (f < 0){
@@ -17,9 +32,13 @@ void p(int m){
         } else if (f == 0){
             // child
             printf("Q%d created\n", i);
-            q(i, m);
+            close(pipeToQ[READ]);
+            close(pipeFromQ[WRITE]);
+            q(i, m, pipeToQ, pipeFromQ);
         } else {
             // parent
+            close(pipeToQ[READ]);
+            close(pipeFromQ[WRITE]);
             pids[i] = f;
         }
     }
@@ -29,3 +48,6 @@ void p(int m){
     }
 }
 
+int main(){
+    return 0;
+}

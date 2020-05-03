@@ -111,7 +111,7 @@ byte* encodePacketForReport(string fileName, bool isInsideFolder, int numCharInP
 
 // TODO change everything from int to long, to support very long files
 // giving the starting and ending offset in the file, it gets the number of
-// occurences for each char. It returns the number of 
+// occurences for each char. It returns the number of byte read.
 int getOccurences(string fileName, int startPosition, int endPosition, int outOccurences[NUM_OCCURENCES]){
     // TODO check for NULL pointer
     int bufferSize = endPosition - startPosition;
