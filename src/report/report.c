@@ -1,12 +1,8 @@
-#include "../packet_codes.c"
+#include "../packet_codes.h"
 #include "../utils.c"
-#include "./list_data_structure.c"
+#include "./list_data_structure.h"
 #include "./report_utils.h"
-
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #ifndef bool
 typedef unsigned char bool;
 #define false 0
@@ -18,25 +14,109 @@ const char *PATH_TO_REPORT_PIPE = "/path/to/pipe";
 // How many bytes to read every time from the pipe
 const int BATCH_SIZE = 128;
 
-int main(int argc, char *argv[]) {
-  int retCode = 0;
-  if (contains(argc, argv, helpFlag)) {
-    printf("this is the help text"); // TODO
-  } else {
-    char *message = argsAreValid(argc, argv);
-    if (message != NULL) {
-      retCode = report(argc, argv);
-    } else {
-      retCode = 1;
-      perror(message);
-      free(message);
-    }
+void stampaGruppi(int dati[], int caratteriTot) {
+  char c;
+  int i = 0;
+  int az = 0;
+  for (i = 'a'; i <= 'z'; i++) {
+    az += dati[i];
   }
-  return retCode;
+  int AZ = 0;
+  for (i = 'A'; i <= 'Z'; i++) {
+    AZ += dati[i];
+  }
+
+  for (i = 0; i < 256; i++) {
+    printf("%c: %d\n", c, dati[i]);
+  }
 }
 
+void stampaGruppiNonVerbosa(list *list) {
+  printf("Analyzed %d files:\n", list->count);
+  long az, AZ, digits, spaces, punctuation, otherChars;
+  long long totalChars;
+  az = AZ = digits = spaces = punctuation = otherChars = totalChars = 0;
+  fwsNode *cursor = list->firstNode;
+  while (cursor != NULL) {
+    fileWithStats *fws = cursor->val;
+    int i;
+    int *oc = fws->occorrenze;
+    long thisaz, thisAZ, thisDigits, thisSpaces, thisPunct;
+    thisaz = thisAZ = thisDigits = thisSpaces = thisPunct = 0;
+    for (i = 'a'; i <= 'z'; i++) {
+      thisaz += oc[i];
+    }
+    az += thisaz;
+    for (i = 'A'; i <= 'Z'; i++) {
+      thisAZ += oc[i];
+    }
+    AZ += thisAZ;
+    for (i = '0'; i <= '9'; i++) {
+      thisDigits += oc[i];
+    }
+    digits += thisDigits;
+    const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
+    for (i = 0; i < 6; i++) {
+      thisSpaces += oc[i];
+    }
+    spaces += thisSpaces;
+    const char punctuationChars[] = {
+        ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
+    };
+    for (i = 0; i < 14; i++) {
+      thisPunct += oc[punctuationChars[i]];
+    }
+    punctuation += thisPunct;
+    otherChars += fws->totalCharacters - thisaz - thisAZ - thisDigits -
+                  thisPunct - thisSpaces;
+    totalChars += fws->totalCharacters;
+    cursor = cursor->nextNode;
+  }
+  printf("a-z: %d\nA-Z: %d\ndigits: %d\npunctuation: %d\nother: %d\n\nTotal "
+         "charcters: %d\n",
+         az, AZ, digits, punctuation, otherChars, totalChars);
+}
+
+void stampaDefault(list *list) {
+  printf("Analyzed %d files:\n", list->count);
+  int i;
+  long az, AZ, digits, spaces, punctuation, otherChars;
+  long long totalChars;
+  long occCount[ASCII_LENGTH];
+  fwsNode *cursor = list->firstNode;
+  while (cursor != NULL) {
+    fileWithStats *fws = cursor->val;
+    int *oc = fws->occorrenze;
+    for (i = 0; i < ASCII_LENGTH; i++) {
+      occCount[i] += oc[i];
+    }
+    totalChars += fws->totalCharacters;
+    cursor = cursor->nextNode;
+  }
+  for (i = 0; i < ASCII_LENGTH; i++) {
+    if (i >= '!' && i < 254 && i != 127) {
+      printf('%c', i);
+    } else {
+      printf("character with extendedASCII code %d", i);
+    }
+    printf(": %d\n");
+  }
+  printf("\nTotal "
+         "charcters: %d\n",
+         totalChars);
+}
+
+// Stampa su stdout le statistiche di un file
+void stampaSingoloFile(char *nomeFile, int dati[], int caratteriTot, int argc,
+                       char *argv) {
+  printf("---------------%s---------------", nomeFile);
+
+  printf("Caratteri totali: %d\n", caratteriTot);
+}
+
+
 // This is the function that implements report buisiness logic
-int report(int argc, char *argv[]) {
+int report(int argc,const char *argv[]) {
   int retCode = 0;
   // This is where the state is stored: it contains the references to the
   // "objects" representing the files and their stats.
@@ -122,102 +202,21 @@ int report(int argc, char *argv[]) {
   return retCode;
 }
 
-void stampaGruppi(int dati[], int caratteriTot) {
-  char c;
-  int i = 0;
-  int az = 0;
-  for (i = 'a'; i <= 'z'; i++) {
-    az += dati[i];
-  }
-  int AZ = 0;
-  for (i = 'A'; i <= 'Z'; i++) {
-    AZ += dati[i];
-  }
-
-  for (i = 0; i < 256; i++) {
-    print("%c: %d\n", c, dati[i]);
-  }
-}
-
-void stampaGruppiNonVerbosa(list *list) {
-  printf("Analyzed %d files:\n", list->count);
-  long az, AZ, digits, spaces, punctuation, otherChars;
-  long long totalChars;
-  az = AZ = digits = spaces = punctuation = otherChars = totalChars = 0;
-  fwsNode *cursor = list->firstNode;
-  while (cursor != NULL) {
-    fileWithStats *fws = cursor->val;
-    int i;
-    int *oc = fws->occorrenze;
-    long thisaz, thisAZ, thisDigits, thisSpaces, thisPunct;
-    thisaz = thisAZ = thisDigits = thisSpaces = thisPunct = 0;
-    for (i = 'a'; i <= 'z'; i++) {
-      thisaz += oc[i];
-    }
-    az += thisaz;
-    for (i = 'A'; i <= 'Z'; i++) {
-      thisAZ += oc[i];
-    }
-    AZ += thisAZ;
-    for (i = '0'; i <= '9'; i++) {
-      thisDigits += oc[i];
-    }
-    digits += thisDigits;
-    const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
-    for (i = 0; i < 6; i++) {
-      thisSpaces += oc[i];
-    }
-    spaces += thisSpaces;
-    const char punctuationChars[] = {
-        ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
-    };
-    for (i = 0; i < 14; i++) {
-      thisPunct += oc[punctuationChars[i]];
-    }
-    punctuation += thisPunct;
-    otherChars += fws->totalCharacters - thisaz - thisAZ - thisDigits -
-                  thisPunct - thisSpaces;
-    totalChars += fws->totalCharacters;
-    cursor = cursor->nextNode;
-  }
-  printf("a-z: %d\nA-Z: %d\ndigits: %d\npunctuation: %d\nother: %d\n\nTotal "
-         "charcters: %d\n",
-         az, AZ, digits, punctuation, otherChars, totalChars);
-}
-
-void stampaDefault(list *list) {
-  printf("Analyzed %d files:\n", list->count);
-  int i;
-  long az, AZ, digits, spaces, punctuation, otherChars;
-  long long totalChars;
-  long occCount[ASCII_LENGTH];
-  fwsNode *cursor = list->firstNode;
-  while (cursor != NULL) {
-    fileWithStats *fws = cursor->val;
-    int *oc = fws->occorrenze;
-    for (i = 0; i < ASCII_LENGTH; i++) {
-      occCount[i] += oc[i];
-    }
-    totalChars += fws->totalCharacters;
-    cursor = cursor->nextNode;
-  }
-  for (i = 0; i < ASCII_LENGTH; i++) {
-    if (i >= '!' && i < 254 && i != 127) {
-      pritnf('%c', i);
+int main(int argc,const char *argv[]) {
+  int retCode = 0;
+  if (contains(argc, argv, helpFlag)) {
+    printf("this is the help text"); // TODO
+  } else {
+    // WTF ? argsAreValid mi da un bool...cosa dovrei fare?
+    bool message = argsAreValid(argc, argv);
+    if (message ) {
+      //dove è report? 
+      retCode = report(argc, argv);
     } else {
-      printf("character with extendedASCII code %d", i);
+      retCode = 1;
+      perror(message);
+      free(message);
     }
-    printf(": %d\n");
   }
-  printf("\nTotal "
-         "charcters: %d\n",
-         totalChars);
-}
-
-// Stampa su stdout le statistiche di un file
-void stampaSingoloFile(char *nomeFile, int dati[], int caratteriTot, int argc,
-                       char *argv) {
-  print("---------------%s---------------", nomeFile);
-
-  print("Caratteri totali: %d\n", caratteriTot);
+  return retCode;
 }
