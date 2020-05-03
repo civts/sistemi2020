@@ -1,4 +1,5 @@
 #include "../utils.c"
+
 #include <stdio.h>  //print etc
 #include <stdlib.h> // malloc & free
 #include <string.h> //strlen e strcpy
@@ -51,12 +52,16 @@ fileWithStats *constructorFWS(char *path, int totalCharacters,
     fs->occorrenze[i] = occorrenze[i];
   }
   fs->fromFolder = fromFolder;
+  if (DEBUGGING)
+    printf("Creating a new FWS instance @%d for file w/ path %s\n", fs, path);
   return fs;
 }
 
 // Destructor for fileWithStats
 // TODO: seems ok but we need to test for memory leaks
 void deleteFWS(fileWithStats *fs) {
+  if (DEBUGGING)
+    printf("Deleting FWS instance @%d of file w/ path %s\n", fs, fs->path);
   free(fs->path);
   free(fs);
 }
@@ -64,6 +69,8 @@ void deleteFWS(fileWithStats *fs) {
 // Adds new stats to this fileWithStats
 void addStatsToFWS(fileWithStats *fs, int totCharsToAdd,
                    int occorrenze[ASCII_LENGTH]) {
+  if (DEBUGGING)
+    printf("Adding new stats to FWS object of file %s\n", fs->path);
   fs->totalCharacters += totCharsToAdd;
   int i;
   for (i = 0; i < ASCII_LENGTH; i++) {

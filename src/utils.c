@@ -1,4 +1,5 @@
 #include <string.h>
+
 #define INT_SIZE 4
 // How many characters we are considering
 #define ASCII_LENGTH 256
@@ -7,6 +8,7 @@ typedef unsigned char bool;
 #define false 0
 #define true 1
 #endif
+#define DEBUGGING true
 typedef unsigned int uint;
 typedef unsigned char byte;
 
@@ -35,5 +37,18 @@ void fromIntToBytes(uint value, byte out[]) {
   }
 }
 
-// Util function for knowing if two paths (or strings in general) are the same
-bool comparePaths(char *p1, char *p2) { return !strcmp(p1, p2); }
+// Util function for knowing if two strings are the same TESTED✔️
+bool streq(char *p1, char *p2) { return !strcmp(p1, p2); }
+
+// Returns if the array of strings [pool] contains the given option. TESTED✔️
+// (useful for checking that params are correct)
+bool contains(int poolLength, char *pool[], char *option) {
+  int i;
+  bool found = false;
+  for (i = 0; i < poolLength; i++)
+    if (streq(option, pool[i])) {
+      found = true;
+      break;
+    }
+  return found;
+}

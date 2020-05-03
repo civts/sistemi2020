@@ -1,6 +1,7 @@
 #include "../utils.c"
 #include "./file_with_stats_data_structure.c"
 #include "./file_with_stats_node.h"
+
 #include <stdio.h>  //print etc
 #include <stdlib.h> // malloc, free
 #include <string.h> //strlen, strcpy
@@ -50,6 +51,7 @@ list *constructorListOne(fileWithStats *fs) {
   return l;
 }
 
+// Deletes l and everything within, de-allocating what's needed
 void destructorList(list *l) {
   fwsNode *current = l->firstNode;
   // delete every node until none is left
@@ -100,27 +102,38 @@ fwsNode *getNodeByIndex(list *lista, int index) {
 fwsNode *getNodeWithPath(list *list, char *path) {
   fwsNode *current = list->firstNode;
   while (current != NULL) {
-    if (comparePaths(current->val->path, path)) {
+    if (streq(current->val->path, path)) {
       return current;
     }
     current = current->nextNode;
   }
 }
 
-// Removes the element with the specified path (first occourrence only)
+// Removes the element with the specified path (first occourrence only).
+// Also handles its de-allocation.
 // TODO test!
 void removeElementByPath(list *list, char *path) {
+  if (DEBUGGING)
+    printf("Getting element with path \"%s\" for deletion\n", path);
   fwsNode *targetNode = getNodeWithPath(list, path);
   if (targetNode != NULL) {
+    if (DEBUGGING)
+      printf("Found element with path \"%s\", its @%d\n", path, targetNode);
     fwsNode *prev = targetNode->previousNode;
     fwsNode *next = targetNode->nextNode;
     prev->nextNode = next;
     next->previousNode = prev;
     deleteFwsNode(targetNode);
+  } else {
+    if (DEBUGGING)
+      printf("Element with path \"%s\" is not in this list so it was not "
+             "deleted\n",
+             path);
   }
 }
 
-// removes first element from the fwsNodeList
+// Removes first element from the fwsNodeList.
+// (and handles its de-allocation)
 void removeFirst(list *lista) {
   if (!isEmpty(lista)) {
     fwsNode *newFirstNode = NULL;
@@ -133,7 +146,8 @@ void removeFirst(list *lista) {
   }
 }
 
-// Remove the last element from the list
+// Removes the last element from the list.
+// (and handles its de-allocation)
 void removeLast(list *list) {
   if (!isEmpty(list)) {
     fwsNode *cursor = list->firstNode;
@@ -159,7 +173,9 @@ void removeLast(list *list) {
 }
 
 // Adds the stats from newData to the right file in this list.
-// if file is not present it is appended to the end of the list
+// If file is not present it is appended to the end of the list.
+//
+// ⚠️ After this you should deallocate the newData fileWithStats.
 void updateFileData(list *list, char *filePath, fileWithStats *newData) {
   fwsNode *targetNode = getNodeWithPath(list, filePath);
   if (targetNode != NULL) {

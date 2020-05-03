@@ -2,6 +2,7 @@
  * clutter the main report.c file
 */
 #include "../utils.c"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,19 +28,6 @@ const char *validOptions[] = {
     helpFlag, groupFlag, verboseFlag, percentageFlag, forceReAnalysisFlag,
 };
 
-// returns true if validOptions contains the given flag
-bool contains(char *option) {
-  int i;
-  bool found = false;
-  const int howManyOptions = 5;
-  for (i = 0; i < howManyOptions; i++)
-    if (!strcmp(option, validOptions[i])) {
-      found = true;
-      break;
-    }
-  return found;
-}
-
 // Returns true if args are valid; And terminates w/ code 1 if they are not
 // (provides the message to the user)
 bool argsAreValid(int argc, char *argv[]) {
@@ -47,7 +35,7 @@ bool argsAreValid(int argc, char *argv[]) {
   int i;
   for (i = 1; i < argc; i++) {
     char *opt = argv[i];
-    int a = contains(opt);
+    int a = contains(5, validOptions, opt);
     if (!a) {
       char msgStart[] = "Option \"";
       char msgEnd[] = "\" is not valid, use --help to see available ones\n";

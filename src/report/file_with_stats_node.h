@@ -1,4 +1,5 @@
 #include "./file_with_stats_data_structure.c"
+
 #include <stdio.h> //print etc
 #include <stdlib.h>
 
@@ -24,6 +25,8 @@ fwsNode *constructorFwsNode(fileWithStats *fs) {
 // Also de-allocates the memory
 // (does NOT delete the next and prevoius nodes otherwise it would cascade)
 void deleteFwsNode(fwsNode *fs) {
+  if (DEBUGGING)
+    printf("deleting node @%d\n", fs);
   deleteFWS(fs->val);
   free(fs);
 }
