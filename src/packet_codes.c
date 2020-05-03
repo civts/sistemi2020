@@ -4,6 +4,7 @@
 /*
 ------ 0 -----
 1 byte (packet code)
+INT_SIZE bytes packet length
 uint -> lunghezza pathname
 pathname /tmp/ciao.txt
 1 byte (1:da cartella, 0:file singolo)
@@ -18,6 +19,7 @@ uint caratteri totali
 /*
 ------ 1 -------
 1 byte (packet_code)
+INT_SIZE bytes packet length
 uint -> lunghezza pathname
 pathname
 */
