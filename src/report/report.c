@@ -72,9 +72,10 @@ void stampaGruppiNonVerbosa(list *list) {
     totalChars += fws->totalCharacters;
     cursor = cursor->nextNode;
   }
-  printf("a-z: %d\nA-Z: %d\ndigits: %d\npunctuation: %d\nother: %d\n\nTotal "
-         "charcters: %d\n",
-         az, AZ, digits, punctuation, otherChars, totalChars);
+  printf(
+      "a-z: %ld\nA-Z: %ld\ndigits: %ld\npunctuation: %ld\nother: %ld\n\nTotal "
+      "charcters: %lld\n",
+      az, AZ, digits, punctuation, otherChars, totalChars);
 }
 
 void stampaDefault(list *list) {
@@ -95,14 +96,14 @@ void stampaDefault(list *list) {
   }
   for (i = 0; i < ASCII_LENGTH; i++) {
     if (i >= '!' && i < 254 && i != 127) {
-      printf('%c', i);
+      printf("%c", i);
     } else {
       printf("character with extendedASCII code %d", i);
     }
-    printf(": %d\n");
+    printf(": %ld\n", occCount[i]);
   }
   printf("\nTotal "
-         "charcters: %d\n",
+         "charcters: %lld\n",
          totalChars);
 }
 
@@ -114,9 +115,8 @@ void stampaSingoloFile(char *nomeFile, int dati[], int caratteriTot, int argc,
   printf("Caratteri totali: %d\n", caratteriTot);
 }
 
-
 // This is the function that implements report buisiness logic
-int report(int argc,const char *argv[]) {
+int report(int argc, const char *argv[]) {
   int retCode = 0;
   // This is where the state is stored: it contains the references to the
   // "objects" representing the files and their stats.
@@ -202,21 +202,19 @@ int report(int argc,const char *argv[]) {
   return retCode;
 }
 
-int main(int argc,const char *argv[]) {
+int main(int argc, const char *argv[]) {
   int retCode = 0;
   if (contains(argc, argv, helpFlag)) {
     printf("this is the help text"); // TODO
   } else {
     // WTF ? argsAreValid mi da un bool...cosa dovrei fare?
     bool message = argsAreValid(argc, argv);
-    if (message ) {
-      //dove è report? 
+    if (message) {
+      // dove è report?
       retCode = report(argc, argv);
-    } else {
-      retCode = 1;
-      perror(message);
-      free(message);
     }
+    // Will never have an else since when they are not valid  the program
+    // terminates
   }
   return retCode;
 }

@@ -1,4 +1,4 @@
-#include "../utils.C"
+#include "../utils.c"
 #include <stdio.h>  //print etc
 #include <stdlib.h> // malloc & free
 #include <string.h> //strlen e strcpy
