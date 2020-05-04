@@ -11,7 +11,7 @@
 
 // IMPORTANT: compile this with -lm to make ceil works...
 
-void  miniQ(string, int, int);
+void  miniQ(string, bool, int, int);
 void  sendOccurencesToReport(string, bool, int, int [NUM_OCCURENCES]);
 byte* encodePacketForReport(string, bool, int, int [NUM_OCCURENCES], int*);
 int   getOccurences(string, int, int, int[NUM_OCCURENCES]);
@@ -20,7 +20,7 @@ void  printOccurencesTemp(string, int[NUM_OCCURENCES]);
 
 // pricipal core of a miniQ: it's goal is to detect the char occurences
 // for a single file of his parent Qij process
-void miniQ(string fileName, int numOfPortions, int portionOfFileToRead){
+void miniQ(string fileName, bool isInsideFolder, int numOfPortions, int portionOfFileToRead){
     if (portionOfFileToRead >= numOfPortions){
         // should never come here
         printf("Error, what's that portion?");
@@ -32,12 +32,14 @@ void miniQ(string fileName, int numOfPortions, int portionOfFileToRead){
         long startPosition = lenPortion * portionOfFileToRead;
         long endPosition   = min_l(fileLength, startPosition + lenPortion);
         
+        // TODO change to uint
         // get character occurences from the file
         int occurences[256];
 
         // bufferOccurecesSize should be endPosition-startPosition
-        int bufferOccurencesSize = getOccurences(fileName, startPosition, endPosition, occurences);
-        sendOccurencesToReport(fileName, 0, bufferOccurencesSize, occurences);
+        int numCharsInPortion = getOccurences(fileName, startPosition, endPosition, occurences);
+        sendOccurencesToReport(fileName, isInsideFolder, numCharsInPortion, occurences);
+        exit(0);
     }
 }
 
@@ -78,7 +80,7 @@ byte* encodePacketForReport(string fileName, bool isInsideFolder, int numCharInP
     outBuffer[offset] = 0;
     offset++;
 
-    // size of pathname
+    // length of pathname
     fromIntToBytes(lenFileName, tempInteger);
     memcpy(outBuffer + offset, tempInteger, INT_SIZE);
     offset += INT_SIZE;
