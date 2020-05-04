@@ -1,8 +1,9 @@
-#include "../utils.c"
-
+#include "../utils.C"
 #include <stdio.h>  //print etc
 #include <stdlib.h> // malloc & free
 #include <string.h> //strlen e strcpy
+#ifndef FILE_WITH_STATS_DATA_STRUCTURE_H
+#define FILE_WITH_STATS_DATA_STRUCTURE_H
 
 /*  File where we define the structure of a fileWithStats and the functions that
  * enable us to work with it. (The representation of a File and its stats)
@@ -53,7 +54,7 @@ fileWithStats *constructorFWS(char *path, int totalCharacters,
   }
   fs->fromFolder = fromFolder;
   if (DEBUGGING)
-    printf("Creating a new FWS instance @%d for file w/ path %s\n", fs, path);
+    printf("Creating a new FWS instance @%p for file w/ path %s\n", fs, path);
   return fs;
 }
 
@@ -61,7 +62,7 @@ fileWithStats *constructorFWS(char *path, int totalCharacters,
 // TODO: seems ok but we need to test for memory leaks
 void deleteFWS(fileWithStats *fs) {
   if (DEBUGGING)
-    printf("Deleting FWS instance @%d of file w/ path %s\n", fs, fs->path);
+    printf("Deleting FWS instance @%p of file w/ path %s\n", fs, fs->path);
   free(fs->path);
   free(fs);
 }
@@ -91,3 +92,4 @@ void printFileWithStats(fileWithStats *fs) {
     */
   printf("%d\n", fs->fromFolder);
 }
+#endif

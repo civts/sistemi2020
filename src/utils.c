@@ -1,5 +1,6 @@
+#ifndef UTILS_H
+#define UTILS_H
 #include <string.h>
-
 #define INT_SIZE 4
 // How many characters we are considering
 #define ASCII_LENGTH 256
@@ -38,11 +39,11 @@ void fromIntToBytes(uint value, byte out[]) {
 }
 
 // Util function for knowing if two strings are the same TESTED✔️
-bool streq(char *p1, char *p2) { return !strcmp(p1, p2); }
+bool streq(const char *p1,const char *p2) { return !strcmp(p1, p2); }
 
 // Returns if the array of strings [pool] contains the given option. TESTED✔️
 // (useful for checking that params are correct)
-bool contains(int poolLength, char *pool[], char *option) {
+bool contains(int poolLength,const char *pool[],const char *option) {
   int i;
   bool found = false;
   for (i = 0; i < poolLength; i++)
@@ -52,3 +53,4 @@ bool contains(int poolLength, char *pool[], char *option) {
     }
   return found;
 }
+#endif

@@ -1,10 +1,12 @@
 /*	File for report business logic that is too verbose and would only
  * clutter the main report.c file
 */
+#ifndef REPORT_UTILS_H
+#define REPORT_UTILS_H
 #include "../utils.c"
-
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 // Flag for telling the report to show help dialog
 const char helpFlag[] = "--help";
@@ -30,11 +32,11 @@ const char *validOptions[] = {
 
 // Returns true if args are valid; And terminates w/ code 1 if they are not
 // (provides the message to the user)
-bool argsAreValid(int argc, char *argv[]) {
+bool argsAreValid(int argc, const char *argv[]) {
   // no arguments is ok (in that case argc is 1)
   int i;
   for (i = 1; i < argc; i++) {
-    char *opt = argv[i];
+    const char *opt = argv[i];
     int a = contains(5, validOptions, opt);
     if (!a) {
       char msgStart[] = "Option \"";
@@ -66,3 +68,4 @@ bool argsAreValid(int argc, char *argv[]) {
 //   int b = argsAreValid(4, a);
 //   printf("%d\n", b);
 // }
+#endif

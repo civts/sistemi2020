@@ -1,10 +1,10 @@
 #include "../utils.c"
-#include "./file_with_stats_data_structure.c"
+#include "./file_with_stats_data_structure.h"
 #include "./file_with_stats_node.h"
 
+#ifndef LIST_DATA_STRUCTURE_H
+#define LIST_DATA_STRUCTURE_H
 #include <stdio.h>  //print etc
-#include <stdlib.h> // malloc, free
-#include <string.h> //strlen, strcpy
 /*  File where we define the structure of the list with all the fileWithStats
  *  nodes
 */
@@ -118,7 +118,7 @@ void removeElementByPath(list *list, char *path) {
   fwsNode *targetNode = getNodeWithPath(list, path);
   if (targetNode != NULL) {
     if (DEBUGGING)
-      printf("Found element with path \"%s\", its @%d\n", path, targetNode);
+      printf("Found element with path \"%s\", its @%p\n", path, targetNode);
     fwsNode *prev = targetNode->previousNode;
     fwsNode *next = targetNode->nextNode;
     prev->nextNode = next;
@@ -195,7 +195,7 @@ void printList(list *list) {
     cursor = cursor->nextNode;
   }
 }
-
+/*
 // main di prova per testare
 int main(int c, char *argv[]) {
   int retCode = 0;
@@ -232,4 +232,5 @@ int main(int c, char *argv[]) {
   printList(lista);
   printf("elementi della lista %d\n", lista->count);
   return retCode;
-}
+}*/
+#endif

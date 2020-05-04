@@ -1,7 +1,6 @@
-#include "./file_with_stats_data_structure.c"
-
-#include <stdio.h> //print etc
-#include <stdlib.h>
+#ifndef FILE_WITH_STATS_NODE_H
+#define FILE_WITH_STATS_NODE_H
+#include "./file_with_stats_data_structure.h"
 
 // FileWithStats list node
 typedef struct fwsNode_t {
@@ -26,11 +25,11 @@ fwsNode *constructorFwsNode(fileWithStats *fs) {
 // (does NOT delete the next and prevoius nodes otherwise it would cascade)
 void deleteFwsNode(fwsNode *fs) {
   if (DEBUGGING)
-    printf("deleting node @%d\n", fs);
+    printf("deleting node @%p\n", fs);
   deleteFWS(fs->val);
   free(fs);
 }
-
+/*
 // UNIT TEST MAIN
 void main() {
   // test constructor: should print only 1s
@@ -53,4 +52,5 @@ void main() {
     node = constructorFwsNode(fs);
     deleteFwsNode(node);
   }
-}
+}*/
+#endif
