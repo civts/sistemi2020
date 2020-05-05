@@ -6,17 +6,17 @@
 #include "utils.c"
 #include "q.c"
 
-// TODO check for exit(0) here... we do not want zombies
-
 #define READ 0
 #define WRITE 1
 
 void p(int, int*);
-void waitForMessagesFromController(pid_t*, int[2], int**, int);
+void waitForMessagesFromController(pid_t*, int[2], int**, int**, int);
 int  processPNewFilePacket(byte[], int, int**, int);
 int  processPRemoveFilePacket(byte[], int**, int);
 int  processPDeathPacket(byte[], int**, int);
-int  processPNewValueForM(byte[], pid_t[], int**, int);
+int  processPNewValueForM(byte[], pid_t[], int**, int**, int, int[2]);
+void killTheQ(int, int**);
+
 
 void p(int m, int *pipeFromController){
     pid_t *pids = (pid_t*) malloc(m * sizeof(pid_t));
@@ -44,6 +44,8 @@ void p(int m, int *pipeFromController){
             close(pipeListToQ[i][WRITE]);
             close(pipeListFromQ[i][READ]);
             q(m, i, pipeListFromQ[i], pipeListToQ[i]);
+            // Beccato!
+            exit(0);
         } else {
             // parent
             close(pipeListToQ[i][READ]);
@@ -52,10 +54,10 @@ void p(int m, int *pipeFromController){
         }
     }
 
-    waitForMessagesFromController(pids, pipeFromController, pipeListToQ, m);
+    waitForMessagesFromController(pids, pipeFromController, pipeListToQ, pipeListFromQ, m);
 }
 
-void waitForMessagesFromController(pid_t *qPids, int pipeFromC[2], int **pipeListToQ, int m){
+void waitForMessagesFromController(pid_t *qPids, int pipeFromC[2], int **pipeListToQ, int **pipeListFromQ, int m){
     byte packetHeader[1 + INT_SIZE];
     int  packetLength = 0, receivedPacketFragmentsLength = 0;
     int  returnCodeFromPacketProcess = 0;
@@ -67,6 +69,7 @@ void waitForMessagesFromController(pid_t *qPids, int pipeFromC[2], int **pipeLis
         packetLength = fromBytesToInt(packetHeader + 1);
         packetData   = (byte*) malloc(sizeof(byte) * packetLength);
         int numBytesRead = read(pipeFromC[READ], packetData, packetLength);
+        
 
         if (packetLength == numBytesRead){
             switch (packetHeader[0]){
@@ -80,13 +83,13 @@ void waitForMessagesFromController(pid_t *qPids, int pipeFromC[2], int **pipeLis
                     returnCodeFromPacketProcess = processPDeathPacket(packetData, pipeListToQ, m);
                     break;
                 case 3:
-                    returnCodeFromPacketProcess = processPNewValueForM(packetData, qPids, pipeListToQ, m);
+                    returnCodeFromPacketProcess = processPNewValueForM(packetData, qPids, pipeListToQ, pipeListFromQ, m, pipeFromC);
                     break;
                 default:
                     printf("Error, P received from C an unknown packet type %d\n", packetHeader[0]);
             }
 
-            // in case of death packet, exit from 
+            // in case of death packet, exit from while whale cycle
             if (packetHeader[0] == 2 && returnCodeFromPacketProcess == 0){
                 break;
             }
@@ -124,21 +127,88 @@ int processPDeathPacket(byte packetData[], int **pipeListToQ, int m){
     int i;
     for (i = 0; i < m; i++){
         write(pipeListToQ[i][WRITE], packet, 5); // send death packet to all its Qs
+        free(pipeListToQ[i]);
     }
+    free(pipeListToQ);
 
-    // TODO free resources
-
-    printf("P is dead\n"); // VIENE STAMPATO IL DOPPIO DELLE VOLTE, PERCHè?
-    exit(0);
+    printf("P is dead\n");
     return 0; // ok code
 }
 
-int processPNewValueForM(byte packetData[], pid_t qPids[], int **pipeListToQ, int m){
+// TODO: reassign files??
+int processPNewValueForM(byte packetData[], pid_t oldPids[], int **pipeListToQ, int **pipeListFromQ, int m, int pipeFromC[2]){
     // the packet data conists only in the new m value
-    uint m_new = fromBytesToInt(packetData);
+    uint new_m = fromBytesToInt(packetData);
     printf("P got new value for M\n");
     
-    // TODO reshape for new M value
+    int **newPipesToQ   = (int**) malloc( ((int)new_m) * sizeof(int*) );
+    int **newPipesFromQ = (int**) malloc( ((int)new_m) * sizeof(int*) );
+    pid_t *newPids = (pid_t*) malloc(new_m * sizeof(pid_t));
 
-    // to delete Q, send packet of death -> {2, 0, 0, 0, 0}
+    int difference = ((int)new_m) - m;
+
+    if(difference < 0){
+        // Gotta kill some children
+        int i;
+        for(i=0; i<m; i++){
+            if(i<new_m) {
+                newPipesToQ[i] = pipeListToQ[i];
+                newPipesFromQ[i] = pipeListFromQ[i];
+                newPids[i] = oldPids[i]; 
+            }
+            else {
+                killTheQ(i, pipeListToQ);
+                free(pipeListToQ[i]);
+                free(pipeListFromQ[i]);
+            }
+        }
+        free(oldPids);
+    } else {
+        // Create some new little Qs
+        
+        // Copy old ones
+        int i;
+        for(i=0; i<m; i++){
+            newPipesToQ[i] = pipeListToQ[i];
+            newPipesFromQ[i] = pipeListFromQ[i];
+            newPids[i] = oldPids[i]; 
+        }
+        
+        // Create new ones
+        for(i=m; i<new_m; i++){
+            // TODO: if we need also pipesFromQ we have to update them HERE
+            newPipesToQ[i]   = (int*) malloc(sizeof(int) * 2);
+            newPipesFromQ[i] = (int*) malloc(sizeof(int) * 2);
+
+            // TODO: check syscall return
+            pipe(newPipesToQ[i]);
+            pipe(newPipesFromQ[i]);
+
+            int f = fork();
+            if (f < 0){
+                printf("Error creating Q\n");
+                i--;
+            } else if (f == 0){
+                // child
+                printf("Q%d created\n", i);
+                close(newPipesToQ[i][WRITE]);
+                close(newPipesFromQ[i][READ]);
+                // AAAARG aggiornare m per i vecchi Q o ucciderli e crearne di nuovi?
+                q(new_m, i, newPipesFromQ[i], newPipesToQ[i]);
+                exit(0);
+            } else {
+            // parent
+            close(newPipesToQ[i][READ]);
+            close(newPipesFromQ[i][WRITE]);
+            newPids[i] = f;
+            }
+        }
+    }
+
+    waitForMessagesFromController(newPids, pipeFromC, newPipesToQ, newPipesFromQ, new_m);
+}
+
+void killTheQ(int Qid, int **pipeListToQ){
+    byte packet[5] = {2, 0, 0, 0, 0};
+    write(pipeListToQ[Qid][WRITE], packet, 5);
 }

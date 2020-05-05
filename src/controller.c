@@ -7,58 +7,29 @@
 #define READ 0
 #define WRITE 1
 
-void controller(int, int, string[], bool);
+void controller(int, int, string[], int);
 void generateTree(int, int);
-void reshapeTree(int, int);
+void update_m(int, int);
+void shapeTree(int, int);
+void staccaStacca(int);
 
 void sendPathNameToP(string, int, bool);
 
 pid_t *pids;
 int **pipesToP;
 
-int curr_n;
-int curr_m;
+int curr_n = 0;
+int curr_m = 0;
 
-// TODO I think we can use only reshapeTree
 // TODO create a fd from analyzer to controller
-void controller(int n, int m, string files[], bool isFirstReport){
+// TODO send controller also the NUMBER OF FILES in files[]
+void controller(int n, int m, string files[], int numFiles){
     // if first report we need to allocate everything...
-    isFirstReport ? generateTree(n, m) : reshapeTree(n, m);
+    shapeTree(n, m);
 
     int i;
-    for (i = 0; i < n; i++){
-        sendPathNameToP(files[0], i % curr_n, false);
-    }
-}
-
-void generateTree(int n, int m){
-    curr_n = n;
-    curr_m = m;
-
-    pids = (pid_t*) malloc(n*sizeof(pid_t));
-    pipesToP = (int **) malloc(n*sizeof(int*));
-
-    int i, f=1;
-    for (i=0; i<n && f!=0; i++){
-        pipesToP[i] = (int *) malloc(sizeof(int) * 2);
-        // TODO:check syscall return
-        pipe(pipesToP[i]);
-        f = fork();
-        if (f < 0){
-            printf("Errore nella generazione di un figlio P");
-            i--;
-        } else if (f == 0){
-            // child
-            printf("P%d created\n", i);
-            fflush(stdout);
-            close(pipesToP[i][WRITE]);
-            p(m, pipesToP[i]);
-            exit(0);
-        } else {
-            // parent
-            close(pipesToP[i][READ]);
-            pids[i] = f;
-        }
+    for (i = 0; i < numFiles; i++){
+        sendPathNameToP(files[i], i % curr_n, false);
     }
 }
 
@@ -70,19 +41,29 @@ void staccaStacca(int pIndex){
     write(pipesToP[pIndex][WRITE], packet, 5);
 }
 
-void update_m(int new_m){
+void update_m(int new_m, int new_n){
     printf("Update m to %d\n", new_m);
 
     byte packet[9] = {3, 0, 0, 0, INT_SIZE, 0, 0, 0, 0};
     fromIntToBytes(new_m, packet + 5);
 
     int i;
-    for (i = 0; i < curr_n; i++){
-        write(pipesToP[i][WRITE], packet, 9);
+
+    if(new_n>curr_n){
+        // updating only old Ps
+        for (i = 0; i < curr_n; i++){
+            write(pipesToP[i][WRITE], packet, 9);
+        }
+    } else {
+        // updating all the Ps
+        for (i = 0; i < new_n; i++){
+           write(pipesToP[i][WRITE], packet, 9);
+        }
     }
 }
 
-void reshapeTree(int new_n, int new_m){
+// TODO: gestire il caso di un reshape(0,0)
+void shapeTree(int new_n, int new_m){
     int difference = new_n - curr_n;
     
     if( difference < 0){ 
@@ -133,8 +114,7 @@ void reshapeTree(int new_n, int new_m){
             } else if (f == 0){
                 // new child
                 printf("New P%d created\n", i);
-                close(newPipes[i][WRITE]);
-                // TODO invio new_m o curr_m??                
+                close(newPipes[i][WRITE]);              
                 p(new_m, newPipes[i]);
                 exit(0); // just to be sure... it should not be necessary
             } else {
@@ -150,12 +130,12 @@ void reshapeTree(int new_n, int new_m){
         pipesToP = newPipes;
     }
 
-    curr_n = new_n;
 
     if(new_m != curr_m){
-        update_m(new_m);
+        update_m(new_m, new_n);
     }
-
+    
+    curr_n = new_n;
     curr_m = new_m;
 }
 
@@ -190,11 +170,11 @@ void wait_a_bit(){
 
 int main(){
     string files[2]={"prova1.txt", "prova2.txt"};
-    controller(2,2, files, true);
+    controller(2,2, files, 2);
     fflush(stdout);
     wait_a_bit(); 
 
-    reshapeTree(4, 2);
+    shapeTree(4, 2);
     wait_a_bit(); 
 
     int y;
