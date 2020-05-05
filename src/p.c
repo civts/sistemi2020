@@ -6,7 +6,7 @@
 #include "utils.c"
 #include "q.c"
 
-// TODO we need some exit(0) here, but where?
+// TODO check for exit(0) here... we do not want zombies
 
 #define READ 0
 #define WRITE 1
@@ -43,7 +43,7 @@ void p(int m, int *pipeFromController){
             printf("Q%d created\n", i);
             close(pipeListToQ[i][WRITE]);
             close(pipeListFromQ[i][READ]);
-            q(i, m, pipeListToQ[i], pipeListFromQ[i]);
+            q(m, i, pipeListFromQ[i], pipeListToQ[i]);
         } else {
             // parent
             close(pipeListToQ[i][READ]);
@@ -66,8 +66,9 @@ void waitForMessagesFromController(pid_t *qPids, int pipeFromC[2], int **pipeLis
         receivedPacketFragmentsLength = read(pipeFromC[READ], packetHeader, 1 + INT_SIZE);
         packetLength = fromBytesToInt(packetHeader + 1);
         packetData   = (byte*) malloc(sizeof(byte) * packetLength);
+        int numBytesRead = read(pipeFromC[READ], packetData, packetLength);
 
-        if (packetLength == 1 + INT_SIZE + read(pipeFromC[READ], packetData, packetLength)){
+        if (packetLength == numBytesRead){
             switch (packetHeader[0]){
                 case 0:
                     returnCodeFromPacketProcess = processPNewFilePacket(packetData, packetLength, pipeListToQ, m);
@@ -89,7 +90,11 @@ void waitForMessagesFromController(pid_t *qPids, int pipeFromC[2], int **pipeLis
             if (packetHeader[0] == 2 && returnCodeFromPacketProcess == 0){
                 break;
             }
+        } else if (numBytesRead==0){
+        } else if (numBytesRead==-1){
+            printf("-1 on P\n");
         } else {
+            printf("Ho letto %d bytes\n", numBytesRead);
             printf("Error, write not atomic\n");
         }
     }
@@ -99,11 +104,12 @@ void waitForMessagesFromController(pid_t *qPids, int pipeFromC[2], int **pipeLis
 int processPNewFilePacket(byte packetData[], int packetLength, int **pipeListToQ, int m){
     byte packetHeader[1 + INT_SIZE];
     packetHeader[0] = 0; // new file packet type
-    fromIntToBytes(0, packetHeader + 1);
+    fromIntToBytes(packetLength, packetHeader + 1);
 
     int i;
     for (i = 0; i < m; i++){
-        write(pipeListToQ[i][WRITE], packetHeader, packetLength);
+        write(pipeListToQ[i][WRITE], packetHeader, 1 + INT_SIZE);
+        write(pipeListToQ[i][WRITE], packetData, packetLength);
     }
 }
 
@@ -114,25 +120,25 @@ int processPRemoveFilePacket(byte packetData[], int **pipeListToQ, int m){
 
 int processPDeathPacket(byte packetData[], int **pipeListToQ, int m){
     // 1. inform q to stop
-    byte packetHeader[1 + INT_SIZE];
-    packetHeader[0] = 2; // death packet type
-    fromIntToBytes(0, packetHeader + 1);
-
+    byte packet[5] = {2, 0, 0, 0, 0};
     int i;
     for (i = 0; i < m; i++){
-        write(pipeListToQ[i][WRITE], packetHeader, 1 + INT_SIZE); // send death packet to all its Qs
+        write(pipeListToQ[i][WRITE], packet, 5); // send death packet to all its Qs
     }
 
-    // TODO
-    // 2. free resources
-    // we need to pass to this function even pipesFromQ
+    // TODO free resources
+
+    printf("P is dead\n"); // VIENE STAMPATO IL DOPPIO DELLE VOLTE, PERCHè?
+    exit(0);
+    return 0; // ok code
 }
 
 int processPNewValueForM(byte packetData[], pid_t qPids[], int **pipeListToQ, int m){
     // the packet data conists only in the new m value
     uint m_new = fromBytesToInt(packetData);
+    printf("P got new value for M\n");
     
     // TODO reshape for new M value
 
-    // to delete Q, send packet of death
+    // to delete Q, send packet of death -> {2, 0, 0, 0, 0}
 }

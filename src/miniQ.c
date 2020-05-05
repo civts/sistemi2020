@@ -38,7 +38,12 @@ void miniQ(string fileName, bool isInsideFolder, int numOfPortions, int portionO
 
         // bufferOccurecesSize should be endPosition-startPosition
         int numCharsInPortion = getOccurences(fileName, startPosition, endPosition, occurences);
-        sendOccurencesToReport(fileName, isInsideFolder, numCharsInPortion, occurences);
+        // sendOccurencesToReport(fileName, isInsideFolder, numCharsInPortion, occurences);
+        printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
+
+        // TODO check for this...
+        free(fileName);
+
         exit(0);
     }
 }
@@ -151,7 +156,8 @@ int getOccurences(string fileName, int startPosition, int endPosition, int outOc
 // it gets file length using stat syscall
 long getFileLength(string fileName){
     struct stat stbuf;
-    stat(fileName, &stbuf); // get file length
-
+    // TODO check 0 result
+    stat(fileName, &stbuf);
+    
     return stbuf.st_size;
 }

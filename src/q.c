@@ -7,10 +7,10 @@
 #define READ 0
 #define WRITE 1
 
-// TODO we need some exit(0), but where?
+// TODO check for exit(0) here... we do not want zombies
 
 void q(int, int, int*, int*);
-int  processQNewFilePacket(byte[], int, int);
+int  processQNewFilePacket(byte[], int, int, int);
 int  processQRemoveFilePacket(byte[]);
 int  processQDeathPacket(byte[]);
 int  processQNewValueForM(byte[]);
@@ -26,20 +26,21 @@ void q(int numPartToSplit, int myIndex, int *pipeToP, int *pipeFromP){
         receivedPacketFragmentsLength = read(pipeFromP[READ], packetHeader, 1 + INT_SIZE);
         packetLength = fromBytesToInt(packetHeader + 1);
         packetData   = (byte*) malloc(sizeof(byte) * packetLength);
-
-        if (packetLength == 1 + INT_SIZE + read(pipeFromP[READ], packetData, packetLength)){
+        int numBytesRead = read(pipeFromP[READ], packetData, packetLength);
+        
+        if (packetLength == numBytesRead){
             switch (packetHeader[0]){
                 case 0:
-                    returnCodeFromPacketProcess = processNewFilePacket(packetData, numPartToSplit, myIndex);
+                    returnCodeFromPacketProcess = processQNewFilePacket(packetData, packetLength, numPartToSplit, myIndex);
                     break;
                 case 1:
-                    returnCodeFromPacketProcess = processRemoveFilePacket(packetData);
+                    returnCodeFromPacketProcess = processQRemoveFilePacket(packetData);
                     break;
                 case 2:
-                    returnCodeFromPacketProcess = processDeathPacket(packetData);
+                    returnCodeFromPacketProcess = processQDeathPacket(packetData);
                     break;
                 case 3:
-                    returnCodeFromPacketProcess = processNewValueForM(packetData);
+                    returnCodeFromPacketProcess = processQNewValueForM(packetData);
                     break;
                 default:
                     printf("Error, P received from C an unknown packet type %d\n", packetHeader[0]);
@@ -49,22 +50,46 @@ void q(int numPartToSplit, int myIndex, int *pipeToP, int *pipeFromP){
             if (packetHeader[0] == 2 && returnCodeFromPacketProcess == 0){
                 break;
             }
+        } else if (numBytesRead==0){
+            printf("0 on Q\n");
+        } else if (numBytesRead==-1){
+            printf("-1 on Q\n");
         } else {
-            printf("Error, write not atomic\n");
+            printf("Error, write not atomic in Q\n");
         }
+        free(packetData);
     }
 }
 
-int processQNewFilePacket(byte packetData[], int numPartToSplit, int myIndex){
-    // TODO extarct file path and isInside folder from packetData
+// TODO do I have to free pathName in both parent and child?
+int processQNewFilePacket(byte packetData[], int packetDataSize, int numPartToSplit, int myIndex){
+    bool isInsideFolder = packetData[0];
+    string pathName = (string) malloc((packetDataSize) * sizeof(char));
+    memcpy(pathName, packetData + 1, packetDataSize - 1);
+    pathName[packetDataSize - 1] = '\0';
 
     pid_t f;
     f = fork();
     if (f < 0){
         printf("Error, creating miniQ\n");
     } else if (f == 0){
-        miniQ("file to pass", false, numPartToSplit, myIndex);
+        printf("Created miniQ\n");
+        miniQ(pathName, isInsideFolder, numPartToSplit, myIndex);
     } else {
-        // parent do nothing
+        // do nothing
+        free(pathName);
     }
+
+    return 0;
+}
+
+int processQRemoveFilePacket(byte packetData[]){
+    return -1;
+}
+int processQDeathPacket(byte packetData[]){
+    printf("Q is dead\n");
+    return 0;
+}
+int processQNewValueForM(byte packetData[]){
+    return -1;
 }
