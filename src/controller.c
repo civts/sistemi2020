@@ -172,28 +172,28 @@ void wait_a_bit(){
     for (i=0; i<999999999; i++){}
 }
 
-int main(){
-    string files[2]={"prova1.txt", "prova2.txt"};
-    controller(2,2, files, 2);
-    fflush(stdout);
-    wait_a_bit(); 
+// int main(){
+//     string files[2]={"prova1.txt", "prova2.txt"};
+//     controller(2,2, files, 2);
+//     fflush(stdout);
+//     wait_a_bit(); 
 
-    shapeTree(4, 2);
-    wait_a_bit(); 
+//     shapeTree(4, 2);
+//     wait_a_bit(); 
 
-    int y;
-    for (y=0; y<curr_n; y++){
-        staccaStacca(y);
-    }
-    fflush(stdout);
-    wait_a_bit();
+//     int y;
+//     for (y=0; y<curr_n; y++){
+//         staccaStacca(y);
+//     }
+//     fflush(stdout);
+//     wait_a_bit();
     
-    printf("Fine\n");
-    free(pids);
-    int z;
-    for (z=0; z<curr_n; z++){
-        free(pipesToP[z]);
-    }
-    free(pipesToP);
-    return 0;
-}
+//     printf("Fine\n");
+//     free(pids);
+//     int z;
+//     for (z=0; z<curr_n; z++){
+//         free(pipesToP[z]);
+//     }
+//     free(pipesToP);
+//     return 0;
+// }

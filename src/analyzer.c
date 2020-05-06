@@ -17,6 +17,10 @@
 // 2: n and m are not numeric non-zero values
 // 3: usage mode not supported
 
+// TODO implement this as a list with pointers
+string filePaths[MAX_FILES]; // list of files to scan
+int numOfFiles = 0, n = 0, m = 0;
+
 int  modeSwitcher(int, int, int, string[], char);
 void helpMode();
 void interactiveMode();
@@ -40,14 +44,14 @@ int getFilePathsFromArgv(string argv[], string fileLists[], int numPaths){
     int out;
 
     int i;
-    for (i=0; i<numPaths; i++){
-        if (isDirectory(argv[i+padding], '/', &out) && out==0){
+    for (i = 0; i < numPaths; i++){
+        if (isDirectory(argv[i + padding], '/', &out) && out == 0){
             int outNewFiles = 0;
-            crawler(argv[i+padding], fileLists+numFiles, &outNewFiles);
+            crawler(argv[i + padding], fileLists + numFiles, &outNewFiles);
             numFiles += outNewFiles;
-        } else if(out==0) {
-            fileLists[numFiles] = (string) malloc(strlen(argv[i+padding]) + 1);
-            strcpy(fileLists[numFiles], argv[i+padding]);
+        } else if (out ==0 ){
+            fileLists[numFiles] = (string) malloc(strlen(argv[i + padding]) + 1);
+            strcpy(fileLists[numFiles], argv[i + padding]);
             numFiles++;
         }
     }
@@ -57,10 +61,6 @@ int getFilePathsFromArgv(string argv[], string fileLists[], int numPaths){
 
 int main(int argc, char *argv[]){
     int returnCode = 0;
-    int numOfP = 0, numOfQ = 0, numOfFiles = 0;
-
-    // TODO implement this as a list with pointers
-    string filePaths[MAX_FILES]; // list of files to scan
 
     if (argc == 1){
         printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
@@ -81,17 +81,17 @@ int main(int argc, char *argv[]){
             char mode = argv[1][1]; // -i, -s, -h
 
             // TODO use strol/stroll for parsing integer values
-            numOfP = atoi(argv[2]);
-            numOfQ = atoi(argv[3]);
+            n = atoi(argv[2]);
+            m = atoi(argv[3]);
 
             // get file paths with the crawler
             numOfFiles = getFilePathsFromArgv(argv, filePaths, argc-4);
 
-            if (numOfP==0 || numOfQ==0){
+            if (n==0 || m==0){
                 printf("Error: specify numeric non-zero values for n and m\n");
                 returnCode = 2;
             } else {
-                returnCode = modeSwitcher(numOfP, numOfQ, numOfFiles, filePaths, mode);
+                returnCode = modeSwitcher(n, m, numOfFiles, filePaths, mode);
             }
         }
     }
@@ -137,7 +137,36 @@ void helpMode(){
 }
 
 void interactiveMode(){
+    const char analyzeString[] = "analyze";
+    const char exitString[] = "exit";
+
     printf("Interactive mode\n");
+
+    char command[5000]; // TODO change to fit max path length on linux
+    printf("> ");
+    scanf("%s", command);
+    while (strcmp(command, exitString) != 0){
+        if (strcmp(command, analyzeString) == 0){
+            // start analyzing process
+            // controller(n, m, filePaths, numOfFiles);
+            printf("Start analysis\n");
+        } else if (command[0] == '+'){
+            printf("New file %s\n", command + 1);
+        } else if (command[0] == '-'){
+            printf("Remove file %s\n", command + 1);
+        } else if (command[0] == 'n'){
+            printf("Change n to %s\n", command + 2);
+        } else if (command[0] == 'm'){
+            printf("Change m to %s\n", command + 2);
+        } else {
+            // command not supported
+        }
+        printf("> ");
+        scanf("%s", command);
+    }
+    
+    
+
 }
 
 void staticMode(int numOfP, int numOfQ, int numOfFiles, string listFilePaths[]){
