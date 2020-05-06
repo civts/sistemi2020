@@ -14,35 +14,37 @@
 void  miniQ(string, bool, int, int);
 void  sendOccurencesToReport(string, bool, int, int [NUM_OCCURENCES]);
 byte* encodePacketForReport(string, bool, int, int [NUM_OCCURENCES], int*);
-int   getOccurences(string, int, int, int[NUM_OCCURENCES]);
+int   getOccurences(string, long, long, uint[NUM_OCCURENCES]);
 long  getFileLength(string fileName);
 void  printOccurencesTemp(string, int[NUM_OCCURENCES]);
 
-// pricipal core of a miniQ: it's goal is to detect the char occurences
+// principal core of a miniQ: it's goal is to detect the char occurences
 // for a single file of his parent Qij process
 void miniQ(string fileName, bool isInsideFolder, int numOfPortions, int portionOfFileToRead){
     if (portionOfFileToRead >= numOfPortions){
         // should never come here
         printf("Error, what's that portion?");
     } else {
+        // check if file exists and it has some data
         long fileLength = getFileLength(fileName);
+        if (fileLength > 0){
+            // we shall read the interval [startPosition, endPosition[
+            long lenPortion    = ceil(fileLength / (double)numOfPortions);
+            long startPosition = lenPortion * portionOfFileToRead;
+            long endPosition   = min_l(fileLength, startPosition + lenPortion);
+            
+            // TODO change to uint
+            // get character occurences from the file
+            uint occurences[256];
 
-        // we shall read the interval [startPosition, endPosition[
-        int lenPortion     = ceil(fileLength / (double)numOfPortions);
-        long startPosition = lenPortion * portionOfFileToRead;
-        long endPosition   = min_l(fileLength, startPosition + lenPortion);
-        
-        // TODO change to uint
-        // get character occurences from the file
-        int occurences[256];
+            // bufferOccurecesSize should be endPosition-startPosition
+            int numCharsInPortion = getOccurences(fileName, startPosition, endPosition, occurences);
+            // sendOccurencesToReport(fileName, isInsideFolder, numCharsInPortion, occurences);
+            printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
 
-        // bufferOccurecesSize should be endPosition-startPosition
-        int numCharsInPortion = getOccurences(fileName, startPosition, endPosition, occurences);
-        // sendOccurencesToReport(fileName, isInsideFolder, numCharsInPortion, occurences);
-        printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
-
-        // TODO check for this...
-        free(fileName);
+            // TODO check for this...
+            free(fileName);
+        }        
 
         exit(0);
     }
@@ -116,11 +118,10 @@ byte* encodePacketForReport(string fileName, bool isInsideFolder, int numCharInP
     return outBuffer;
 }
 
-// TODO change everything from int to long, to support very long files
 // giving the starting and ending offset in the file, it gets the number of
 // occurences for each char. It returns the number of byte read.
-int getOccurences(string fileName, int startPosition, int endPosition, int outOccurences[NUM_OCCURENCES]){
-    // TODO check for NULL pointer
+int getOccurences(string fileName, long startPosition, long endPosition, uint outOccurences[NUM_OCCURENCES]){
+    // TODO check for NULL pointer -> maybe we should allocate less memory and read more times
     int bufferSize = endPosition - startPosition;
     byte *buffer = (byte*) malloc (bufferSize * sizeof(byte));
 
@@ -135,7 +136,6 @@ int getOccurences(string fileName, int startPosition, int endPosition, int outOc
     if (fd == -1){
         printf("Error, can't open the file %s\n", fileName);
     } else {
-        // TODO check return value from system calls
         lseek(fd, startPosition, SEEK_SET);
 
         int r = read(fd, buffer, bufferSize);
@@ -156,8 +156,12 @@ int getOccurences(string fileName, int startPosition, int endPosition, int outOc
 // it gets file length using stat syscall
 long getFileLength(string fileName){
     struct stat stbuf;
-    // TODO check 0 result
-    stat(fileName, &stbuf);
+
+    long fileLength = -1;
     
-    return stbuf.st_size;
+    if (stat(fileName, &stbuf) == 0){
+        fileLength = stbuf.st_size;
+    }
+    
+    return fileLength;
 }

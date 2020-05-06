@@ -34,11 +34,15 @@ void controller(int n, int m, string files[], int numFiles){
 }
 
 void staccaStacca(int pIndex){
-    // TODO this will not work if we change INT_SIZE in utils
     printf("Stacca stacca: %d\n", pIndex);
-    byte packet[5] = {2, 0, 0, 0, 0};
 
-    write(pipesToP[pIndex][WRITE], packet, 5);
+    byte *deathPacket = (byte*) malloc((1 + INT_SIZE) * sizeof(byte));
+    deathPacket[0] = 2; // death packet header
+    fromIntToBytes(0, deathPacket + 1);
+    write(pipesToP[pIndex][WRITE], deathPacket, 1 + INT_SIZE);
+
+    // TODO - free resources
+    free(deathPacket);
 }
 
 void update_m(int new_m, int new_n){

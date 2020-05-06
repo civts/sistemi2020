@@ -122,17 +122,16 @@ int processPRemoveFilePacket(byte packetData[], int **pipeListToQ, int m){
 }
 
 int processPDeathPacket(byte packetData[], int **pipeListToQ, int m){
-    // 1. inform q to stop
-    byte packet[5] = {2, 0, 0, 0, 0};
-    int i;
+    int i, returnCode = 0;
     for (i = 0; i < m; i++){
-        write(pipeListToQ[i][WRITE], packet, 5); // send death packet to all its Qs
+        killTheQ(i, pipeListToQ);
         free(pipeListToQ[i]);
     }
-    free(pipeListToQ);
 
+    free(pipeListToQ);
     printf("P is dead\n");
-    return 0; // ok code
+
+    return returnCode;
 }
 
 // TODO: reassign files??
@@ -168,7 +167,7 @@ int processPNewValueForM(byte packetData[], pid_t oldPids[], int **pipeListToQ, 
         
         // Copy old ones
         int i;
-        for(i=0; i<m; i++){
+        for(i = 0; i < m; i++){
             newPipesToQ[i] = pipeListToQ[i];
             newPipesFromQ[i] = pipeListFromQ[i];
             newPids[i] = oldPids[i]; 
@@ -208,7 +207,11 @@ int processPNewValueForM(byte packetData[], pid_t oldPids[], int **pipeListToQ, 
     waitForMessagesFromController(newPids, pipeFromC, newPipesToQ, newPipesFromQ, new_m);
 }
 
-void killTheQ(int Qid, int **pipeListToQ){
-    byte packet[5] = {2, 0, 0, 0, 0};
-    write(pipeListToQ[Qid][WRITE], packet, 5);
+void killTheQ(int Qindex, int **pipeListToQ){
+    byte *deathPacket = (byte*) malloc((1 + INT_SIZE) * sizeof(byte));
+    deathPacket[0] = 2; // death packet header
+    fromIntToBytes(0, deathPacket + 1);
+
+    write(pipeListToQ[Qindex][WRITE], deathPacket, 1 + INT_SIZE);
+    free(deathPacket);
 }

@@ -7,8 +7,6 @@
 #define READ 0
 #define WRITE 1
 
-// TODO check for exit(0) here... we do not want zombies
-
 void q(int, int, int*, int*);
 int  processQNewFilePacket(byte[], int, int, int);
 int  processQRemoveFilePacket(byte[]);
@@ -51,14 +49,16 @@ void q(int numPartToSplit, int myIndex, int *pipeToP, int *pipeFromP){
                 break;
             }
         } else if (numBytesRead==0){
-            printf("0 on Q\n");
+            printf("Q read 0 bytes, should never come here\n");
         } else if (numBytesRead==-1){
-            printf("-1 on Q\n");
+            printf("Q failed to read\n");
         } else {
             printf("Error, write not atomic in Q\n");
         }
         free(packetData);
     }
+
+    // TODO shall we close the fds?
 }
 
 // TODO do I have to free pathName in both parent and child?
