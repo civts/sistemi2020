@@ -10,7 +10,7 @@ typedef unsigned char bool;
 #endif
 
 // Path to the named pipe
-const char *PATH_TO_REPORT_PIPE = "/path/to/pipe";
+const char *PATH_TO_REPORT_PIPE = "/tmp/myfifo";
 // How many bytes to read every time from the pipe
 const int BATCH_SIZE = 128;
 
