@@ -174,16 +174,19 @@ void removeLast(list *list) {
 
 // Adds the stats from newData to the right file in this list.
 // If file is not present it is appended to the end of the list.
-//
+// return 0=false new element non appended
+// return 1=true if  if new element is appended
 // ⚠️ After this you should deallocate the newData fileWithStats.
-void updateFileData(list *list, char *filePath, fileWithStats *newData) {
+bool updateFileData(list *list, char *filePath, fileWithStats *newData) {
   fwsNode *targetNode = getNodeWithPath(list, filePath);
   if (targetNode != NULL) {
-    int charsToAdd = newData->totalCharacters;
-    int *occourrrences = newData->occorrenze;
+    uint charsToAdd = newData->totalCharacters;
+    uint *occourrrences = newData->occorrenze;
     addStatsToFWS(targetNode->val, charsToAdd, occourrrences);
+    return false;
   } else {
     append(list, newData);
+    return true;
   }
 }
 
