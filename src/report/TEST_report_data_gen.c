@@ -25,28 +25,56 @@ int main(int argc, char **argv) {
   int i;
   for (i = 0; i < FILESTOGEN; i++) {
     fd = open(myfifo, O_WRONLY);
-    // packet code
-    write(fd, '0', 1);
+    // packet code PRIMO BYTE FUNZIONANTE E VERIFICATO
+    // fd, const void * buf, size_t count
+    //const int * buff = malloc(INT_SIZE);
+    //(*buff) = '0
+    byte codeByte[1] = {'\0'};
+    //NON PUOI USARE fromIntToBytes perché fa la conversione su 4 byte non 1
+    //fromIntToBytes(code,codeBytes);
+    write(fd, codeByte, 1);
+    //write(1,codeBytes,1);
+
+    //printf("statusCode %u",code);
+    //printf("statusCode %u",codeBytes[0]);//
     char *path = "/abcd/file";
-    // path length
     byte bytes[INT_SIZE];
-    fromIntToBytes(strlen(path), bytes);
+    // path length FUNZIONANTE E VERIFICATO
+
+    fromIntToBytes((uint)strlen(path), bytes);
     write(fd, bytes, INT_SIZE);
 
-    // path
-    write(fd, path, strlen(path) + 1);
+    //printf("pathLength %u",(uint)strlen(path));
+    //printf("pathLength %u",pathLength);
+    // path FUNZIONANTE  E VERIFICATO
 
-    // from folder/not flag
-    write(fd, 1, 1);
+    write(fd, path, strlen(path)+1);
+    //write(fd, path, strlen(path) );
 
-    // total chars
-    uint totalChars = i;
+    // from folder/not flag VERIFICATO E FUNZIONANTE
+    byte folderFlag[1] = {'\0'+1};
+    //fromIntToBytes((uint)1,folderFlag);
+    write(fd, folderFlag, 1);
+    //printf("folder %u",folderFlag[0]);
+    // total chars VERIFICATO E FUNZIONANTE
+    //uint totalChars = i;
+    uint totalChars = ASCII_LENGTH;
     fromIntToBytes(totalChars, bytes);
+    //printf("caratteri tot %u",totalChars);
+    //printf("caratteri tot %u",bytes[3]);
     write(fd, bytes, INT_SIZE);
     int j;
+    uint characters[ASCII_LENGTH];
     for (j = 0; j < ASCII_LENGTH; j++) {
-      write(fd, bytes, INT_SIZE);
+        characters[j] = 1;
+
     }
+    for (j = 0; j < ASCII_LENGTH; j++) {
+        fromIntToBytes(characters[j],bytes);
+        write(fd, bytes, INT_SIZE);
+
+    }
+
     close(fd);
   }
   return 0;

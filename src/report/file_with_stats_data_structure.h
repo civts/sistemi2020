@@ -28,11 +28,11 @@ typedef struct {
   char *path;
 
   // how many characters are present in this file
-  int totalCharacters;
+  uint totalCharacters;
 
   // array where in position i we count how many chars w/ ASCII code i are in
   // the file
-  int occorrenze[ASCII_LENGTH];
+  uint occorrenze[ASCII_LENGTH];
 
   // if this file was analyzed because in a folder (for display purposes)
   bool fromFolder;
@@ -42,8 +42,8 @@ typedef struct {
 //
 // -------------------------------
 // TODO: ensure that **deleteFWS** frees path and fs correctly
-fileWithStats *constructorFWS(char *path, int totalCharacters,
-                              int occorrenze[ASCII_LENGTH], bool fromFolder) {
+fileWithStats *constructorFWS(char *path, uint totalCharacters,
+                              uint occorrenze[ASCII_LENGTH], bool fromFolder) {
   fileWithStats *fs = malloc(sizeof(fileWithStats));
   fs->path = malloc(strlen(path));
   strcpy(fs->path, path);
@@ -68,8 +68,8 @@ void deleteFWS(fileWithStats *fs) {
 }
 
 // Adds new stats to this fileWithStats
-void addStatsToFWS(fileWithStats *fs, int totCharsToAdd,
-                   int occorrenze[ASCII_LENGTH]) {
+void addStatsToFWS(fileWithStats *fs, uint totCharsToAdd,
+                   uint occorrenze[ASCII_LENGTH]) {
   if (DEBUGGING)
     printf("Adding new stats to FWS object of file %s\n", fs->path);
   fs->totalCharacters += totCharsToAdd;
@@ -82,6 +82,7 @@ void addStatsToFWS(fileWithStats *fs, int totCharsToAdd,
 // Prints the fileWithStats, just fore testing for now - TESTED
 void printFileWithStats(fileWithStats *fs) {
   printf("%s\n", fs->path);
+  printf("%u\n", fs->totalCharacters);
   // lo tolgo solo per debug più veloce
   /*
   printf("%d\n",fs->totalCharacters);

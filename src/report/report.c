@@ -14,34 +14,34 @@ const char *PATH_TO_REPORT_PIPE = "/tmp/myfifo";
 // How many bytes to read every time from the pipe
 const int BATCH_SIZE = 128;
 
-void stampaGruppi(int dati[], int caratteriTot) {
+void stampaGruppi(uint dati[], uint caratteriTot) {
   char c;
   int i = 0;
-  int az = 0;
+  uint az = 0;
   for (i = 'a'; i <= 'z'; i++) {
     az += dati[i];
   }
-  int AZ = 0;
+  uint AZ = 0;
   for (i = 'A'; i <= 'Z'; i++) {
     AZ += dati[i];
   }
 
   for (i = 0; i < 256; i++) {
-    printf("%c: %d\n", c, dati[i]);
+    printf("%c: %u\n", c, dati[i]);
   }
 }
 
 void stampaGruppiNonVerbosa(list *list) {
   printf("Analyzed %d files:\n", list->count);
-  long az, AZ, digits, spaces, punctuation, otherChars;
-  long long totalChars;
+  uint az, AZ, digits, spaces, punctuation, otherChars;
+  uint totalChars;
   az = AZ = digits = spaces = punctuation = otherChars = totalChars = 0;
   fwsNode *cursor = list->firstNode;
   while (cursor != NULL) {
     fileWithStats *fws = cursor->val;
     int i;
     int *oc = fws->occorrenze;
-    long thisaz, thisAZ, thisDigits, thisSpaces, thisPunct;
+    uint thisaz, thisAZ, thisDigits, thisSpaces, thisPunct;
     thisaz = thisAZ = thisDigits = thisSpaces = thisPunct = 0;
     for (i = 'a'; i <= 'z'; i++) {
       thisaz += oc[i];
@@ -73,17 +73,17 @@ void stampaGruppiNonVerbosa(list *list) {
     cursor = cursor->nextNode;
   }
   printf(
-      "a-z: %ld\nA-Z: %ld\ndigits: %ld\npunctuation: %ld\nother: %ld\n\nTotal "
-      "charcters: %lld\n",
+      "a-z: %u\nA-Z: %u\ndigits: %u\npunctuation: %u\nother: %u\n\nTotal "
+      "charcters: %u\n",
       az, AZ, digits, punctuation, otherChars, totalChars);
 }
 
 void stampaDefault(list *list) {
   printf("Analyzed %d files:\n", list->count);
   int i;
-  long az, AZ, digits, spaces, punctuation, otherChars;
-  long long totalChars;
-  long occCount[ASCII_LENGTH];
+  uint az, AZ, digits, spaces, punctuation, otherChars;
+  uint totalChars;
+  uint occCount[ASCII_LENGTH];
   fwsNode *cursor = list->firstNode;
   while (cursor != NULL) {
     fileWithStats *fws = cursor->val;
@@ -100,10 +100,10 @@ void stampaDefault(list *list) {
     } else {
       printf("character with extendedASCII code %d", i);
     }
-    printf(": %ld\n", occCount[i]);
+    printf(": %u\n", occCount[i]);
   }
   printf("\nTotal "
-         "charcters: %lld\n",
+         "charcters: %u\n",
          totalChars);
 }
 
@@ -112,7 +112,7 @@ void stampaSingoloFile(char *nomeFile, int dati[], int caratteriTot, int argc,
                        char *argv) {
   printf("---------------%s---------------", nomeFile);
 
-  printf("Caratteri totali: %d\n", caratteriTot);
+  printf("Caratteri totali: %u\n", caratteriTot);
 }
 
 // This is the function that implements report buisiness logic
@@ -145,6 +145,7 @@ int report(int argc, const char *argv[]) {
       read(fd, buffer, INT_SIZE);
       // path length (in bytes)
       uint pathLength = fromBytesToInt(buffer);
+      //printf("pathlength %u\n", pathLength);
       char pathToFile[pathLength + 1];
       read(fd, &pathToFile, pathLength + 1);
       pathToFile[pathLength] = '\0';
@@ -152,7 +153,12 @@ int report(int argc, const char *argv[]) {
       if (DEBUGGING)
         printf("Got packet w/ status code %d for file %s\n", statusCode,
                pathToFile);
-
+      /*
+      int j=0;
+      for(j=0;j<pathLength+1;j++){
+        printf("%c\n",pathToFile[j]);
+      }
+      */
       switch (statusCode) {
       // nuovi dati per il file
       case NEW_PACKET_CODE: {
@@ -160,16 +166,19 @@ int report(int argc, const char *argv[]) {
 
         // Wether this file was passed directly or analyzed because it was
         // inside of a folder
-        bool cameFromFolder;
+        // è un byte, non è un bool
+        byte cameFromFolder;
         read(fd, &cameFromFolder, 1);
-
+        //printf("folder %u",cameFromFolder);
         read(fd, buffer, INT_SIZE);
         // Total number of chars in the file
         uint totalCharsInFile = fromBytesToInt(buffer);
-
+        //printf("totalCharacters %u \n",buffer[3]);
+        //printf("totalCharacters %u \n",totalCharsInFile);
         // Array where in each position i we have the occourrences of the letter
         // w/ ASCII code i
-        int occourrences[ASCII_LENGTH];
+        uint occourrences[ASCII_LENGTH];
+
         int i;
         for (i = 0; i < ASCII_LENGTH; i++) {
           read(fd, buffer, INT_SIZE);
@@ -180,8 +189,10 @@ int report(int argc, const char *argv[]) {
 
         fileWithStats *newFwsData = constructorFWS(
             pathToFile, totalCharsInFile, occourrences, cameFromFolder);
-        updateFileData(mainList, pathToFile, newFwsData);
-        free(newFwsData);
+        //printFileWithStats(newFwsData);
+        int appended = updateFileData(mainList, pathToFile, newFwsData);
+        if(!appended)
+          free(newFwsData);
         break;
       }
       // rimuovi questo file
