@@ -17,6 +17,9 @@ fwsNode *constructorFwsNode(fileWithStats *fs) {
   result->val = fs;
   result->previousNode = NULL;
   result->nextNode = NULL;
+
+  if (DEBUGGING)
+    printf("creating node @%p\n", result);
   return result;
 }
 

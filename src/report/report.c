@@ -123,7 +123,7 @@ int report(int argc, const char *argv[]) {
   list *mainList = constructorListEmpty();
   while (1) {
     // open the pipe
-    int fd = open(PATH_TO_REPORT_PIPE, O_RDONLY);
+    int fd = open(PATH_TO_REPORT_PIPE, O_RDONLY | O_NONBLOCK);
     if (fd == -1) {
       retCode = 1;
       perror("No pipe");
