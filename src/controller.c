@@ -1,146 +1,139 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h> // pid_t // in crawler I use pid_t without types.h
+#include <sys/types.h> // pid_t -> in crawler I use pid_t without types.h
 #include "utils.c"
 #include "p.c"
 
 #define READ 0
 #define WRITE 1
 
-void controller(int, int, string[], int);
-void generateTree(int, int);
-void update_m(int, int);
-void shapeTree(int, int);
-void staccaStacca(int);
+typedef struct{
+    pid_t pid;
+    int pipePC[2];
+    int pipeCP[2];
+} pInstance;
 
+void controller(int, int, string[], int);
+int  shapeTree(int, int);
+void notifyNewMToPInstance(pInstance*, int);
+void killInstanceOfP(int);
 void sendPathNameToP(string, int, bool);
 
-pid_t *pids;
-int **pipesToP;
+pInstance *pInstances = NULL; // P processes created
 
-int curr_n = 0;
-int curr_m = 0;
+int currN = 0;
+int currM = 0;
 
-// TODO create a fd from analyzer to controller
-// TODO send controller also the NUMBER OF FILES in files[]
+// main worker of the C process
 void controller(int n, int m, string files[], int numFiles){
-    // if first report we need to allocate everything...
     shapeTree(n, m);
 
     int i;
     for (i = 0; i < numFiles; i++){
-        sendPathNameToP(files[i], i % curr_n, false);
+        sendPathNameToP(files[i], i % currN, false);
     }
+
+    // backbone of the correct implementation
+    // while (true){
+    //     getMessagesFromA()
+    //     sendMessagesToA()
+    //     getMessagesFromPs()
+    //     sendMessagesToP()
+    //     sendMessagesToR()
+    // }
 }
 
-void staccaStacca(int pIndex){
-    printf("Stacca stacca: %d\n", pIndex);
+// TODO check for syscall close fails: what to do?
+int generateNewPInstance(pInstance *newP, int index, int newM){
+    int returnCode = 0;
 
-    byte *deathPacket = (byte*) malloc((1 + INT_SIZE) * sizeof(byte));
-    deathPacket[0] = 2; // death packet header
-    fromIntToBytes(0, deathPacket + 1);
-    write(pipesToP[pIndex][WRITE], deathPacket, 1 + INT_SIZE);
+    if (pipe(newP->pipeCP) != -1 && pipe(newP->pipePC) != -1){
+        newP->pid = fork();
 
-    // TODO - free resources
-    free(deathPacket);
-}
+        if (newP->pid < 0){
+            fprintf(stderr, "Found an error creating P%d\n", index);
+            returnCode = 2;
+        } else if (newP->pid == 0){
+            // child: new instance of P
+            fprintf(stderr, "New P%d created\n", index);
+            close(newP->pipeCP[WRITE]);
+            close(newP->pipePC[READ]);
 
-void update_m(int new_m, int new_n){
-    printf("Update m to %d\n", new_m);
-
-    byte packet[9] = {3, 0, 0, 0, INT_SIZE, 0, 0, 0, 0};
-    fromIntToBytes(new_m, packet + 5);
-
-    int i;
-
-    if(new_n>curr_n){
-        // updating only old Ps
-        for (i = 0; i < curr_n; i++){
-            write(pipesToP[i][WRITE], packet, 9);
+            p(newM, newP->pipeCP);
+            exit(0); // just to be sure... it should not be necessary
+        } else {
+            // parent
+            close(newP->pipeCP[READ]);
+            close(newP->pipePC[WRITE]);
         }
     } else {
-        // updating all the Ps
-        for (i = 0; i < new_n; i++){
-           write(pipesToP[i][WRITE], packet, 9);
-        }
+        fprintf(stderr, "Found an error creting pipes to P%d\n", index);
+        returnCode = 1;
     }
+
+    return returnCode;
 }
 
-// TODO: gestire il caso di un reshape(0,0)
-void shapeTree(int new_n, int new_m){
-    int difference = new_n - curr_n;
-    
-    if( difference < 0){ 
-        // We have to delete some Ps
-        difference *= -1;  // making a positive difference
-        pid_t *newPids = (pid_t *) malloc(sizeof(pid_t) * new_n);
-        int **newPipes = (int **) malloc(sizeof(int*) * new_n);
+// Reshape all the three given new m and n values
+// Error codes:
+// 1 - Not enough space to allocate new P table
+// 2 - Failed to generate new P process
+int shapeTree(int newN, int newM){
+    int i, returnCode = 0;
 
-        int i;
-        for(i = 0; i < curr_n; i++){
-            if (i < new_n){
-                newPids[i] = pids[i];
-                newPipes[i]= pipesToP[i];
-            } else {
-                staccaStacca(i);   // notify its child Qs to kill themselves
-                free(pipesToP[i]); // free execeeding pipesToP
-            }
+    // free exceeding instances of P and update M value for old ones
+    for (i = 0; i < currN; i++){
+        if (i >= newN){
+            killInstanceOfP(i);
+        } else if (newM != currM){
+            notifyNewMToPInstance(pInstances + i, newM);
         }
-
-        // free old resources
-        free(pids);
-        free(pipesToP);
-        
-        // updating global pipesToP and pids
-        pipesToP = newPipes;
-        pids  = newPids;
-
-    } else if (difference > 0){
-        // This is the case in which we have to add new Ps
-        pid_t *newPids = (pid_t*) malloc(new_n*sizeof(pid_t));
-        int **newPipes = (int **) malloc(new_n*sizeof(int *));
-
-        int i;
-        for( i = 0; i < curr_n; i++){
-            // copying good old Ps
-            newPids[i]  = pids[i];
-            newPipes[i] = pipesToP[i];
-        }
-
-        for (i = curr_n; i < new_n; i++){
-            newPipes[i] = (int *) malloc(sizeof(int) * 2); // creating brand new Ps
-            pipe(newPipes[i]); // TODO:check syscall return
-
-            int f = fork();
-            if (f < 0){
-                printf("Errore nella generazione di un figlio P");
-                i--;
-            } else if (f == 0){
-                // new child
-                printf("New P%d created\n", i);
-                close(newPipes[i][WRITE]);              
-                p(new_m, newPipes[i]);
-                exit(0); // just to be sure... it should not be necessary
-            } else {
-                // parent
-                close(newPipes[i][READ]);
-                newPids[i] = f;
-            }
-        }
-
-        free(pids); // valgrind says it works, we need to investigate further
-
-        pids = newPids;
-        pipesToP = newPipes;
     }
 
+    // allocate the space necessary for new_n
+    pInstances = (pInstance*) realloc(pInstances, newN * sizeof(pInstance));
 
-    if(new_m != curr_m){
-        update_m(new_m, new_n);
+    if (pInstances == NULL){
+        fprintf(stderr, "Not enough space to allocate new P table\n");
+        returnCode = 1;
+    } else {
+        // generate new instances of P if necessary
+        for (i = currN; i < newN && returnCode == 0; i++){
+            if (generateNewPInstance(pInstances + i, i, newM) != 0){
+                fprintf(stderr, "Failed to generate new P process\n");
+                returnCode = 2;
+            }
+        }
     }
     
-    curr_n = new_n;
-    curr_m = new_m;
+    currN = newN;
+    currM = newM;
+
+    return returnCode;
+}
+
+void notifyNewMToPInstance(pInstance *instanceOfP, int newM){
+    printf("Update m to %d\n", newM);
+
+    byte packet[1 + 2 * INT_SIZE];
+    // header section
+    packet[0] = 3; // packet code
+    fromIntToBytes(INT_SIZE, packet + 1); // data section size
+    // data section
+    fromIntToBytes(newM, packet + 1 + INT_SIZE); // new value for m
+
+    write(instanceOfP->pipeCP[WRITE], packet, 1 + 2 * INT_SIZE);
+}
+
+void killInstanceOfP(int pIndex){
+    printf("Stacca stacca: %d\n", pIndex);
+
+    byte deathPacket[1 + INT_SIZE];
+    deathPacket[0] = 2; // death packet header
+    fromIntToBytes(0, deathPacket + 1);
+    write(pInstances[pIndex].pipeCP[WRITE], deathPacket, 1 + INT_SIZE);
+
+    // TODO - free resources
 }
 
 void sendPathNameToP(string pathName, int indexOfP, bool isInsideFolder){
@@ -163,18 +156,19 @@ void sendPathNameToP(string pathName, int indexOfP, bool isInsideFolder){
     // pathName
     memcpy(packet + offset, pathName, strlen(pathName));
 
-    write(pipesToP[indexOfP][WRITE], packet, packetLength);
+    write(pInstances[indexOfP].pipeCP[WRITE], packet, packetLength);
     free(packet);
 }
 
+// only for debug... wait a certain amount of time
 void wait_a_bit(){
     long long int i;
     for (i=0; i<999999999; i++){}
 }
 
 // int main(){
-//     string files[2]={"prova1.txt", "prova2.txt"};
-//     controller(2,2, files, 2);
+//     string files[2] = {"prova1.txt", "prova2.txt"};
+//     controller(2, 2, files, 2);
 //     fflush(stdout);
 //     wait_a_bit(); 
 
@@ -182,18 +176,14 @@ void wait_a_bit(){
 //     wait_a_bit(); 
 
 //     int y;
-//     for (y=0; y<curr_n; y++){
-//         staccaStacca(y);
+//     for (y = 0; y < currN; y++){
+//         killInstanceOfP(y);
 //     }
+
 //     fflush(stdout);
 //     wait_a_bit();
     
 //     printf("Fine\n");
-//     free(pids);
-//     int z;
-//     for (z=0; z<curr_n; z++){
-//         free(pipesToP[z]);
-//     }
-//     free(pipesToP);
+//     free(pInstances);
 //     return 0;
 // }

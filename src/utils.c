@@ -16,6 +16,8 @@ void fromIntToBytes(uint, byte[]);
 bool isDirectory(string, char, int *out);
 long min_l(long, long);
 long max_l(long, long);
+int  min_i(int, int);
+int  max_i(int, int);
 
 // convert 4 bytes in unsigned int (little endian)
 uint fromBytesToInt(byte *bytes){
@@ -68,6 +70,14 @@ long min_l(long a, long b){
 }
 
 long max_l(long a, long b){
+    return a > b ? a : b;
+}
+
+int min_i(int a, int b){
+    return a < b ? a : b;
+}
+
+int max_i(int a, int b){
     return a > b ? a : b;
 }
 
