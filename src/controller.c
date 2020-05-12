@@ -1,17 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h> // pid_t -> in crawler I use pid_t without types.h
+#include "packets.h"
 #include "utils.c"
 #include "p.c"
 
 #define READ 0
 #define WRITE 1
-
-typedef struct{
-    pid_t pid;
-    int pipePC[2];
-    int pipeCP[2];
-} pInstance;
 
 void controller(int, int, string[], int);
 int  shapeTree(int, int);
@@ -19,7 +14,7 @@ void notifyNewMToPInstance(pInstance*, int);
 void killInstanceOfP(int);
 void sendPathNameToP(string, int, bool);
 
-pInstance *pInstances = NULL; // P processes created
+pInstance *pInstances = NULL; // P processes associated to C
 
 int currN = 0;
 int currM = 0;
@@ -59,7 +54,7 @@ int generateNewPInstance(pInstance *newP, int index, int newM){
             close(newP->pipeCP[WRITE]);
             close(newP->pipePC[READ]);
 
-            p(newM, newP->pipeCP);
+            p(newP, newM);
             exit(0); // just to be sure... it should not be necessary
         } else {
             // parent
@@ -114,26 +109,13 @@ int shapeTree(int newN, int newM){
 
 void notifyNewMToPInstance(pInstance *instanceOfP, int newM){
     printf("Update m to %d\n", newM);
-
-    byte packet[1 + 2 * INT_SIZE];
-    // header section
-    packet[0] = 3; // packet code
-    fromIntToBytes(INT_SIZE, packet + 1); // data section size
-    // data section
-    fromIntToBytes(newM, packet + 1 + INT_SIZE); // new value for m
-
-    write(instanceOfP->pipeCP[WRITE], packet, 1 + 2 * INT_SIZE);
+    sendNewMPacket(instanceOfP->pipeCP, newM);
 }
 
 void killInstanceOfP(int pIndex){
-    printf("Stacca stacca: %d\n", pIndex);
-
-    byte deathPacket[1 + INT_SIZE];
-    deathPacket[0] = 2; // death packet header
-    fromIntToBytes(0, deathPacket + 1);
-    write(pInstances[pIndex].pipeCP[WRITE], deathPacket, 1 + INT_SIZE);
-
     // TODO - free resources
+    printf("Stacca stacca: %d\n", pIndex);
+    sendDeathPacket(pInstances[pIndex].pipeCP);
 }
 
 void sendPathNameToP(string pathName, int indexOfP, bool isInsideFolder){
