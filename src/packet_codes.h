@@ -43,11 +43,11 @@ INT_SIZE pid dell'A
 INT_SIZE id file
 string path
 */
-#define A_NEW_FILE_COMPLETE 0
+#define A_NEW_FILE_COMPLETE 2
 // As A_NEW_FILE_COMPLETE but contains only first half of the path
-#define A_NEW_FILE_INCOMPLETE_PART2 1
+#define A_NEW_FILE_INCOMPLETE_PART1 3
 // As A_NEW_FILE_COMPLETE but contains only second half of the path
-#define A_NEW_FILE_INCOMPLETE_PART2 2
+#define A_NEW_FILE_INCOMPLETE_PART2 4
 /*Packet for when we need to delete a file
 pipeA nel caso di eliminazione file:
 ------ header -----
@@ -57,7 +57,7 @@ INT_SIZE dimensione in byte sezione dati
 INT_SIZE pid dell'A
 INT_SIZE id file
 */
-#define A_DELETE_FILE_CODE 3
+#define A_DELETE_FILE_CODE 5
 
 #ifndef bool
 typedef unsigned char bool;
