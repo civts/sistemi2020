@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
   fd = open(myfifo, O_WRONLY);
   byte header[INT_SIZE + 1] = {'\0', '\0', '\0', '\0', '\0'};
-  header[0] = DELETE_FILE_CODE;
+  header[0] = A_DELETE_FILE_CODE;
   uint dataSize = 2 * INT_SIZE;
   fromIntToBytes(dataSize, header + 1);
   int i = 0;

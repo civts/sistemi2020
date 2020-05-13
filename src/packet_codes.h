@@ -3,33 +3,61 @@
 
 #ifndef PACKET_CODES_H
 #define PACKET_CODES_H
-/*This is the packet for new data from a Q
+//----------------------------------CODES FOR-----------------------------------
+//--------------------------------PACKETS FROM Q--------------------------------
+/*Packet for new data from a Q/MiniQ
 (that is raw char count in a part of a file)
------- 0 -----
+------ header -----
 1 byte (packet code)
-uint -> lunghezza pathname
-pathname /tmp/ciao.txt
-1 byte (1:da cartella, 0:file singolo)
-uint caratteri totali
+INT_SIZE dimensione in byte sezione dati
+------body------
+INT_SIZE pid analyzer
+INT_SIZE file id: riferimento al nome del file per l'altra pipe
+INT_SIZE m: numero parti in cui è stato diviso il file
+INT_SIZE i: numero della parte di file che ho analizzato in questo pacchetto 0
+<= i < m
+INT_SIZE D: dimensione file
+INT_SIZE numCaratteriLettiInQuestaPorzione (?confermate se vi serve?)
+INT_SIZE[256] dati
+*/
+#define Q_NEW_DATA_CODE 0
 
-0 uint
-..
-255 uint
+/*Packet for signalling an error in processing a given file
+------ header -----
+1 byte packet code (1)
+INT_SIZE dimensione sezione dati
+------body------
+INT_SIZE pid analyzer
+INT_SIZE file id su cui ho avuto il problema
 */
-#define NEW_FILE_CODE 0
-/*
+#define Q_FILE_ERROR_CODE 1
+
+//----------------------------------CODES FOR-----------------------------------
+//--------------------------------PACKETS FROM A--------------------------------
+/*Packet for adding new file (w/ complete path)
+------ header -----
+1 byte packet code (0)
+INT_SIZE dimensione in byte sezione dati
+------body------
+INT_SIZE pid dell'A
+INT_SIZE id file
+string path
 */
-#define NEW_FILE_CODE_P1 1
-/*
-*/
-#define NEW_FILE_CODE_P2 2
+#define A_NEW_FILE_COMPLETE 0
+// As A_NEW_FILE_COMPLETE but contains only first half of the path
+#define A_NEW_FILE_INCOMPLETE_PART2 1
+// As A_NEW_FILE_COMPLETE but contains only second half of the path
+#define A_NEW_FILE_INCOMPLETE_PART2 2
 /*Packet for when we need to delete a file
------- 3 -------
-1 byte (packet_code)
-uint -> lunghezza pathname
-pathname
+pipeA nel caso di eliminazione file:
+------ header -----
+1 byte packet code (3)
+INT_SIZE dimensione in byte sezione dati
+------body------
+INT_SIZE pid dell'A
+INT_SIZE id file
 */
-#define DELETE_FILE_CODE 3
+#define A_DELETE_FILE_CODE 3
 
 #ifndef bool
 typedef unsigned char bool;

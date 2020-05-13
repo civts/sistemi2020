@@ -130,7 +130,7 @@ int report(int argc, const char *argv[]) {
     int rdHeader = read(pipeFromA, header, INT_SIZE + 1);
     if (rdHeader == INT_SIZE + 1) {
       switch (header[0]) {
-      case NEW_FILE_CODE:
+      case Q_NEW_DATA_CODE:
         if (DEBUGGING)
           printf("nuovo pacchetto\n");
         handleNewFilePacket(pipeFromA, header, analyzers);
@@ -145,7 +145,7 @@ int report(int argc, const char *argv[]) {
           printf("nuovo pacchetto p2\n");
         handleUpdateFilePathPacket(pipeFromA, header, analyzers);
         break;
-      case DELETE_FILE_CODE:
+      case A_DELETE_FILE_CODE:
         if (DEBUGGING)
           printf("elimina\n");
         deleteFilePacket(pipeFromA, header, analyzers);
@@ -237,7 +237,7 @@ int report(int argc, const char *argv[]) {
         break;
       }
       // rimuovi questo file
-      case DELETE_FILE_CODE: {
+      case A_DELETE_FILE_CODE: {
         removeElementByPath(mainList, pathToFile);
         break;
       }
