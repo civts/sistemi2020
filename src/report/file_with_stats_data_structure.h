@@ -86,7 +86,6 @@ void addStatsToFWS(fileWithStats *fs, uint totCharsToAdd,
     fs->occorrenze[i] += occorrenze[i];
   }
 }
-
 // Prints the fileWithStats, just fore testing for now - TESTED
 void printFileWithStats(fileWithStats *fs) {
   printf("path : %s\n", fs->path);

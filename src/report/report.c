@@ -118,11 +118,11 @@ void stampaSingoloFile(char *nomeFile, int dati[], int caratteriTot, int argc,
 
   printf("Caratteri totali: %u\n", caratteriTot);
 }
-//funzione che gestisce l'aggiunta di nuovi file NON FUNZIONANTE ANCORA
-void newFile(int pipeFromA,byte *header,analyzerList * analyzers){
-  printf("code : %u\n",header[0]);
+//funzione che gestisce l'aggiunta di nuovi file
+void newFilePacket(int pipeFromA,byte *header,analyzerList * analyzers){
+  //printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header+1);
-  printf("dati : %u\n",dimDati);
+  //printf("dati : %u\n",dimDati);
   byte *dati = malloc(sizeof(byte)*dimDati);
   int rdDati = read(pipeFromA,dati,dimDati);
   if (rdDati == dimDati){
@@ -130,8 +130,8 @@ void newFile(int pipeFromA,byte *header,analyzerList * analyzers){
     uint idFile = fromBytesToInt(dati+INT_SIZE);
     bool isFromFolder = dati[INT_SIZE*2];
     char* path = dati + ((2*INT_SIZE)+1);
-    printf("pid %u\nidFile %u\n",pid,idFile);
-    printf("path %s\n",path);
+    //printf("pid %u\nidFile %u\n",pid,idFile);
+    //printf("path %s\n",path);
     analyzer* a = analyzerListGetAnalyzerByID(analyzers,pid);
     if(a==NULL){
       a = constructorAnalyzer(pid);
@@ -143,7 +143,7 @@ void newFile(int pipeFromA,byte *header,analyzerList * analyzers){
       //devo creare il file nella lista degli analyzer
       //from folder da discutere
       fileWithStats * file = constructorFWS(path,idFile,0,NULL,isFromFolder);
-      printFileWithStats(file);
+      //printFileWithStats(file);
       append(a->mainList,file);
     }
   }else{
@@ -154,13 +154,35 @@ void newFile(int pipeFromA,byte *header,analyzerList * analyzers){
   //printf("bananare");
   free(dati);
 }
-void deleteFile(int pipeFromA,byte *header,analyzerList * analyzers){
+//funzione che gestisce l'aggiunta di nuovi file
+void updateFilePathPacket(int pipeFromA,byte *header,analyzerList * analyzers){
   //printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header+1);
   //printf("dati : %u\n",dimDati);
   byte *dati = malloc(sizeof(byte)*dimDati);
   int rdDati = read(pipeFromA,dati,dimDati);
+  if (rdDati == dimDati){
+    uint pid = fromBytesToInt(dati);
+    uint idFile = fromBytesToInt(dati+INT_SIZE);
+    char* path = dati + (2*INT_SIZE);
+    analyzer* a = analyzerListGetAnalyzerByID(analyzers,pid);
+    updateFilePath(a->mainList,idFile,path);
+    //printf("path %s",getFWSByID(a->mainList,idFile)->path);
 
+  }else{
+    perror("errore da banane\n");
+  }
+  // perché qui non va avanti ?
+  //printAnalyzerList(analyzers);
+  //printf("bananare");
+  free(dati);
+}
+void deleteFilePacket(int pipeFromA,byte *header,analyzerList * analyzers){
+  //printf("code : %u\n",header[0]);
+  int dimDati = fromBytesToInt(header+1);
+  //printf("dati : %u\n",dimDati);
+  byte *dati = malloc(sizeof(byte)*dimDati);
+  int rdDati = read(pipeFromA,dati,dimDati);
   if (rdDati == dimDati){
     uint pid;
     uint idFile;
@@ -173,8 +195,12 @@ void deleteFile(int pipeFromA,byte *header,analyzerList * analyzers){
       removeElementByID(a->mainList,idFile);
       //printAnalyzerList(analyzers);
       //printAnalyzer(a);
-      printList(a->mainList);
+      //printList(a->mainList);
+      //printf("mainlista :%p \n %d",a->mainList,(a->mainList)->count);
+      //printf("mainlista :%d\n",(a->mainList)->count);
     }
+  }else{
+    perror("errore da banane\n");
   }
   free(dati);
 }
@@ -203,15 +229,26 @@ int report(int argc, const char *argv[]) {
       switch(header[0]){
         //NUOVO FILE
         case NEW_FILE_CODE :
-          newFile(pipeFromA,header,analyzers);
+          printf("nuovo pacchetto\n");
+          newFilePacket(pipeFromA,header,analyzers);
           break;
-
+        // file parziale
         case NEW_FILE_CODE_P1:
+
+          printf("nuovo pacchetto p1\n");
+          newFilePacket(pipeFromA,header,analyzers);
           break;
+        //file parziale
         case NEW_FILE_CODE_P2:
+
+          printf("nuovo pacchetto p2\n");
+          updateFilePathPacket(pipeFromA,header,analyzers);
           break;
+        //eliminazione di file
         case DELETE_FILE_CODE:
-          deleteFile(pipeFromA,header,analyzers);
+
+          printf("elimina\n");
+          deleteFilePacket(pipeFromA,header,analyzers);
           break;
 
       }

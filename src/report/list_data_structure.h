@@ -199,6 +199,17 @@ bool updateFileData(list *list, uint id, fileWithStats *newData) {
     return true;
   }
 }
+
+void updateFilePath(list *list,uint id,char* path){
+  fileWithStats *target = getFWSByID(list, id);
+  if (target != NULL) {
+    char * oldPath = target->path;
+    char * tmp = malloc(strlen(oldPath)+strlen(oldPath));
+    strcpy(tmp,oldPath);
+    strcat(tmp,path);
+    target->path = tmp;
+  }
+}
 void removeElementByID(list *list, uint id){
   fwsNode *target = getNodeByID(list,id);
   if(target!=NULL){
