@@ -18,60 +18,89 @@ const char *PATH_TO_PIPE = "./myfifo";
 // How many bytes to read every time from the pipe
 const int BATCH_SIZE = 128;
 
-// Callback for Q_NEW_DATA_CODE packets.
-//
-// TODO Should add new stats for the file with the given id in the given
+
 // analyzer (eventually creating the fws if needed)
-void gotNewDataPacket(int pipeFromA, byte *header, analyzerList *analyzers) {
+void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  int rdDati = read(pipeFromA, dati, dimDati);
-  uint pid = fromBytesToInt(dati);
-  uint idFile = fromBytesToInt(dati + INT_SIZE);
-  uint m = fromBytesToInt(dati + 2 * INT_SIZE);
-  uint i = fromBytesToInt(dati + 3 * INT_SIZE);
-  uint D = fromBytesToInt(dati + 4 * INT_SIZE);
-  uint totChars = fromBytesToInt(dati + 5 * INT_SIZE);
-  // bool isFromFolder = dati[INT_SIZE * 2];
-
-  analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
-  if (a == NULL) {
-    a = constructorAnalyzer(pid);
-    analyzerListAppend(analyzers, a);
-  }
-  // printAnalyzerList(analyzers);
-  // checking if already in the analyzer list
-  fwsNode *n = getNodeByID(a->mainList, idFile);
-  if (n == NULL) {
-    // devo creare il file nella lista degli analyzer
-    // from folder da discutere
-    fileWithStats *file = constructorFWS(path, idFile, 0, NULL, isFromFolder);
-    // printFileWithStats(file);
-    append(a->mainList, file);
-  } else {
-    addStatsToFWS(n->val, totChars, dati + 6 * INT_SIZE);
+  int rdDati = read(pipe, dati, dimDati);
+  if(rdDati==dimDati){
+    uint pid = fromBytesToInt(dati);
+    uint idFile = fromBytesToInt(dati + INT_SIZE);
+    bool isFromFolder = dati[INT_SIZE * 2];
+    char* path = dati+2*INT_SIZE+1;
+    analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
+    if (a == NULL) {
+      a = constructorAnalyzer(pid);
+      analyzerListAppend(analyzers, a);
+    }
+    // printAnalyzerList(analyzers);
+    // checking if already in the analyzer list
+    fwsNode *n = getNodeByID(a->mainList, idFile);
+    if (n == NULL) {
+      // devo creare il file nella lista degli analyzer
+      // from folder da discutere
+      fileWithStats *file = constructorFWS(path, idFile, 0, NULL, isFromFolder);
+      // printFileWithStats(file);
+      append(a->mainList, file);
+    }
+  }else{
+    perror("aggiunta file fallita");
   }
   free(dati);
 }
-
+void got1stPathPartPacket(int pipe, byte *header,
+                          analyzerList *analyzers) {
+  int dimDati = fromBytesToInt(header + 1);
+  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  int rdDati = read(pipe, dati, dimDati);
+  if(rdDati==dimDati){
+    uint pid = fromBytesToInt(dati);
+    uint idFile = fromBytesToInt(dati + INT_SIZE);
+    bool isFromFolder = dati[INT_SIZE * 2];
+    char* path = dati+2*INT_SIZE+1;
+    analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
+    if (a == NULL) {
+      a = constructorAnalyzer(pid);
+      analyzerListAppend(analyzers, a);
+    }
+    // printAnalyzerList(analyzers);
+    // checking if already in the analyzer list
+    fwsNode *n = getNodeByID(a->mainList, idFile);
+    if (n == NULL) {
+      // devo creare il file nella lista degli analyzer
+      // from folder da discutere
+      fileWithStats *file = constructorFWS(path, idFile, 0, NULL, isFromFolder);
+      // printFileWithStats(file);
+      append(a->incompleteList, file);
+    }
+  }else{
+    perror("aggiunta file p1 fallita");
+  }
+  free(dati);
+}
 // Callback for A_NEW_FILE_INCOMPLETE_PART2 packets.
 //(2nd half of a file path)
-void got2ndPathPartPacket(int pipeFromA, byte *header,
+void got2ndPathPartPacket(int pipe, byte *header,
                           analyzerList *analyzers) {
   // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
   // printf("dati : %u\n",dimDati);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  int rdDati = read(pipeFromA, dati, dimDati);
+  int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
     char *path = dati + (2 * INT_SIZE);
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
-    updateFilePath(a->mainList, idFile, path);
+    //fwsNode *nodeToUpdate = getNodeByID(a->incompleteList,idFile);
+    updateFilePath(a->incompleteList, idFile, path);
+    fwsNode *updatedNode = getNodeByID(a->incompleteList,idFile);
+    removeElementByID(a->incompleteList,idFile,false);
+    appendNode(a->incompleteList,updatedNode);
     // printf("path %s",getFWSByID(a->mainList,idFile)->path);
   } else {
-    perror("errore da banane\n");
+    perror("update del path fallito\n");
   }
   // perché qui non va avanti ?
   // printAnalyzerList(analyzers);
@@ -79,17 +108,36 @@ void got2ndPathPartPacket(int pipeFromA, byte *header,
   free(dati);
 }
 
-// Callback for A_NEW_FILE_COMPLETE packets.
-void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
+void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
   // TODO
+  int dimDati = fromBytesToInt(header + 1);
+  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  int rdDati = read(pipe, dati, dimDati);
+  if(rdDati ==dimDati){
+    uint pid = fromBytesToInt(dati);
+    uint idFile = fromBytesToInt(dati + INT_SIZE);
+    uint m = fromBytesToInt(dati + 2 * INT_SIZE);
+    uint i = fromBytesToInt(dati + 3 * INT_SIZE);
+    uint dimFile = fromBytesToInt(dati + 4 * INT_SIZE);
+    uint totChars = fromBytesToInt(dati + 5 * INT_SIZE);
+    uint numeri[ASCII_LENGTH];
+    int j;
+    for(j=0;j<ASCII_LENGTH;j++){
+      numeri[i] = fromBytesToInt(dati+ 6*INT_SIZE+i*INT_SIZE);
+    }
+    analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
+    updateFileData(a->mainList,idFile,dimFile,totChars,numeri);
+  }else{
+    perror("updateDelFileFallito\n");
+  }
 }
 
-void gotDeleteFilePacket(int pipeFromA, byte *header, analyzerList *analyzers) {
+void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
   // printf("dati : %u\n",dimDati);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  int rdDati = read(pipeFromA, dati, dimDati);
+  int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid;
     uint idFile;
@@ -99,7 +147,7 @@ void gotDeleteFilePacket(int pipeFromA, byte *header, analyzerList *analyzers) {
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
     if (a != NULL) {
       // printAnalyzer(a);
-      removeElementByID(a->mainList, idFile);
+      removeElementByID(a->mainList, idFile,true);
       // printAnalyzerList(analyzers);
       // printAnalyzer(a);
       // printList(a->mainList);
@@ -151,6 +199,7 @@ int report(int argc, const char *argv[]) {
         break;
       }
     }
+    
   }
   return retCode;
 }

@@ -35,6 +35,8 @@ typedef struct {
   // blacklist: files that have been removed from this analyzer which we should
   // not include in the final stats
   list *deletedList;
+  //lista di file parziali
+  list *incompleteList;
 } analyzer;
 
 // Creates an Analyzer and returns pointer to it - TESTED
@@ -43,6 +45,7 @@ analyzer *constructorAnalyzer(uint pid) {
   a->pid = pid;
   a->mainList = constructorListEmpty();
   a->deletedList = constructorListEmpty();
+  a->incompleteList = constructorListEmpty();
   if (DEBUGGING)
     printf("Creating a new Analyzer instance @%p for Analyzer with pid %u\n", a,
            a->pid);
@@ -57,6 +60,7 @@ void deleteAnalyzer(analyzer *a) {
            a->pid);
   destructorList(a->mainList);
   destructorList(a->deletedList);
+  destructorList(a->incompleteList);
   free(a);
 }
 

@@ -83,7 +83,20 @@ void append(list *list, fileWithStats *fs) {
   }
   list->count++;
 }
-
+//appends node, given the node
+void appendNode(list *list, fwsNode *node) {
+  if (isEmpty(list)) {
+    list->firstNode = node;
+  } else {
+    fwsNode *cursor = list->firstNode;
+    while (cursor->nextNode != NULL) {
+      cursor = cursor->nextNode;
+    }
+    cursor->nextNode = node;
+    node->previousNode = cursor;
+  }
+  list->count++;
+}
 // Returns node in the given position (starting from 0)
 // Returns NULL if not found
 fileWithStats *getFWSByIndex(list *lista, int index) {
@@ -184,20 +197,11 @@ void removeLast(list *list) {
 }
 // Adds the stats from newData to the right file in this list.
 // If file is not present it is appended to the end of the list.
-// return 0=false new element non appended
-// return 1=true if  if new element is appended
-// ⚠️ After this you should deallocate the newData fileWithStats
-// accordingly.
-bool updateFileData(list *list, uint id, fileWithStats *newData) {
+
+void updateFileData(list *list, uint id,uint charTot,uint charsToAdd,uint *occourrrences) {
   fwsNode *targetNode = getNodeByID(list, id);
   if (targetNode != NULL) {
-    uint charsToAdd = newData->totalCharacters;
-    uint *occourrrences = newData->occorrenze;
-    addStatsToFWS(targetNode->val, charsToAdd, occourrrences);
-    return false;
-  } else {
-    append(list, newData);
-    return true;
+    addStatsToFWS(targetNode->val,charTot, charsToAdd, occourrrences);
   }
 }
 
@@ -213,13 +217,14 @@ void updateFilePath(list *list, uint id, char *path) {
     free(oldPath);
   }
 }
-
-void removeElementByID(list *list, uint id) {
+// remove element with given id from list, delete true if deletion of said node id necessary
+void removeElementByID(list *list, uint id,bool delete) {
   fwsNode *target = getNodeByID(list, id);
   if (target != NULL) {
     fwsNode *prev = target->previousNode;
     fwsNode *next = target->nextNode;
-    deleteFwsNode(target);
+    if(delete)
+      deleteFwsNode(target);
     if (prev != NULL)
       prev->nextNode = next;
     if (next != NULL)
@@ -227,12 +232,13 @@ void removeElementByID(list *list, uint id) {
     list->count--;
   }
 }
-void removeElementByPath(list *list, char *path) {
+void removeElementByPath(list *list, char *path,bool delete) {
   fwsNode *target = getNodeByPath(list, path);
   if (target != NULL) {
     fwsNode *prev = target->previousNode;
     fwsNode *next = target->nextNode;
-    deleteFwsNode(target);
+    if(delete)
+      deleteFwsNode(target);
     if (prev != NULL)
       prev->nextNode = next;
     if (next != NULL)

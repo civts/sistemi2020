@@ -29,7 +29,8 @@ typedef struct {
   uint id;
   // how many characters are present in this file
   uint totalCharacters;
-
+  //how characters hav been rdHeader
+  uint readCharacters;
   // array where in position i we count how many chars w/ ASCII code i are in
   // the file
   uint occorrenze[ASCII_LENGTH];
@@ -46,6 +47,9 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
   fs->id = id;
   strcpy(fs->path, path);
   fs->totalCharacters = totalCharacters;
+
+  fs->readCharacters = 0;
+
   if (occorrenze != NULL) {
     int i;
     for (i = 0; i < ASCII_LENGTH; i++) {
@@ -73,11 +77,13 @@ void deleteFWS(fileWithStats *fs) {
 }
 
 // Adds new stats to this fileWithStats
-void addStatsToFWS(fileWithStats *fs, uint totCharsToAdd,
+void addStatsToFWS(fileWithStats *fs, uint totChars,uint totCharsToAdd,
                    uint occorrenze[ASCII_LENGTH]) {
   if (DEBUGGING)
     printf("Adding new stats to FWS object of file %s\n", fs->path);
-  fs->totalCharacters += totCharsToAdd;
+
+  fs->totalCharacters += totChars;
+  fs->readCharacters += totCharsToAdd;
   int i;
   for (i = 0; i < ASCII_LENGTH; i++) {
     fs->occorrenze[i] += occorrenze[i];
