@@ -1,6 +1,6 @@
 #include "../packet_codes.h"
 #include "../utils.c"
-#include "./list_data_structure.h"
+#include "./file_with_stats_list.h"
 #include "./report_utils.h"
 #include <fcntl.h>
 #ifndef bool
@@ -10,20 +10,20 @@ typedef unsigned char bool;
 #endif
 
 // Path to the named pipe
-const char *PATH_TO_A = "./A";
+const char *PATH_TO_Q = "./Q";
 // How many bytes to read every time from the pipe
 const int BATCH_SIZE = 128;
 
 int main(int argc, const char *argv[]) {
   int retCode = 0;
-  int fd = open(PATH_TO_A, O_RDONLY | O_NONBLOCK);
-  int rd=1;
+  int fd = open(PATH_TO_Q, O_RDONLY | O_NONBLOCK);
+  int rd = 1;
   if (fd == -1) {
     retCode = 1;
     printf("nopipe\n");
   } else {
-    do{
-    //while(true)
+    do {
+      // while(true)
       /*if (statusCode[0] == EOF) {
         // If there is no one on the writing end of the pipe previous read will
         // retur EOF (see
@@ -37,7 +37,7 @@ int main(int argc, const char *argv[]) {
       rd = read(fd, buffer, 1);
       // Will never have an else since when they are not valid  the program
       // terminates
-    }while(rd !=0);
+    } while (rd != 0);
     close(fd);
     //}
   }

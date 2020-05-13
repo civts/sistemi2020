@@ -1,10 +1,10 @@
 #include "../utils.c"
-#include "./analyzer_data_structure.h"
+#include "./file_with_stats_list.h"
 #include "./analyzer_node.h"
 
 #ifndef ANALYZER_LIST_DATA_STRUCTURE_H
 #define ANALZYER_LIST_DATA_STRUCTURE_H
-#include <stdio.h>  //print etc
+#include <stdio.h> //print etc
 /*  File where we define the structure of the analyzerList with all the analyzer
  *  nodes
 */
@@ -34,9 +34,10 @@ typedef struct {
   // how many nodes are currently in the analyzerList
   int count;
 } analyzerList;
+
 // Returns reference to new empty analyzerList
 analyzerList *constructorAnalyzerListEmpty() {
-  analyzerList *l = malloc(sizeof(analyzerList));
+  analyzerList *l =(analyzerList *)malloc(sizeof(analyzerList));
   l->count = 0;
   l->firstNode = NULL;
 }
@@ -46,7 +47,6 @@ analyzerList *constructoranalyzerListOne(analyzer *a) {
   analyzerNode *firstNode = constructorAnalyzerNode(a);
   analyzerList *l = constructorAnalyzerListEmpty();
   l->count = 1;
-  //perché non fare una append ? perché sono scemo l'ho scritto io questo codice!
   l->firstNode = firstNode;
   return l;
 }
@@ -66,11 +66,12 @@ void destructoraAnalyzerList(analyzerList *l) {
 // Returns wether the analyzeranalyzerList is empty or not
 bool analyzerListIsEmpty(analyzerList *l) { return l->count == 0; }
 
-// Appends new node to end of analyzeranalyzerList - TESTED✔️
+// Appends new analyzer node to end of analyzeranalyzerList - TESTED✔️
 //
-// ⚠️ do NOT deallocate fs, the analyzeranalyzerList will take care of it when needed
-void analyzerListAppend(analyzerList *analyzerList, analyzer *fs) {
-  analyzerNode *node = constructorAnalyzerNode(fs);
+// ⚠️ do NOT deallocate an, the analyzeranalyzerList will take care of it when
+// needed
+void analyzerListAppend(analyzerList *analyzerList, analyzer *an) {
+  analyzerNode *node = constructorAnalyzerNode(an);
   if (analyzerListIsEmpty(analyzerList)) {
     analyzerList->firstNode = node;
   } else {
@@ -84,12 +85,12 @@ void analyzerListAppend(analyzerList *analyzerList, analyzer *fs) {
   analyzerList->count++;
 }
 
-// Returns reference to analyzer w/ given path or NULL
-analyzer *analyzerListGetAnalyzerByID(analyzerList *analyzerList, uint pid) {
+// Returns reference to the analyzer in the list w/ the given pid or NULL
+analyzer *analyzerListGetAnalyzerByPid(analyzerList *analyzerList, uint pid) {
   analyzerNode *current = analyzerList->firstNode;
   while (current != NULL) {
     analyzer *a = current->a;
-    if(a!=NULL){
+    if (a != NULL) {
       if ((a->pid) == pid) {
         return a;
       }
@@ -98,12 +99,14 @@ analyzer *analyzerListGetAnalyzerByID(analyzerList *analyzerList, uint pid) {
   }
   return NULL;
 }
-// Returns reference to node w/ given path or NULL
-analyzerNode *analyzerListGetNodeByID(analyzerList *analyzerList, uint pid) {
+
+// Returns reference to the node of the list which analyzer has the given pid
+// (or NULL if it's not found)
+analyzerNode *analyzerListGetNodeByPid(analyzerList *analyzerList, uint pid) {
   analyzerNode *current = analyzerList->firstNode;
   while (current != NULL) {
     analyzer *a = current->a;
-    if(a!=NULL){
+    if (a != NULL) {
       if ((a->pid) == pid) {
         return current;
       }
@@ -113,29 +116,30 @@ analyzerNode *analyzerListGetNodeByID(analyzerList *analyzerList, uint pid) {
   return NULL;
 }
 
-// Removes the element with the specified path (first occourrence only).
+// Removes the element with the specified pid (first occourrence only).
 // Also handles its de-allocation.
 // TODO test!
-void analyzerListRemoveElementByID(analyzerList *analyzerList, uint pid) {
+void analyzerListRemoveElementByPid(analyzerList *analyzerList, uint pid) {
   if (DEBUGGING)
-    printf("Getting element with pid \"%u\" for deletion\n", pid);
-  analyzerNode *targetNode = analyzerListGetNodeByID(analyzerList, pid);
+    printf("Getting element with pid %u for deletion\n", pid);
+  analyzerNode *targetNode = analyzerListGetNodeByPid(analyzerList, pid);
   if (targetNode != NULL) {
     if (DEBUGGING)
-      printf("Found element with pid \"%u\", its @%p\n", pid, targetNode);
+      printf("Found element with pid %u, its @%p\n", pid, targetNode);
     analyzerNode *prev = targetNode->previousNode;
     analyzerNode *next = targetNode->nextNode;
-    if(prev!=NULL)
+    if (prev != NULL)
       prev->nextNode = next;
-    if(next!=NULL)
+    if (next != NULL)
       next->previousNode = prev;
     deleteAnalyzerNode(targetNode);
     analyzerList->count--;
   } else {
     if (DEBUGGING)
-      printf("Element with pid \"%u\" is not in this analyzerList so it was not "
-             "deleted\n",
-             pid);
+      printf(
+          "Element with pid \"%u\" is not in this analyzerList so it was not "
+          "deleted\n",
+          pid);
   }
 }
 
@@ -143,10 +147,7 @@ void analyzerListRemoveElementByID(analyzerList *analyzerList, uint pid) {
 // (and handles its de-allocation)
 void analyzerListRemoveFirst(analyzerList *analyzerLista) {
   if (!analyzerListIsEmpty(analyzerLista)) {
-    analyzerNode *newFirstNode = NULL;
-    // TODO: I think this check is redundant given that here analyzerList is not empty
-    if (analyzerLista->firstNode != NULL)
-      newFirstNode = analyzerLista->firstNode->nextNode;
+    analyzerNode *newFirstNode = analyzerLista->firstNode->nextNode;
     deleteAnalyzerNode(analyzerLista->firstNode);
     analyzerLista->firstNode = newFirstNode;
     analyzerLista->count--;
@@ -179,7 +180,6 @@ void analyzerListRemoveLast(analyzerList *analyzerList) {
   }
 }
 
-
 // Prints the analyzerList on stdOut TESTED✔️
 void printAnalyzerList(analyzerList *analyzerList) {
   analyzerNode *cursor = analyzerList->firstNode;
@@ -200,15 +200,15 @@ int main(int c, char *argv[]) {
   analyzerListAppend(list,a1);
   analyzerListAppend(list,a2);
   analyzerListAppend(list,a3);
-  //int x = analyzerListGetAnalyzerByID(0);
-  //analyzerListRemoveElementByID(list,1);
+  //int x = analyzerListGetAnalyzerByPid(0);
+  //analyzerListRemoveElementByPid(list,1);
   printAnalyzerList(list);
   analyzerListRemoveFirst(list);
   analyzerListRemoveLast(list);
   printAnalyzerList(list);
   //
   printAnalyzer(analyzerListGetAnalyzerByIndex(list,0));
-  analyzerListRemoveElementByID(list,2);
+  analyzerListRemoveElementByPid(list,2);
   return 0;
 }
 */

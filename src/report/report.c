@@ -1,8 +1,10 @@
 #include "../packet_codes.h"
 #include "../utils.c"
-#include "./list_data_structure.h"
-#include "./report_utils.h"
-#include "./analyzer_list.h"
+#include "analyzer_list.h"
+#include "file_with_stats_list.h"
+#include "report_print_functions.h"
+#include "report_utils.h"
+
 #include <fcntl.h>
 #ifndef bool
 typedef unsigned char bool;
@@ -18,243 +20,139 @@ const char *PATH_TO_A = "./A";
 // How many bytes to read every time from the pipe
 const int BATCH_SIZE = 128;
 
-void stampaGruppi(uint dati[], uint caratteriTot) {
-  char c;
-  int i = 0;
-  uint az = 0;
-  for (i = 'a'; i <= 'z'; i++) {
-    az += dati[i];
-  }
-  uint AZ = 0;
-  for (i = 'A'; i <= 'Z'; i++) {
-    AZ += dati[i];
-  }
-
-  for (i = 0; i < 256; i++) {
-    printf("%c: %u\n", c, dati[i]);
-  }
-}
-
-void stampaGruppiNonVerbosa(list *list) {
-  printf("Analyzed %d files:\n", list->count);
-  uint az, AZ, digits, spaces, punctuation, otherChars;
-  uint totalChars;
-  az = AZ = digits = spaces = punctuation = otherChars = totalChars = 0;
-  fwsNode *cursor = list->firstNode;
-  while (cursor != NULL) {
-    fileWithStats *fws = cursor->val;
-    int i;
-    int *oc = fws->occorrenze;
-    uint thisaz, thisAZ, thisDigits, thisSpaces, thisPunct;
-    thisaz = thisAZ = thisDigits = thisSpaces = thisPunct = 0;
-    for (i = 'a'; i <= 'z'; i++) {
-      thisaz += oc[i];
-    }
-    az += thisaz;
-    for (i = 'A'; i <= 'Z'; i++) {
-      thisAZ += oc[i];
-    }
-    AZ += thisAZ;
-    for (i = '0'; i <= '9'; i++) {
-      thisDigits += oc[i];
-    }
-    digits += thisDigits;
-    const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
-    for (i = 0; i < 6; i++) {
-      thisSpaces += oc[i];
-    }
-    spaces += thisSpaces;
-    const char punctuationChars[] = {
-        ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
-    };
-    for (i = 0; i < 14; i++) {
-      thisPunct += oc[punctuationChars[i]];
-    }
-    punctuation += thisPunct;
-    otherChars += fws->totalCharacters - thisaz - thisAZ - thisDigits -
-                  thisPunct - thisSpaces;
-    totalChars += fws->totalCharacters;
-    cursor = cursor->nextNode;
-  }
-  printf(
-      "a-z: %u\nA-Z: %u\ndigits: %u\npunctuation: %u\nother: %u\n\nTotal "
-      "charcters: %u\n",
-      az, AZ, digits, punctuation, otherChars, totalChars);
-}
-
-void stampaDefault(list *list) {
-  printf("Analyzed %d files:\n", list->count);
-  int i;
-  uint az, AZ, digits, spaces, punctuation, otherChars;
-  uint totalChars;
-  uint occCount[ASCII_LENGTH];
-  fwsNode *cursor = list->firstNode;
-  while (cursor != NULL) {
-    fileWithStats *fws = cursor->val;
-    int *oc = fws->occorrenze;
-    for (i = 0; i < ASCII_LENGTH; i++) {
-      occCount[i] += oc[i];
-    }
-    totalChars += fws->totalCharacters;
-    cursor = cursor->nextNode;
-  }
-  for (i = 0; i < ASCII_LENGTH; i++) {
-    if (i >= '!' && i < 254 && i != 127) {
-      printf("%c", i);
-    } else {
-      printf("character with extendedASCII code %d", i);
-    }
-    printf(": %u\n", occCount[i]);
-  }
-  printf("\nTotal "
-         "charcters: %u\n",
-         totalChars);
-}
-
-// Stampa su stdout le statistiche di un file
-void stampaSingoloFile(char *nomeFile, int dati[], int caratteriTot, int argc,
-                       char *argv) {
-  printf("---------------%s---------------", nomeFile);
-
-  printf("Caratteri totali: %u\n", caratteriTot);
-}
-//funzione che gestisce l'aggiunta di nuovi file
-void newFilePacket(int pipeFromA,byte *header,analyzerList * analyzers){
-  //printf("code : %u\n",header[0]);
-  int dimDati = fromBytesToInt(header+1);
-  //printf("dati : %u\n",dimDati);
-  byte *dati = malloc(sizeof(byte)*dimDati);
-  int rdDati = read(pipeFromA,dati,dimDati);
-  if (rdDati == dimDati){
+// funzione che gestisce l'aggiunta di nuovi file
+void handleNewFilePacket(int pipeFromA, byte *header, analyzerList *analyzers) {
+  int dimDati = fromBytesToInt(header + 1);
+  byte *dati = malloc(sizeof(byte) * dimDati);
+  int rdDati = read(pipeFromA, dati, dimDati);
+  if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
-    uint idFile = fromBytesToInt(dati+INT_SIZE);
-    bool isFromFolder = dati[INT_SIZE*2];
-    char* path = dati + ((2*INT_SIZE)+1);
-    //printf("pid %u\nidFile %u\n",pid,idFile);
-    //printf("path %s\n",path);
-    analyzer* a = analyzerListGetAnalyzerByID(analyzers,pid);
-    if(a==NULL){
+    uint idFile = fromBytesToInt(dati + INT_SIZE);
+    bool isFromFolder = dati[INT_SIZE * 2];
+    char *path = dati + ((2 * INT_SIZE) + 1);
+    // printf("pid %u\nidFile %u\n",pid,idFile);
+    // printf("path %s\n",path);
+    analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
+    if (a == NULL) {
       a = constructorAnalyzer(pid);
-      analyzerListAppend(analyzers,a);
+      analyzerListAppend(analyzers, a);
     }
-    //printAnalyzerList(analyzers);
-    //controllo di non aggiungere più volte lo stesso file
-    if(getNodeByID(a->mainList,idFile)==NULL){
-      //devo creare il file nella lista degli analyzer
-      //from folder da discutere
-      fileWithStats * file = constructorFWS(path,idFile,0,NULL,isFromFolder);
-      //printFileWithStats(file);
-      append(a->mainList,file);
+    // printAnalyzerList(analyzers);
+    // controllo di non aggiungere più volte lo stesso file
+    if (getNodeByID(a->mainList, idFile) == NULL) {
+      // devo creare il file nella lista degli analyzer
+      // from folder da discutere
+      fileWithStats *file = constructorFWS(path, idFile, 0, NULL, isFromFolder);
+      // printFileWithStats(file);
+      append(a->mainList, file);
     }
-  }else{
-    perror("errore da banane\n");
+  } else {
+    perror("errore da banane\n"); // TODO
   }
   // perché qui non va avanti ?
-  //printAnalyzerList(analyzers);
-  //printf("bananare");
+  // printAnalyzerList(analyzers);
+  // printf("bananare");
   free(dati);
 }
-//funzione che gestisce l'aggiunta di nuovi file
-void updateFilePathPacket(int pipeFromA,byte *header,analyzerList * analyzers){
-  //printf("code : %u\n",header[0]);
-  int dimDati = fromBytesToInt(header+1);
-  //printf("dati : %u\n",dimDati);
-  byte *dati = malloc(sizeof(byte)*dimDati);
-  int rdDati = read(pipeFromA,dati,dimDati);
-  if (rdDati == dimDati){
-    uint pid = fromBytesToInt(dati);
-    uint idFile = fromBytesToInt(dati+INT_SIZE);
-    char* path = dati + (2*INT_SIZE);
-    analyzer* a = analyzerListGetAnalyzerByID(analyzers,pid);
-    updateFilePath(a->mainList,idFile,path);
-    //printf("path %s",getFWSByID(a->mainList,idFile)->path);
 
-  }else{
+//funzione che gestisce l'aggiunta di nuovi file
+void handleUpdateFilePathPacket(int pipeFromA, byte *header,
+                                analyzerList *analyzers) {
+  // printf("code : %u\n",header[0]);
+  int dimDati = fromBytesToInt(header + 1);
+  // printf("dati : %u\n",dimDati);
+  byte *dati = malloc(sizeof(byte) * dimDati);
+  int rdDati = read(pipeFromA, dati, dimDati);
+  if (rdDati == dimDati) {
+    uint pid = fromBytesToInt(dati);
+    uint idFile = fromBytesToInt(dati + INT_SIZE);
+    char *path = dati + (2 * INT_SIZE);
+    analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
+    updateFilePath(a->mainList, idFile, path);
+    // printf("path %s",getFWSByID(a->mainList,idFile)->path);
+
+  } else {
     perror("errore da banane\n");
   }
   // perché qui non va avanti ?
-  //printAnalyzerList(analyzers);
-  //printf("bananare");
+  // printAnalyzerList(analyzers);
+  // printf("bananare");
   free(dati);
 }
-void deleteFilePacket(int pipeFromA,byte *header,analyzerList * analyzers){
-  //printf("code : %u\n",header[0]);
-  int dimDati = fromBytesToInt(header+1);
-  //printf("dati : %u\n",dimDati);
-  byte *dati = malloc(sizeof(byte)*dimDati);
-  int rdDati = read(pipeFromA,dati,dimDati);
-  if (rdDati == dimDati){
+
+void deleteFilePacket(int pipeFromA, byte *header, analyzerList *analyzers) {
+  // printf("code : %u\n",header[0]);
+  int dimDati = fromBytesToInt(header + 1);
+  // printf("dati : %u\n",dimDati);
+  byte *dati = malloc(sizeof(byte) * dimDati);
+  int rdDati = read(pipeFromA, dati, dimDati);
+  if (rdDati == dimDati) {
     uint pid;
     uint idFile;
     pid = fromBytesToInt(dati);
-    idFile = fromBytesToInt(dati+INT_SIZE);
-    //printf("pid %u\nidFile %u\n",pid,idFile);
-    analyzer* a = analyzerListGetAnalyzerByID(analyzers,pid);
-    if(a!=NULL){
-      //printAnalyzer(a);
-      removeElementByID(a->mainList,idFile);
-      //printAnalyzerList(analyzers);
-      //printAnalyzer(a);
-      //printList(a->mainList);
-      //printf("mainlista :%p \n %d",a->mainList,(a->mainList)->count);
-      //printf("mainlista :%d\n",(a->mainList)->count);
+    idFile = fromBytesToInt(dati + INT_SIZE);
+    // printf("pid %u\nidFile %u\n",pid,idFile);
+    analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
+    if (a != NULL) {
+      // printAnalyzer(a);
+      removeElementByID(a->mainList, idFile);
+      // printAnalyzerList(analyzers);
+      // printAnalyzer(a);
+      // printList(a->mainList);
+      // printf("mainlista :%p \n %d",a->mainList,(a->mainList)->count);
+      // printf("mainlista :%d\n",(a->mainList)->count);
     }
-  }else{
+  } else {
     perror("errore da banane\n");
   }
   free(dati);
 }
+
 // This is the function that implements report buisiness logic
 int report(int argc, const char *argv[]) {
   int retCode = 0;
   // This is where the state is stored: it contains the references to the
   // "objects" representing the files and their stats.
   analyzerList *analyzers = constructorAnalyzerListEmpty();
-
-  int pipeFromA = open(PATH_TO_A, O_RDONLY );
+  int pipeFromA = open(PATH_TO_A, O_RDONLY);
   if (pipeFromA == -1) {
     retCode = 1;
     perror("No pipe A");
   }
-  int pipeFromQ = open(PATH_TO_Q, O_RDONLY );
+  int pipeFromQ = open(PATH_TO_Q, O_RDONLY);
   if (pipeFromQ == -1) {
     retCode = 1;
     perror("No pipe Q");
   }
-  while (1) {
+  while (pipeFromQ != -1 && pipeFromA != -1) {
     // lettura dalla pipeA sistemare in dinamica
-    byte header [INT_SIZE+1] = {'\0','\0','\0','\0','\0'};
-    int rdHeader = read(pipeFromA,header,INT_SIZE+1);
-    if (rdHeader == INT_SIZE+1){
-      switch(header[0]){
-        //NUOVO FILE
-        case NEW_FILE_CODE :
+    byte header[INT_SIZE + 1] = {'\0', '\0', '\0', '\0', '\0'};
+    int rdHeader = read(pipeFromA, header, INT_SIZE + 1);
+    if (rdHeader == INT_SIZE + 1) {
+      switch (header[0]) {
+      case NEW_FILE_CODE:
+        if (DEBUGGING)
           printf("nuovo pacchetto\n");
-          newFilePacket(pipeFromA,header,analyzers);
-          break;
-        // file parziale
-        case NEW_FILE_CODE_P1:
-
+        handleNewFilePacket(pipeFromA, header, analyzers);
+        break;
+      case NEW_FILE_CODE_P1:
+        if (DEBUGGING)
           printf("nuovo pacchetto p1\n");
-          newFilePacket(pipeFromA,header,analyzers);
-          break;
-        //file parziale
-        case NEW_FILE_CODE_P2:
-
+        handleNewFilePacket(pipeFromA, header, analyzers);
+        break;
+      case NEW_FILE_CODE_P2:
+        if (DEBUGGING)
           printf("nuovo pacchetto p2\n");
-          updateFilePathPacket(pipeFromA,header,analyzers);
-          break;
-        //eliminazione di file
-        case DELETE_FILE_CODE:
-
+        handleUpdateFilePathPacket(pipeFromA, header, analyzers);
+        break;
+      case DELETE_FILE_CODE:
+        if (DEBUGGING)
           printf("elimina\n");
-          deleteFilePacket(pipeFromA,header,analyzers);
-          break;
-
+        deleteFilePacket(pipeFromA, header, analyzers);
+        break;
       }
-
     }
-    //lettura dalla pipeQ
+    // lettura dalla pipeQ
   }
   return retCode;
 }
@@ -302,8 +200,6 @@ int report(int argc, const char *argv[]) {
       for(j=0;j<pathLength+1;j++){
         printf("%c\n",pathToFile[j]);
       }
-      */
-      /*
       switch (statusCode) {
       // nuovi dati per il file
       case NEW_PACKET_CODE: {
@@ -356,21 +252,18 @@ int report(int argc, const char *argv[]) {
   }
   destructorList(mainList);
   return retCode;
-}
-*/
+}*/
+
 int main(int argc, const char *argv[]) {
   int retCode = 0;
   if (contains(argc, argv, helpFlag)) {
     printf("this is the help text"); // TODO
   } else {
-    // WTF ? argsAreValid mi da un bool...cosa dovrei fare?
-    bool message = argsAreValid(argc, argv);
-    if (message) {
-      // dove è report?
+    if (argsAreValid(argc, argv)) {
       retCode = report(argc, argv);
     }
-    // Will never have an else since when they are not valid  the program
-    // terminates
+    // Will never have an else since when args are not valid the program
+    // terminates (argsAreValid calls exit w/ appropriate error code).
   }
   return retCode;
 }

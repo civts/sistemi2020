@@ -12,6 +12,7 @@ typedef unsigned char bool;
 #define DEBUGGING true
 typedef unsigned int uint;
 typedef unsigned char byte;
+typedef char *string;
 
 uint fromBytesToInt(byte *);
 void fromIntToBytes(uint, byte[]);

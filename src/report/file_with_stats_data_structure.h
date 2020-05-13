@@ -39,22 +39,19 @@ typedef struct {
 } fileWithStats;
 
 // Creates a fileWithStats and returns pointer to it - TESTED
-//
-// -------------------------------
-// TODO: ensure that **deleteFWS** frees path and fs correctly
-fileWithStats *constructorFWS(char *path, uint id,uint totalCharacters,
+fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
                               uint occorrenze[ASCII_LENGTH], bool fromFolder) {
-  fileWithStats *fs = malloc(sizeof(fileWithStats));
-  fs->path = malloc(strlen(path));
+  fileWithStats *fs = (fileWithStats *)malloc(sizeof(fileWithStats));
+  fs->path = (char *)malloc(strlen(path));
   fs->id = id;
   strcpy(fs->path, path);
   fs->totalCharacters = totalCharacters;
-  if(occorrenze !=NULL){
+  if (occorrenze != NULL) {
     int i;
     for (i = 0; i < ASCII_LENGTH; i++) {
       fs->occorrenze[i] = occorrenze[i];
     }
-  }else{
+  } else {
     int i;
     for (i = 0; i < ASCII_LENGTH; i++) {
       fs->occorrenze[i] = 0;
@@ -89,7 +86,7 @@ void addStatsToFWS(fileWithStats *fs, uint totCharsToAdd,
 // Prints the fileWithStats, just fore testing for now - TESTED
 void printFileWithStats(fileWithStats *fs) {
   printf("path : %s\n", fs->path);
-  printf("id %u\n",fs->id);
+  printf("id %u\n", fs->id);
   printf("totlchar %u\n", fs->totalCharacters);
   // lo tolgo solo per debug più veloce
   /*

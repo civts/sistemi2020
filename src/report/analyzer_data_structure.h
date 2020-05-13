@@ -1,13 +1,14 @@
 #include "../utils.c"
+#include "./file_with_stats_list.h"
 #include <stdio.h>  //print etc
 #include <stdlib.h> // malloc & free
-#include <string.h> //strlen e strcpy
-#include "./list_data_structure.h"
 #ifndef ANALYZER_DATA_STRUCTURE_H
 #define ANALYZER_DATA_STRUCTURE_H
 
-/*  File where we define the structure of a fileWithStats and the functions that
- * enable us to work with it. (The representation of a File and its stats)
+/*  File where we define the structure of an Analyzer and the functions that
+ * enable us to work with it. The analyzer has a pid of its process, a list of
+ * the files it has analyzed complete w/ their stats and a second list which we
+ * use to keep track of removed files.
  *
  * We have:
  *  - a constructor
@@ -18,31 +19,33 @@
 
 // The representation of a file and its stats
 // Props:
-// -
+// - id: Analyzer process pid
+// - mainList: List of the files with stats relative to this analyzer
+// - deletedList: files that have been removed from this analyzer which we
+// should not include in the final stats (blacklist)
 //
 // Methods for this:
 // constructorAnalyzer       -> constructor
 // deleteAnalyzer            -> destructor
 typedef struct {
-  // pid
+  // Analyzer process pid
   uint pid;
-  //file correntemente in uso
+  // List of the files with stats relative to this analyzer
   list *mainList;
-  //file rimossi
+  // blacklist: files that have been removed from this analyzer which we should
+  // not include in the final stats
   list *deletedList;
 } analyzer;
 
-// Creates a fileWithStats and returns pointer to it - TESTED
-//
-// -------------------------------
-// TODO: ensure that **deleteAnalyzer** frees path and fs correctly
+// Creates an Analyzer and returns pointer to it - TESTED
 analyzer *constructorAnalyzer(uint pid) {
-  analyzer *a = malloc(sizeof(analyzer));
+  analyzer *a = (analyzer *)malloc(sizeof(analyzer));
   a->pid = pid;
   a->mainList = constructorListEmpty();
   a->deletedList = constructorListEmpty();
   if (DEBUGGING)
-    printf("Creating a new Analyzer instance @%p for Analyzer with pid %u\n", a, a->pid);
+    printf("Creating a new Analyzer instance @%p for Analyzer with pid %u\n", a,
+           a->pid);
   return a;
 }
 
@@ -50,17 +53,12 @@ analyzer *constructorAnalyzer(uint pid) {
 // TODO: seems ok but we need to test for memory leaks
 void deleteAnalyzer(analyzer *a) {
   if (DEBUGGING)
-    printf("Deleting Analyzer instance @%p for Analyzer with pid %u\n", a, a->pid);
+    printf("Deleting Analyzer instance @%p for Analyzer with pid %u\n", a,
+           a->pid);
   destructorList(a->mainList);
   destructorList(a->deletedList);
   free(a);
 }
-void printAnalyzer(analyzer *a){
-  printf("Analyzer pid : %u",a->pid);
-}
-/*
-int main(){
-  analyzer *a = constructorAnalyzer(33);
-  deleteAnalyzer(a);
-}*/
+
+void printAnalyzer(analyzer *a) { printf("Analyzer pid : %u", a->pid); }
 #endif

@@ -4,7 +4,7 @@
 
 #ifndef LIST_DATA_STRUCTURE_H
 #define LIST_DATA_STRUCTURE_H
-#include <stdio.h>  //print etc
+#include <stdio.h> //print etc
 /*  File where we define the structure of the list with all the fileWithStats
  *  nodes
 */
@@ -37,7 +37,7 @@ typedef struct {
 
 // Returns reference to new empty list
 list *constructorListEmpty() {
-  list *l = malloc(sizeof(list));
+  list *l = (list *)malloc(sizeof(list));
   l->count = 0;
   l->firstNode = NULL;
 }
@@ -102,22 +102,22 @@ fileWithStats *getFWSByIndex(list *lista, int index) {
 fileWithStats *getFWSByPath(list *list, char *path) {
   fwsNode *current = list->firstNode;
   while (current != NULL) {
-    fileWithStats * tmp = current->val;
-    if(tmp!=NULL){
-      if ( streq(tmp->path, path) ) {
+    fileWithStats *tmp = current->val;
+    if (tmp != NULL) {
+      if (streq(tmp->path, path)) {
         return tmp;
       }
     }
     current = current->nextNode;
   }
 }
-//returns reference to the actual node, pretty useless
+// returns reference to the actual node, pretty useless
 fwsNode *getNodeByPath(list *list, char *path) {
   fwsNode *current = list->firstNode;
   while (current != NULL) {
-    fileWithStats * tmp = current->val;
-    if(tmp!=NULL){
-      if ( streq(tmp->path, path) ) {
+    fileWithStats *tmp = current->val;
+    if (tmp != NULL) {
+      if (streq(tmp->path, path)) {
         return current;
       }
     }
@@ -186,7 +186,8 @@ void removeLast(list *list) {
 // If file is not present it is appended to the end of the list.
 // return 0=false new element non appended
 // return 1=true if  if new element is appended
-// ⚠️ After this you should deallocate the newData fileWithStats accordingly.
+// ⚠️ After this you should deallocate the newData fileWithStats
+// accordingly.
 bool updateFileData(list *list, uint id, fileWithStats *newData) {
   fwsNode *targetNode = getNodeByID(list, id);
   if (targetNode != NULL) {
@@ -200,39 +201,41 @@ bool updateFileData(list *list, uint id, fileWithStats *newData) {
   }
 }
 
-void updateFilePath(list *list,uint id,char* path){
+// Adds new chars to file path
+void updateFilePath(list *list, uint id, char *path) {
   fileWithStats *target = getFWSByID(list, id);
   if (target != NULL) {
-    char * oldPath = target->path;
-    char * tmp = malloc(strlen(oldPath)+strlen(oldPath));
-    strcpy(tmp,oldPath);
-    strcat(tmp,path);
+    char *oldPath = target->path;
+    char *tmp = (char *)malloc(strlen(oldPath) + strlen(path) + 1);
+    strcpy(tmp, oldPath);
+    strcat(tmp, path);
     target->path = tmp;
     free(oldPath);
   }
 }
-void removeElementByID(list *list, uint id){
-  fwsNode *target = getNodeByID(list,id);
-  if(target!=NULL){
+
+void removeElementByID(list *list, uint id) {
+  fwsNode *target = getNodeByID(list, id);
+  if (target != NULL) {
     fwsNode *prev = target->previousNode;
     fwsNode *next = target->nextNode;
     deleteFwsNode(target);
-    if(prev!=NULL)
+    if (prev != NULL)
       prev->nextNode = next;
-    if(next!=NULL)
+    if (next != NULL)
       next->previousNode = prev;
     list->count--;
   }
 }
-void removeElementByPath(list * list,char* path){
-  fwsNode *target = getNodeByPath(list,path);
-  if(target!=NULL){
+void removeElementByPath(list *list, char *path) {
+  fwsNode *target = getNodeByPath(list, path);
+  if (target != NULL) {
     fwsNode *prev = target->previousNode;
     fwsNode *next = target->nextNode;
     deleteFwsNode(target);
-    if(prev!=NULL)
+    if (prev != NULL)
       prev->nextNode = next;
-    if(next!=NULL)
+    if (next != NULL)
       next->previousNode = prev;
     list->count--;
   }

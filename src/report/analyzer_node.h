@@ -4,6 +4,7 @@
 
 // analyzer list node
 typedef struct analyzerNode_t {
+  //The analyzer of this node
   analyzer *a; // it's already in the heap anyway
   struct analyzerNode_t *nextNode;
   struct analyzerNode_t *previousNode;
@@ -18,7 +19,9 @@ analyzerNode *constructorAnalyzerNode(analyzer *a) {
   result->previousNode = NULL;
   result->nextNode = NULL;
   if (DEBUGGING)
-    printf("Creating a new AnalyzerNode instance @%p for Analyzer %p\n", result, a);
+    printf(
+        "Creating a new AnalyzerNode instance @%p for Analyzer %p w/ pid %d\n",
+        result, a, a->pid);
   return result;
 }
 
@@ -27,7 +30,7 @@ analyzerNode *constructorAnalyzerNode(analyzer *a) {
 // (does NOT delete the next and prevoius nodes otherwise it would cascade)
 void deleteAnalyzerNode(analyzerNode *a) {
   if (DEBUGGING)
-    printf("deleting AnalyzerNode @%p\n", a);
+    printf("deleting AnalyzerNode @%p (pid %d)\n", a, a->a->pid);
   deleteAnalyzer(a->a);
   free(a);
 }
