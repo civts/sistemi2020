@@ -208,6 +208,7 @@ void updateFilePath(list *list,uint id,char* path){
     strcpy(tmp,oldPath);
     strcat(tmp,path);
     target->path = tmp;
+    free(oldPath);
   }
 }
 void removeElementByID(list *list, uint id){
