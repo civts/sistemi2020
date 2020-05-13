@@ -16,6 +16,10 @@ uint caratteri totali
 #ifndef PACKET_CODES_H
 #define PACKET_CODES_H
 #define NEW_PACKET_CODE 0
+#define NEW_FILE_CODE 0
+#define NEW_FILE_CODE_P1 1
+#define NEW_FILE_CODE_P2 2
+#define DELETE_FILE_CODE 3 
 
 /*
 ------ 1 -------
@@ -23,8 +27,6 @@ uint caratteri totali
 uint -> lunghezza pathname
 pathname
 */
-#define DELETE_FILE_CODE 1
-
 #ifndef bool
 typedef unsigned char bool;
 #define false 0
