@@ -43,6 +43,7 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
       fileWithStats *file = constructorFWS(path, idFile, 0, NULL, isFromFolder);
       // printFileWithStats(file);
       append(a->mainList, file);
+      removeElementByID(a->deletedList,idFile,true);
     }
   }else{
     perror("aggiunta file fallita");
@@ -73,6 +74,7 @@ void got1stPathPartPacket(int pipe, byte *header,
       fileWithStats *file = constructorFWS(path, idFile, 0, NULL, isFromFolder);
       // printFileWithStats(file);
       append(a->incompleteList, file);
+      removeElementByID(a->deletedList,idFile,true);
     }
   }else{
     perror("aggiunta file p1 fallita");
@@ -93,12 +95,16 @@ void got2ndPathPartPacket(int pipe, byte *header,
     uint idFile = fromBytesToInt(dati + INT_SIZE);
     char *path = dati + (2 * INT_SIZE);
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
-    //fwsNode *nodeToUpdate = getNodeByID(a->incompleteList,idFile);
-    updateFilePath(a->incompleteList, idFile, path);
-    fwsNode *updatedNode = getNodeByID(a->incompleteList,idFile);
-    removeElementByID(a->incompleteList,idFile,false);
-    appendNode(a->incompleteList,updatedNode);
-    // printf("path %s",getFWSByID(a->mainList,idFile)->path);
+    if (a != NULL) {
+      //fwsNode *nodeToUpdate = getNodeByID(a->incompleteList,idFile);
+      updateFilePath(a->incompleteList, idFile, path);
+      fwsNode *updatedNode = getNodeByID(a->incompleteList,idFile);
+      removeElementByID(a->incompleteList,idFile,false);
+      appendNode(a->incompleteList,updatedNode);
+      // printf("path %s",getFWSByID(a->mainList,idFile)->path);
+    }else{
+        perror("analyzer non esistente\n");
+    }
   } else {
     perror("update del path fallito\n");
   }
@@ -126,7 +132,21 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
       numeri[i] = fromBytesToInt(dati+ 6*INT_SIZE+i*INT_SIZE);
     }
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
-    updateFileData(a->mainList,idFile,dimFile,totChars,numeri);
+    if (a != NULL) {
+      fileWithStats *isDeleted = getFWSByID(a->deletedList,idFile);
+      if(isDeleted==NULL){
+        fileWithStats *exist = getFWSByID(a->mainList,idFile);
+        if(exist!=NULL){
+          updateFileData(a->mainList,idFile,dimFile,totChars,numeri);
+        }else{
+            perror("file non esistente\n");
+          }
+      }else{
+          perror("file rimosso\n");
+        }
+    }else{
+        perror("analyzer non esistente\n");
+      }
   }else{
     perror("updateDelFileFallito\n");
   }
@@ -147,15 +167,19 @@ void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
     if (a != NULL) {
       // printAnalyzer(a);
-      removeElementByID(a->mainList, idFile,true);
+      fwsNode *removedNode = getNodeByID(a->mainList,idFile);
+      removeElementByID(a->mainList,idFile,false);
+      appendNode(a->deletedList,removedNode);
       // printAnalyzerList(analyzers);
       // printAnalyzer(a);
       // printList(a->mainList);
       // printf("mainlista :%p \n %d",a->mainList,(a->mainList)->count);
       // printf("mainlista :%d\n",(a->mainList)->count);
+    }else{
+        perror("analyzer non esistente\n");
     }
   } else {
-    perror("errore da banane\n");
+    perror("errore in eliminazione\n");
   }
   free(dati);
 }
@@ -199,7 +223,7 @@ int report(int argc, const char *argv[]) {
         break;
       }
     }
-    
+
   }
   return retCode;
 }
