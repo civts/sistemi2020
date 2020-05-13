@@ -125,14 +125,11 @@ void newFile(int pipeFromA,byte *header,analyzerList * analyzers){
   printf("dati : %u\n",dimDati);
   byte *dati = malloc(sizeof(byte)*dimDati);
   int rdDati = read(pipeFromA,dati,dimDati);
-  uint pid;
-  uint idFile;
-  bool isFromFolder = dati[INT_SIZE*2];
-  char* path = dati + ((2*INT_SIZE)+1);
-
   if (rdDati == dimDati){
-    pid = fromBytesToInt(dati);
-    idFile = fromBytesToInt(dati+INT_SIZE);
+    uint pid = fromBytesToInt(dati);
+    uint idFile = fromBytesToInt(dati+INT_SIZE);
+    bool isFromFolder = dati[INT_SIZE*2];
+    char* path = dati + ((2*INT_SIZE)+1);
     printf("pid %u\nidFile %u\n",pid,idFile);
     printf("path %s\n",path);
     analyzer* a = analyzerListGetAnalyzerByID(analyzers,pid);
@@ -163,9 +160,10 @@ void deleteFile(int pipeFromA,byte *header,analyzerList * analyzers){
   //printf("dati : %u\n",dimDati);
   byte *dati = malloc(sizeof(byte)*dimDati);
   int rdDati = read(pipeFromA,dati,dimDati);
-  uint pid;
-  uint idFile;
+
   if (rdDati == dimDati){
+    uint pid;
+    uint idFile;
     pid = fromBytesToInt(dati);
     idFile = fromBytesToInt(dati+INT_SIZE);
     //printf("pid %u\nidFile %u\n",pid,idFile);
@@ -215,7 +213,7 @@ int report(int argc, const char *argv[]) {
         case DELETE_FILE_CODE:
           deleteFile(pipeFromA,header,analyzers);
           break;
-          
+
       }
 
     }

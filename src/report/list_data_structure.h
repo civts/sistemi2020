@@ -209,6 +209,7 @@ void removeElementByID(list *list, uint id){
       prev->nextNode = next;
     if(next!=NULL)
       next->previousNode = prev;
+    list->count--;
   }
 }
 void removeElementByPath(list * list,char* path){
@@ -221,6 +222,7 @@ void removeElementByPath(list * list,char* path){
       prev->nextNode = next;
     if(next!=NULL)
       next->previousNode = prev;
+    list->count--;
   }
 }
 /*

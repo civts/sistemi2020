@@ -130,6 +130,7 @@ void analyzerListRemoveElementByID(analyzerList *analyzerList, uint pid) {
     if(next!=NULL)
       next->previousNode = prev;
     deleteAnalyzerNode(targetNode);
+    analyzerList->count--;
   } else {
     if (DEBUGGING)
       printf("Element with pid \"%u\" is not in this analyzerList so it was not "
