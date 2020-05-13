@@ -25,7 +25,7 @@
 // deleteAnalyzer            -> destructor
 typedef struct {
   // pid
-  int pid;
+  uint pid;
   //file correntemente in uso
   list *mainList;
   //file rimossi
@@ -36,13 +36,13 @@ typedef struct {
 //
 // -------------------------------
 // TODO: ensure that **deleteAnalyzer** frees path and fs correctly
-analyzer *constructorAnalyzer(int pid) {
+analyzer *constructorAnalyzer(uint pid) {
   analyzer *a = malloc(sizeof(analyzer));
   a->pid = pid;
   a->mainList = constructorListEmpty();
   a->deletedList = constructorListEmpty();
   if (DEBUGGING)
-    printf("Creating a new Analyzer instance @%p for Analyzer with pid %d\n", a, a->pid);
+    printf("Creating a new Analyzer instance @%p for Analyzer with pid %u\n", a, a->pid);
   return a;
 }
 
@@ -50,10 +50,13 @@ analyzer *constructorAnalyzer(int pid) {
 // TODO: seems ok but we need to test for memory leaks
 void deleteAnalyzer(analyzer *a) {
   if (DEBUGGING)
-    printf("Deleting Analyzer instance @%p for Analyzer with pid %d\n", a, a->pid);
+    printf("Deleting Analyzer instance @%p for Analyzer with pid %u\n", a, a->pid);
   destructorList(a->mainList);
   destructorList(a->deletedList);
   free(a);
+}
+void printAnalyzer(analyzer *a){
+  printf("Analyzer pid : %u",a->pid);
 }
 /*
 int main(){

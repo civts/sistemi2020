@@ -2,6 +2,7 @@
 #include "../utils.c"
 #include "./list_data_structure.h"
 #include "./report_utils.h"
+#include "./analyzer_list.h"
 #include <fcntl.h>
 #ifndef bool
 typedef unsigned char bool;
@@ -10,7 +11,10 @@ typedef unsigned char bool;
 #endif
 
 // Path to the named pipe
-const char *PATH_TO_REPORT_PIPE = "/tmp/myfifo";
+const char *PATH_TO_Q = "./Q";
+
+const char *PATH_TO_A = "./A";
+
 // How many bytes to read every time from the pipe
 const int BATCH_SIZE = 128;
 
@@ -114,7 +118,112 @@ void stampaSingoloFile(char *nomeFile, int dati[], int caratteriTot, int argc,
 
   printf("Caratteri totali: %u\n", caratteriTot);
 }
+//funzione che gestisce l'aggiunta di nuovi file NON FUNZIONANTE ANCORA
+void newFile(int pipeFromA,byte *header,analyzerList * analyzers){
+  printf("code : %u\n",header[0]);
+  int dimDati = fromBytesToInt(header+1);
+  printf("dati : %u\n",dimDati);
+  byte *dati = malloc(sizeof(byte)*dimDati);
+  int rdDati = read(pipeFromA,dati,dimDati);
+  uint pid;
+  uint idFile;
+  bool isFromFolder = dati[INT_SIZE*2];
+  char* path = dati + ((2*INT_SIZE)+1);
 
+  if (rdDati == dimDati){
+    pid = fromBytesToInt(dati);
+    idFile = fromBytesToInt(dati+INT_SIZE);
+    printf("pid %u\nidFile %u\n",pid,idFile);
+    printf("path %s\n",path);
+    analyzer* a = analyzerListGetAnalyzerByID(analyzers,pid);
+    if(a==NULL){
+      a = constructorAnalyzer(pid);
+      analyzerListAppend(analyzers,a);
+    }
+    //printAnalyzerList(analyzers);
+    //controllo di non aggiungere più volte lo stesso file
+    if(getNodeByID(a->mainList,idFile)==NULL){
+      //devo creare il file nella lista degli analyzer
+      //from folder da discutere
+      fileWithStats * file = constructorFWS(path,idFile,0,NULL,isFromFolder);
+      printFileWithStats(file);
+      append(a->mainList,file);
+    }
+  }else{
+    perror("errore da banane\n");
+  }
+  // perché qui non va avanti ?
+  //printAnalyzerList(analyzers);
+  //printf("bananare");
+  free(dati);
+}
+void deleteFile(int pipeFromA,byte *header,analyzerList * analyzers){
+  //printf("code : %u\n",header[0]);
+  int dimDati = fromBytesToInt(header+1);
+  //printf("dati : %u\n",dimDati);
+  byte *dati = malloc(sizeof(byte)*dimDati);
+  int rdDati = read(pipeFromA,dati,dimDati);
+  uint pid;
+  uint idFile;
+  if (rdDati == dimDati){
+    pid = fromBytesToInt(dati);
+    idFile = fromBytesToInt(dati+INT_SIZE);
+    //printf("pid %u\nidFile %u\n",pid,idFile);
+    analyzer* a = analyzerListGetAnalyzerByID(analyzers,pid);
+    if(a!=NULL){
+      //printAnalyzer(a);
+      removeElementByID(a->mainList,idFile);
+      //printAnalyzerList(analyzers);
+      //printAnalyzer(a);
+      printList(a->mainList);
+    }
+  }
+  free(dati);
+}
+// This is the function that implements report buisiness logic
+int report(int argc, const char *argv[]) {
+  int retCode = 0;
+  // This is where the state is stored: it contains the references to the
+  // "objects" representing the files and their stats.
+  analyzerList *analyzers = constructorAnalyzerListEmpty();
+
+  int pipeFromA = open(PATH_TO_A, O_RDONLY );
+  if (pipeFromA == -1) {
+    retCode = 1;
+    perror("No pipe A");
+  }
+  int pipeFromQ = open(PATH_TO_Q, O_RDONLY );
+  if (pipeFromQ == -1) {
+    retCode = 1;
+    perror("No pipe Q");
+  }
+  while (1) {
+    // lettura dalla pipeA sistemare in dinamica
+    byte header [INT_SIZE+1] = {'\0','\0','\0','\0','\0'};
+    int rdHeader = read(pipeFromA,header,INT_SIZE+1);
+    if (rdHeader == INT_SIZE+1){
+      switch(header[0]){
+        //NUOVO FILE
+        case NEW_FILE_CODE :
+          newFile(pipeFromA,header,analyzers);
+          break;
+
+        case NEW_FILE_CODE_P1:
+          break;
+        case NEW_FILE_CODE_P2:
+          break;
+        case DELETE_FILE_CODE:
+          deleteFile(pipeFromA,header,analyzers);
+          break;
+          
+      }
+
+    }
+    //lettura dalla pipeQ
+  }
+  return retCode;
+}
+/*
 // This is the function that implements report buisiness logic
 int report(int argc, const char *argv[]) {
   int retCode = 0;
@@ -159,6 +268,7 @@ int report(int argc, const char *argv[]) {
         printf("%c\n",pathToFile[j]);
       }
       */
+      /*
       switch (statusCode) {
       // nuovi dati per il file
       case NEW_PACKET_CODE: {
@@ -212,7 +322,7 @@ int report(int argc, const char *argv[]) {
   destructorList(mainList);
   return retCode;
 }
-
+*/
 int main(int argc, const char *argv[]) {
   int retCode = 0;
   if (contains(argc, argv, helpFlag)) {

@@ -86,7 +86,7 @@ void append(list *list, fileWithStats *fs) {
 
 // Returns node in the given position (starting from 0)
 // Returns NULL if not found
-fwsNode *getNodeByIndex(list *lista, int index) {
+fileWithStats *getFWSByIndex(list *lista, int index) {
   fwsNode *result = NULL;
   if (index >= 0 && index < lista->count) {
     result = lista->firstNode;
@@ -95,43 +95,55 @@ fwsNode *getNodeByIndex(list *lista, int index) {
       result = result->nextNode;
     }
   }
-  return result;
+  return result->val;
 }
 
-// Returns reference to node w/ given path or NULL
-fwsNode *getNodeWithPath(list *list, char *path) {
+// Returns reference to file  w/ given path or NULL
+fileWithStats *getFWSByPath(list *list, char *path) {
   fwsNode *current = list->firstNode;
   while (current != NULL) {
-    if (streq(current->val->path, path)) {
+    fileWithStats * tmp = current->val;
+    if(tmp!=NULL){
+      if ( streq(tmp->path, path) ) {
+        return tmp;
+      }
+    }
+    current = current->nextNode;
+  }
+}
+//returns reference to the actual node, pretty useless
+fwsNode *getNodeByPath(list *list, char *path) {
+  fwsNode *current = list->firstNode;
+  while (current != NULL) {
+    fileWithStats * tmp = current->val;
+    if(tmp!=NULL){
+      if ( streq(tmp->path, path) ) {
+        return current;
+      }
+    }
+    current = current->nextNode;
+  }
+}
+// return reference to file w/ give id
+fileWithStats *getFWSByID(list *list, uint id) {
+  fwsNode *current = list->firstNode;
+  while (current != NULL) {
+    if (current->val->id == id) {
+      return current->val;
+    }
+    current = current->nextNode;
+  }
+}
+// return reference to node w/ give id
+fwsNode *getNodeByID(list *list, uint id) {
+  fwsNode *current = list->firstNode;
+  while (current != NULL) {
+    if (current->val->id == id) {
       return current;
     }
     current = current->nextNode;
   }
 }
-
-// Removes the element with the specified path (first occourrence only).
-// Also handles its de-allocation.
-// TODO test!
-void removeElementByPath(list *list, char *path) {
-  if (DEBUGGING)
-    printf("Getting element with path \"%s\" for deletion\n", path);
-  fwsNode *targetNode = getNodeWithPath(list, path);
-  if (targetNode != NULL) {
-    if (DEBUGGING)
-      printf("Found element with path \"%s\", its @%p\n", path, targetNode);
-    fwsNode *prev = targetNode->previousNode;
-    fwsNode *next = targetNode->nextNode;
-    prev->nextNode = next;
-    next->previousNode = prev;
-    deleteFwsNode(targetNode);
-  } else {
-    if (DEBUGGING)
-      printf("Element with path \"%s\" is not in this list so it was not "
-             "deleted\n",
-             path);
-  }
-}
-
 // Removes first element from the fwsNodeList.
 // (and handles its de-allocation)
 void removeFirst(list *lista) {
@@ -145,7 +157,6 @@ void removeFirst(list *lista) {
     lista->count--;
   }
 }
-
 // Removes the last element from the list.
 // (and handles its de-allocation)
 void removeLast(list *list) {
@@ -171,7 +182,48 @@ void removeLast(list *list) {
     list->count--;
   }
 }
-
+// Adds the stats from newData to the right file in this list.
+// If file is not present it is appended to the end of the list.
+// return 0=false new element non appended
+// return 1=true if  if new element is appended
+// ⚠️ After this you should deallocate the newData fileWithStats accordingly.
+bool updateFileData(list *list, uint id, fileWithStats *newData) {
+  fwsNode *targetNode = getNodeByID(list, id);
+  if (targetNode != NULL) {
+    uint charsToAdd = newData->totalCharacters;
+    uint *occourrrences = newData->occorrenze;
+    addStatsToFWS(targetNode->val, charsToAdd, occourrrences);
+    return false;
+  } else {
+    append(list, newData);
+    return true;
+  }
+}
+void removeElementByID(list *list, uint id){
+  fwsNode *target = getNodeByID(list,id);
+  if(target!=NULL){
+    fwsNode *prev = target->previousNode;
+    fwsNode *next = target->nextNode;
+    deleteFwsNode(target);
+    if(prev!=NULL)
+      prev->nextNode = next;
+    if(next!=NULL)
+      next->previousNode = prev;
+  }
+}
+void removeElementByPath(list * list,char* path){
+  fwsNode *target = getNodeByPath(list,path);
+  if(target!=NULL){
+    fwsNode *prev = target->previousNode;
+    fwsNode *next = target->nextNode;
+    deleteFwsNode(target);
+    if(prev!=NULL)
+      prev->nextNode = next;
+    if(next!=NULL)
+      next->previousNode = prev;
+  }
+}
+/*
 // Adds the stats from newData to the right file in this list.
 // If file is not present it is appended to the end of the list.
 // return 0=false new element non appended
@@ -189,7 +241,7 @@ bool updateFileData(list *list, char *filePath, fileWithStats *newData) {
     return true;
   }
 }
-
+*/
 // Prints the list on stdOut TESTED✔️
 void printList(list *list) {
   fwsNode *cursor = list->firstNode;
@@ -198,42 +250,22 @@ void printList(list *list) {
     cursor = cursor->nextNode;
   }
 }
+
+#endif
 /*
-// main di prova per testare
+// main di prova per testarefwsNode
 int main(int c, char *argv[]) {
-  int retCode = 0;
-  char *prova = "GATTO\0";
-  int oc[256] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0}; // non li metto tutti, sei matto
-  fwsNode *fs = constructorListItem(prova, 20, oc, true, NULL, NULL);
-  printListItem(fs);
-  prova = "deleted\0";
-  oc[0] = -1;
-  printListItem(fs);
-  char *testo1 = "EL1";
-  fwsNode *f1 = constructorListItem(testo1, 20, oc, true, NULL, NULL);
-  printListItem(f1);
-  char *testo2 = "EL2";
-  fwsNode *f2 = constructorListItem(testo2, 20, oc, true, NULL, NULL);
-  printListItem(f2);
-  list *lista = malloc(sizeof(list));
-
-  // constructorListOne(lista,f1);
-  constructorListEmpty(lista);
-  append(lista, f1);
-  append(lista, f2);
-
-  printList(lista);
-  printf("%d\n", lista->count);
-  // listItem *f3 = getFirst(lista);
-  // printListItem(f3);
-  // removeLast(lista);
-  // removeLast(lista);
-  // removeLast(lista);
-  removeFirst(lista);
-  removeFirst(lista);
-  removeFirst(lista);
+  list * lista =  constructorListEmpty();
+  char * path = "patate\0";
+  append(lista, constructorFWS(path,1,0,NULL,false));
   printList(lista);
   printf("elementi della lista %d\n", lista->count);
-  return retCode;
+
+  //removeElementByPath(lista,path);
+  //printFileWithStats(getFWSByPath(lista,path));
+  //printFileWithStats(getFWSByIndex(lista,0));
+  //printFileWithStats(getFWSByID(lista,1));
+  //removeElementByID(lista,1);
+  removeElementByPath(lista,path);
+  return 0;
 }*/
-#endif

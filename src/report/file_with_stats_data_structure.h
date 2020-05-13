@@ -26,7 +26,7 @@
 typedef struct {
   // path to the file
   char *path;
-
+  uint id;
   // how many characters are present in this file
   uint totalCharacters;
 
@@ -42,15 +42,23 @@ typedef struct {
 //
 // -------------------------------
 // TODO: ensure that **deleteFWS** frees path and fs correctly
-fileWithStats *constructorFWS(char *path, uint totalCharacters,
+fileWithStats *constructorFWS(char *path, uint id,uint totalCharacters,
                               uint occorrenze[ASCII_LENGTH], bool fromFolder) {
   fileWithStats *fs = malloc(sizeof(fileWithStats));
   fs->path = malloc(strlen(path));
+  fs->id = id;
   strcpy(fs->path, path);
   fs->totalCharacters = totalCharacters;
-  int i;
-  for (i = 0; i < ASCII_LENGTH; i++) {
-    fs->occorrenze[i] = occorrenze[i];
+  if(occorrenze !=NULL){
+    int i;
+    for (i = 0; i < ASCII_LENGTH; i++) {
+      fs->occorrenze[i] = occorrenze[i];
+    }
+  }else{
+    int i;
+    for (i = 0; i < ASCII_LENGTH; i++) {
+      fs->occorrenze[i] = 0;
+    }
   }
   fs->fromFolder = fromFolder;
   if (DEBUGGING)
@@ -81,8 +89,9 @@ void addStatsToFWS(fileWithStats *fs, uint totCharsToAdd,
 
 // Prints the fileWithStats, just fore testing for now - TESTED
 void printFileWithStats(fileWithStats *fs) {
-  printf("%s\n", fs->path);
-  printf("%u\n", fs->totalCharacters);
+  printf("path : %s\n", fs->path);
+  printf("id %u\n",fs->id);
+  printf("totlchar %u\n", fs->totalCharacters);
   // lo tolgo solo per debug più veloce
   /*
   printf("%d\n",fs->totalCharacters);
@@ -91,6 +100,6 @@ void printFileWithStats(fileWithStats *fs) {
       printf("%d\n",fs->occorrenze[i]);
     }
     */
-  printf("%d\n", fs->fromFolder);
+  printf("from folder %u\n", fs->fromFolder);
 }
 #endif
