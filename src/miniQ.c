@@ -5,6 +5,7 @@
 #include <math.h>     // for ceil()
 #include <fcntl.h>    // for file descriptors
 #include <string.h>   // for strlen()
+#include "packets.h"
 #include "utils.c"
 
 #define NUM_OCCURENCES 256 // this should be un utils...
@@ -23,7 +24,7 @@ void  printOccurencesTemp(string, int[NUM_OCCURENCES]);
 void miniQ(string fileName, bool isInsideFolder, int numOfPortions, int portionOfFileToRead){
     if (portionOfFileToRead >= numOfPortions){
         // should never come here
-        printf("Error, what's that portion?");
+        fprintf(stderr, "Error, what's that portion?");
     } else {
         // check if file exists and it has some data
         long fileLength = getFileLength(fileName);
@@ -42,8 +43,6 @@ void miniQ(string fileName, bool isInsideFolder, int numOfPortions, int portionO
             // sendOccurencesToReport(fileName, isInsideFolder, numCharsInPortion, occurences);
             printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
 
-            // TODO check for this...
-            free(fileName);
         }        
 
         exit(0);
@@ -58,7 +57,7 @@ void sendOccurencesToReport(string fileName, bool isInsideFolder, int numCharInP
 
     if (fd == -1){
         // TODO if errors try again after a delay (set max number of attemps)
-        printf("Could not write packet in the pipe\n");
+        fprintf(stderr, "Could not write packet in the pipe\n");
     } else {
         // write encoded stream of bytes to the pipe
         int bufferSize;
@@ -134,7 +133,7 @@ int getOccurences(string fileName, long startPosition, long endPosition, uint ou
     fd = open(fileName, O_RDONLY);
 
     if (fd == -1){
-        printf("Error, can't open the file %s\n", fileName);
+        fprintf(stderr, "Error, can't open the file %s\n", fileName);
     } else {
         lseek(fd, startPosition, SEEK_SET);
 

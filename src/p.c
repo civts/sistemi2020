@@ -12,16 +12,17 @@
 
 int  p(pInstance*, int);
 int  generateNewQInstance(qInstance*, int, int);
-void waitForMessages(pInstance*);
-void waitForMessagesFromQ();
-void waitForMessagesFromController(pInstance*);
-int  processMessageFromQ(byte, byte*, int, pInstance*);
-int  processMessageFromController(byte, byte*, int, pInstance*);
+void waitForMessagesInP(pInstance*);
+void waitForMessagesInPFromQ(pInstance *);
+void waitForMessagesInPFromController(pInstance*);
+int  processMessageInPFromQ(byte, byte*, int, pInstance*);
+int  processMessageInPFromController(byte, byte*, int, pInstance*);
 
 int  processPNewFilePacket(byte[], int);
-int  processPRemoveFilePacket(byte[]);
+int  processPRemoveFilePacket(byte[], int);
 int  processPDeathPacket();
 int  processPNewValueForM(byte[], pInstance*);
+int  processPFileResults(byte[], int, pInstance*);
 
 qInstance *qInstances = NULL; // Q processes associated to this P
 int currM;
@@ -40,7 +41,7 @@ int p(pInstance *instanceOfMySelf, int _currM){
     }
 
     currM = _currM;
-    waitForMessages(instanceOfMySelf);
+    waitForMessagesInP(instanceOfMySelf);
 
     return returnCode;
 }
@@ -49,7 +50,14 @@ int generateNewQInstance(qInstance *newQ, int index, int currM){
     int returnCode = 0;
 
     if (pipe(newQ->pipePQ) != -1 && pipe(newQ->pipeQP) != -1){
+        // TODO check for error code
+        // make the pipes non blocking
+        fcntl(newQ->pipePQ[READ], F_SETFL, O_NONBLOCK);
+        fcntl(newQ->pipeQP[READ], F_SETFL, O_NONBLOCK);
+
         newQ->pid = fork();
+        newQ->currM = currM;
+        newQ->index = index;
 
         if (newQ->pid < 0){
             fprintf(stderr, "Found an error creating Q%d\n", index);
@@ -60,7 +68,7 @@ int generateNewQInstance(qInstance *newQ, int index, int currM){
             close(newQ->pipePQ[WRITE]);
             close(newQ->pipeQP[READ]);
 
-            q(currM, index, newQ->pipeQP, newQ->pipePQ);
+            q(newQ);
             exit(0); // just to be sure... it should not be necessary
         } else {
             // parent
@@ -75,19 +83,38 @@ int generateNewQInstance(qInstance *newQ, int index, int currM){
     return returnCode;
 }
 
-void waitForMessages(pInstance *instanceOfMySelf){
+// main worker: infinite loop to get messages
+void waitForMessagesInP(pInstance *instanceOfMySelf){
 
     while (true){
-        waitForMessagesFromQ();
-        waitForMessagesFromController(instanceOfMySelf);
+        waitForMessagesInPFromQ(instanceOfMySelf);
+        waitForMessagesInPFromController(instanceOfMySelf);
     }
 }
 
-void waitForMessagesFromQ(){
-    // check for done file and forward info to C
+// here the messages arrives always atomically, so we don't
+// need to check if the message is complete
+void waitForMessagesInPFromQ(pInstance *instanceOfMySelf){
+    int numBytesRead, dataSectionSize, offset;
+    byte packetHeader[1 + INT_SIZE];
+
+    int i;
+    for (i = 0; i < currM; i++){
+        numBytesRead  = read(qInstances[i].pipeQP[READ], packetHeader, 1 + INT_SIZE);
+
+        if (numBytesRead == (1 + INT_SIZE)){
+            dataSectionSize = fromBytesToInt(packetHeader + 1);
+            byte packetData[dataSectionSize];
+
+            numBytesRead  = read(qInstances[i].pipeQP[READ], packetData, dataSectionSize);
+            processMessageInPFromQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
+        }
+    }
 }
 
-void waitForMessagesFromController(pInstance *instanceOfMySelf){
+// here the messages can not be sent or received atomically
+// since the new file pacekt contains the full file path as string
+void waitForMessagesInPFromController(pInstance *instanceOfMySelf){
     int numBytesRead, dataSectionSize, offset;
     byte packetHeader[1 + INT_SIZE];
 
@@ -109,22 +136,32 @@ void waitForMessagesFromController(pInstance *instanceOfMySelf){
             }
         }
 
-        processMessageFromController(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
+        processMessageInPFromController(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
     }
 }
 
-int processMessageFromQ(byte packetCode, byte *packetData, int packetDataSize, pInstance *instanceOfMySelf){
-    return -1;
+int processMessageInPFromQ(byte packetCode, byte *packetData, int packetDataSize, pInstance *instanceOfMySelf){
+    int returnCode;
+    switch (packetCode){
+        case 4:
+            returnCode = processPFileResults(packetData, packetDataSize, instanceOfMySelf);
+            break;
+        default:
+            fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
+            returnCode = 1;
+    }
+
+    return returnCode;
 }
 
-int processMessageFromController(byte packetCode, byte *packetData, int packetDataSize, pInstance *instanceOfMySelf){
+int processMessageInPFromController(byte packetCode, byte *packetData, int packetDataSize, pInstance *instanceOfMySelf){
     int returnCode;
     switch (packetCode){
         case 0:
             returnCode = processPNewFilePacket(packetData, packetDataSize);
             break;
         case 1:
-            returnCode = processPRemoveFilePacket(packetData);
+            returnCode = processPRemoveFilePacket(packetData, packetDataSize);
             break;
         case 2:
             returnCode = processPDeathPacket();
@@ -133,7 +170,7 @@ int processMessageFromController(byte packetCode, byte *packetData, int packetDa
             returnCode = processPNewValueForM(packetData, instanceOfMySelf);
             break;
         default:
-            printf("Error, P received from C an unknown packet type %d\n", packetCode);
+            fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
             returnCode = 1;
     }
 
@@ -153,11 +190,23 @@ int processPNewFilePacket(byte packetData[], int packetDataSize){
     return 0;
 }
 
-int processPRemoveFilePacket(byte packetData[]){
-    // TODO (not now)
-    // currently we are not able to remove files during analysis
+// forward the message to delete a file to all its Qs
+int processPRemoveFilePacket(byte packetData[], int packetDataSize){
+    int returnCode = 0;
+    
+    int i;
+    for (i = 0; i < currM; i++){
+        if (forwardPacket(qInstances[i].pipePQ, 1, packetDataSize, packetData) < 0){
+            returnCode = 1;
+            fprintf(stderr, "Error trying to remove file from P to Q\n");
+        }
+    }
+
+    return returnCode;
 }
 
+// it sends a kill message to all its Qs and in the end
+// it kills also itself
 int processPDeathPacket(){
     int i, returnCode;
     for (i = 0; i < currM; i++){
@@ -171,7 +220,16 @@ int processPDeathPacket(){
     free(qInstances);
     printf("P is dead\n");
 
-    exit(0); // to exit from infinite loop in waitForMessages()
+    exit(0); // to exit from infinite loop in waitForMessagesInP()
+}
+
+int processPFileResults(byte packetData[], int packetDataSize, pInstance *instanceOfMySelf){
+    int returnCode = 0;
+    if (forwardPacket(instanceOfMySelf->pipePC, 4, packetDataSize, packetData) < 0){
+        returnCode = 1;
+    }
+
+    return returnCode;
 }
 
 // TODO: reassign files??
@@ -244,5 +302,5 @@ int processPNewValueForM(byte packetData[], pInstance *instanceOfMySelf){
     //     }
     // }
 
-    // waitForMessagesFromController(newPids, pipeFromC, newPipesToQ, newPipesFromQ, new_m);
+    // waitForMessagesInPFromController(newPids, pipeFromC, newPipesToQ, newPipesFromQ, new_m);
 }

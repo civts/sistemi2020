@@ -20,7 +20,16 @@ typedef struct{
     pid_t pid;
     int pipePQ[2];
     int pipeQP[2];
+    int currM; // number of parts in which to split the file
+    int index; // index of the file part this Q needs to analyze
 } qInstance;
+
+typedef struct{
+    pid_t pid;
+    int pipeMiniQQ[2];
+    int currM; // number of parts in which to split the file
+    int index; // index of the file part this Q needs to analyze
+} miniQInstance;
 
 // forward a packet without looking inside it's content. Useful for new filepath
 int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSection){
@@ -35,9 +44,11 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 
 // Here there is a list of packets we transfer inside
 // the components of the analyzer by packetCode:
-// 1:
+// 0: new file
+// 1: remove file packet
 // 2: death packet
 // 3: notify new M value
+// 4: file results (backpropagation)
 
 // Send death packet to a certain file descriptor
 // this causes the exit from the infinite loop of

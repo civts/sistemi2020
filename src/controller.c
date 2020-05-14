@@ -43,6 +43,11 @@ int generateNewPInstance(pInstance *newP, int index, int newM){
     int returnCode = 0;
 
     if (pipe(newP->pipeCP) != -1 && pipe(newP->pipePC) != -1){
+        // TODO check for error -1
+        // make the pipes non blocking
+        fcntl(newP->pipeCP[READ], F_SETFL, O_NONBLOCK);
+        fcntl(newP->pipePC[READ], F_SETFL, O_NONBLOCK);
+
         newP->pid = fork();
 
         if (newP->pid < 0){
