@@ -5,9 +5,11 @@
 #define INT_SIZE 4
 #define true 1
 #define false 0
+#define MINIQ_MAX_BUFFER_SIZE 4096
 
 typedef unsigned int uint;
 typedef unsigned char byte;
+typedef unsigned long long ull;
 typedef char* string;
 typedef int bool;
 

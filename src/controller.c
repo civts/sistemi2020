@@ -154,8 +154,8 @@ void wait_a_bit(){
 }
 
 // int main(){
-//     string files[2] = {"prova1.txt", "prova2.txt"};
-//     controller(2, 2, files, 2);
+//     string files[3] = {"prova1.txt", "prova2.txt", "p.c"};
+//     controller(2, 2, files, 3);
 //     fflush(stdout);
 //     wait_a_bit(); 
 

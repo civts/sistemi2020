@@ -132,6 +132,10 @@ int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* inst
     memcpy(pathName, packetData + 1, packetDataSize - 1);
     pathName[packetDataSize - 1] = '\0';
 
+    miniQInstance newMiniQ;
+    newMiniQ.currM = instanceOfMySelf->currM;
+    newMiniQ.index = instanceOfMySelf->index;
+
     // create
     pid_t f;
     f = fork();
@@ -139,9 +143,9 @@ int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* inst
         fprintf(stderr, "Error, creating miniQ\n");
     } else if (f == 0){
         printf("Created miniQ\n");
-        miniQ(pathName, isInsideFolder, instanceOfMySelf->currM, instanceOfMySelf->index);
+        miniQ(pathName, isInsideFolder, &newMiniQ);
     } else {
-        // TODO - append this miniQ to the list of miniQs
+        // TODO - append newMiniQ to the list of miniQs
     }
 
     return 0;
