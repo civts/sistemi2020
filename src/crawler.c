@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include "utils.c"
+#include "datastructures/namesList.c"
 
 #define READ 0
 #define WRITE 1
@@ -13,21 +14,16 @@
 // TODO: check stinky lengths
 #define MAX_SIZE_OF_FOLDER_NAME 256
 
-void printFileList(string fileList[], int numFiles){
-    int i;
-    for (i=0; i<numFiles; i++){
-        printf("File %d: %s\n", i+1, fileList[i]);
-    }
-}
 
 void addFolderToFileName(string out, string folder, string fileName){
     strcpy(out, folder);
     strcat(out, fileName);
 }
 
-int getOutputFromLSRec(int readDescriptor, string fileList[]){
+int getOutputFromLSRec(int readDescriptor, NamesList *fileList){
     FILE *pipeToRead = fdopen(readDescriptor, "r");
     int numOfFileNamesProcessed = 0;
+    
     // TODO: check if 256 as limit can be a problem for file names
     string buffer = (string)malloc(SIZE_OF_BUFFER_TO_READ_PIPE);
     string currentFolder = (string)malloc(MAX_SIZE_OF_FOLDER_NAME);
@@ -38,7 +34,8 @@ int getOutputFromLSRec(int readDescriptor, string fileList[]){
         // check if the string ends with ":"
         if (isDirectory(stringRead, ':', &out) && out==0){
             // that's a new foldah
-            // printf("I found folder  '%s'\n", stringRead);
+            //  printf("I found folder  '%s'\n", stringRead);
+
             if(stringRead[strlen(stringRead)-2]!='/'){
                 // we must add / in place of :
                 stringRead[strlen(stringRead)-1]='/';
@@ -47,12 +44,17 @@ int getOutputFromLSRec(int readDescriptor, string fileList[]){
                 stringRead[strlen(stringRead)-1]='\0';
             }
             strcpy(currentFolder, stringRead);  
+        
         } else {
             // if it ends with '/' it's a folder, then we'll inspect it later 
             if(!isDirectory(stringRead, '/', &out) && out==0){
                 // that's a file
-                fileList[numOfFileNamesProcessed] = (string) malloc(strlen(stringRead) + strlen(currentFolder) + 1);
-                addFolderToFileName(fileList[numOfFileNamesProcessed], currentFolder, stringRead);
+                string completeName = (string) malloc(strlen(stringRead) + strlen(currentFolder) + 1);
+                addFolderToFileName(completeName, currentFolder, stringRead);
+
+                Node *newNode = constructorNode(completeName);
+                append(fileList, newNode);
+
                 numOfFileNamesProcessed++;
             }
             
@@ -66,7 +68,7 @@ int getOutputFromLSRec(int readDescriptor, string fileList[]){
 // Error codes:
 // 1: it was not possible to fork a child
 // 2: it was not possibile to inspect the folder
-int crawler(string folder, string fileList[], int* outNumFilesFound){
+int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
     *outNumFilesFound = -1; // in case of error;
     int returnCode = 0;
     string lsArgs[] = {"ls", folder, "-p", "-R", NULL};
@@ -99,7 +101,17 @@ int crawler(string folder, string fileList[], int* outNumFilesFound){
     return returnCode;
 }
 
+// TODO: spostare in utils.c
 bool isValidFile(string filename){
     struct stat buffer;
     return (stat(filename, &buffer) == 0);
 }
+
+// int main(){
+//     NamesList *list = constructorNamesList();
+//     int *n = malloc(sizeof(int));
+//     crawler("./", list, n);
+//     printNamesList(list);
+
+//     return 0;
+// }

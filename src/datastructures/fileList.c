@@ -68,6 +68,7 @@ Node *constructorFileNode(fileState *newFileState){
 void printNode(Node *node){
     // printf("Node: %p\n", node);
     printFileState(node->data);
+    print("==================");
 }
 
 void deleteNode(Node *node){
@@ -131,6 +132,10 @@ void *append(FileNameList *list, struct Node *newNode){
     
     list->last = newNode;
     list->number_of_nodes++;
+}
+
+void appendName(){
+    
 }
 
 /**
