@@ -11,6 +11,23 @@ const char punctuationChars[] = {
     ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
 };
 
+void printAnalyzers(analyzerList *aList) {
+  long totFiles = 0;
+  int analyzers = 0;
+  analyzerNode *n = aList->firstNode;
+  while (n != NULL) {
+    fwsNode *fws = n->a->mainList->firstNode;
+    while (fws != NULL) {
+      totFiles++;
+      fws = fws->nextNode;
+    }
+    n = n->nextNode;
+    analyzers++;
+  }
+  printf("Analyzed %d files with %d analyzers", totFiles, analyzers);
+  //TODO continue printing stats for each analyzer
+}
+
 void stampaGruppi(uint dati[], uint caratteriTot) {
   char c;
   int i = 0;

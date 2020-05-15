@@ -1,5 +1,6 @@
 #include "../utils.c"
 #include "./file_with_stats_list.h"
+#include "int_list.h"
 #include <stdio.h>  //print etc
 #include <stdlib.h> // malloc & free
 #ifndef ANALYZER_DATA_STRUCTURE_H
@@ -21,7 +22,7 @@
 // Props:
 // - id: Analyzer process pid
 // - mainList: List of the files with stats relative to this analyzer
-// - deletedList: files that have been removed from this analyzer which we
+// - deletedList: ids of the files that have been removed from this analyzer which we
 // should not include in the final stats (blacklist)
 //
 // Methods for this:
@@ -34,7 +35,7 @@ typedef struct {
   list *mainList;
   // blacklist: files that have been removed from this analyzer which we should
   // not include in the final stats
-  list *deletedList;
+  intList *deletedList;
   //lista di file parziali
   list *incompleteList;
 } analyzer;
@@ -44,7 +45,7 @@ analyzer *constructorAnalyzer(uint pid) {
   analyzer *a = (analyzer *)malloc(sizeof(analyzer));
   a->pid = pid;
   a->mainList = constructorListEmpty();
-  a->deletedList = constructorListEmpty();
+  a->deletedList = constructorIntList();
   a->incompleteList = constructorListEmpty();
   if (DEBUGGING)
     printf("Creating a new Analyzer instance @%p for Analyzer with pid %u\n", a,
@@ -59,7 +60,7 @@ void deleteAnalyzer(analyzer *a) {
     printf("Deleting Analyzer instance @%p for Analyzer with pid %u\n", a,
            a->pid);
   destructorList(a->mainList);
-  destructorList(a->deletedList);
+  destructorIntList(a->deletedList);
   destructorList(a->incompleteList);
   free(a);
 }

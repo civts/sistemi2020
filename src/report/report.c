@@ -18,7 +18,6 @@ const char *PATH_TO_PIPE = "./myfifo";
 // How many bytes to read every time from the pipe
 const int BATCH_SIZE = 128;
 
-
 // analyzer (eventually creating the fws if needed)
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
@@ -50,6 +49,9 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   }
   free(dati);
 }
+
+// Callback for A_NEW_FILE_INCOMPLETE_PART1 packets.
+//(2nd half of a file path)
 void got1stPathPartPacket(int pipe, byte *header,
                           analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
@@ -81,6 +83,7 @@ void got1stPathPartPacket(int pipe, byte *header,
   }
   free(dati);
 }
+
 // Callback for A_NEW_FILE_INCOMPLETE_PART2 packets.
 //(2nd half of a file path)
 void got2ndPathPartPacket(int pipe, byte *header,
@@ -168,8 +171,8 @@ void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
     if (a != NULL) {
       // printAnalyzer(a);
       fwsNode *removedNode = getNodeByID(a->mainList,idFile);
-      removeElementByID(a->mainList,idFile,false);
-      appendNode(a->deletedList,removedNode);
+      removeElementByID(a->mainList,idFile,true);
+      addToIntList(a->deletedList,idFile);
       // printAnalyzerList(analyzers);
       // printAnalyzer(a);
       // printList(a->mainList);
