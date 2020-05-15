@@ -136,6 +136,7 @@ void helpMode(){
     printf("3: usage mode not supported\n\n");
 }
 
+// TODO - this should be executed inside a child
 void interactiveMode(){
     const char analyzeString[] = "analyze";
     const char exitString[] = "exit";
@@ -163,10 +164,7 @@ void interactiveMode(){
         }
         printf("> ");
         scanf("%s", command);
-    }
-    
-    
-
+    }    
 }
 
 void staticMode(int numOfP, int numOfQ, int numOfFiles, string listFilePaths[]){

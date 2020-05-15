@@ -41,7 +41,7 @@ void miniQ(string fileName, bool isInsideFolder, miniQInstance *instanceOfMySelf
             int numCharsInPortion = getBigOccurences(fileName, startPosition, endPosition, occurences);
             // sendOccurencesToReport(fileName, isInsideFolder, numCharsInPortion, occurences);
             printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
-
+            // TODO - inform q that miniQ has finished through instanceOfMySelf->pipeMiniQQ
         }        
 
         exit(0);
@@ -49,7 +49,6 @@ void miniQ(string fileName, bool isInsideFolder, miniQInstance *instanceOfMySelf
 }
 
 // TODO atm I'm doing output on a normal file, change the it to the nominal pipe according to report.c
-// TODO should we include a list of possibile nominal pipes to try if the first does not work?
 // send char occureces to the report through a nominal pipe
 void sendOccurencesToReport(string fileName, bool isInsideFolder, int numCharInPortion, ull occurences[NUM_OCCURENCES]){
     int fd = open ("file.txt", O_WRONLY|O_CREAT, 0644);
@@ -69,8 +68,7 @@ void sendOccurencesToReport(string fileName, bool isInsideFolder, int numCharInP
     }
 }
 
-// TODO write the packet format in a doc
-// encode an occurences packet to send to the record through the nominal
+// Encode an occurences packet to send to the record through the nominal
 // return the number of bytes in the packet
 byte* encodePacketForReport(string fileName, bool isInsideFolder, int numCharInPortion, ull occurences[NUM_OCCURENCES], int* outBufferSize){
     int lenFileName = strlen(fileName);
@@ -116,7 +114,7 @@ byte* encodePacketForReport(string fileName, bool isInsideFolder, int numCharInP
     return outBuffer;
 }
 
-// giving the starting and ending offset in the file, it gets the number of
+// Giving the starting and ending offset in the file, it gets the number of
 // occurences for each char. It returns the number of byte read.
 int getOccurences(string fileName, long startPosition, long endPosition, ull outOccurences[NUM_OCCURENCES]){
     // TODO check for NULL pointer -> maybe we should allocate less memory and read more times

@@ -106,14 +106,14 @@ void waitForMessagesInPFromQ(pInstance *instanceOfMySelf){
             dataSectionSize = fromBytesToInt(packetHeader + 1);
             byte packetData[dataSectionSize];
 
-            numBytesRead  = read(qInstances[i].pipeQP[READ], packetData, dataSectionSize);
+            numBytesRead = read(qInstances[i].pipeQP[READ], packetData, dataSectionSize);
             processMessageInPFromQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
         }
     }
 }
 
 // here the messages can not be sent or received atomically
-// since the new file pacekt contains the full file path as string
+// since the new file packet contains the full file path as string
 void waitForMessagesInPFromController(pInstance *instanceOfMySelf){
     int numBytesRead, dataSectionSize, offset;
     byte packetHeader[1 + INT_SIZE];

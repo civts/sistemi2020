@@ -43,7 +43,7 @@ int generateNewPInstance(pInstance *newP, int index, int newM){
     int returnCode = 0;
 
     if (pipe(newP->pipeCP) != -1 && pipe(newP->pipePC) != -1){
-        // TODO check for error -1
+        // TODO check for error -1 for fcntl
         // make the pipes non blocking
         fcntl(newP->pipeCP[READ], F_SETFL, O_NONBLOCK);
         fcntl(newP->pipePC[READ], F_SETFL, O_NONBLOCK);
@@ -92,7 +92,7 @@ int shapeTree(int newN, int newM){
 
     // allocate the space necessary for new_n
     pInstances = (pInstance*) realloc(pInstances, newN * sizeof(pInstance));
-
+    
     if (pInstances == NULL){
         fprintf(stderr, "Not enough space to allocate new P table\n");
         returnCode = 1;
