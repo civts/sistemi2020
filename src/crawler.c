@@ -107,11 +107,16 @@ bool isValidFile(string filename){
     return (stat(filename, &buffer) == 0);
 }
 
-// int main(){
-//     NamesList *list = constructorNamesList();
-//     int *n = malloc(sizeof(int));
-//     crawler("./", list, n);
-//     printNamesList(list);
+int main(){
+    NamesList *list = constructorNamesList();
+    int *n = malloc(sizeof(int));
+    crawler("./", list, n);
+    printNamesList(list);
+    Node *no = list->first;
+    // while(no!=NULL){
+    //     printf("node: %s\n", (no->name) );
+    //     no = no->next;
+    // }
 
-//     return 0;
-// }
+    return 0;
+}

@@ -16,16 +16,20 @@ typedef struct {
     int counter;
 } NamesList;
 
+void printNode(Node*);
 
 Node *constructorNode(string fileName){
     Node *node = (Node *)malloc(sizeof(Node));
     node->name = (string)malloc(sizeof(fileName));
     strcpy(node->name, fileName);
     node->next = node->prev = NULL;
+    // printf("constructed node %s\n", node->name);
+    // printNode(node);
+    return node;
 }
 
 void printNode(Node *node){
-    printf("FileName: %s\n", node->name);
+    printf("File: %s \n", node->name);
 }
 
 void deleteNode(Node *node){
@@ -51,8 +55,7 @@ void printNamesList(NamesList *list){
     } else {
         struct Node *element = list->first; 
         int i;
-        for(i=0; i<list->counter; i++){
-            printf("Node: %3d \n", i);
+        while(element!=NULL){
             printNode(element);
             element = element->next;
         }
@@ -117,7 +120,7 @@ void removeByName(NamesList *list, string fileName){
     Node *toRemove = getNodeByName(list, fileName);
     
     if(toRemove == NULL){
-        printf("No Node found with fileName %s\n", fileName);
+        printf("There is no file %s in the list\n", fileName);
     } else {
         if(list->first == toRemove){
             list->first = toRemove->next;
@@ -132,6 +135,7 @@ void removeByName(NamesList *list, string fileName){
         }
         deleteNode(toRemove);
         list->counter--;
+        printf("%s deleted.\n", fileName);
     }
 }
 

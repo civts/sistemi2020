@@ -64,29 +64,39 @@ int getFilePathsFromArgv(string argv[], NamesList *fileList, int numPaths){
 
 int main(int argc, char *argv[]){
     int returnCode = 0;
+    filePaths = constructorNamesList();
 
     if (argc == 1){
         printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
         returnCode = 1;
-    } else if (argc <= 4){
-        if (isValidMode(argv[1]) && argv[1][1] == 'h'){
-            helpMode();
-        } else if((isValidMode(argv[1]) && argv[1][1] == 'i')){
-            interactiveMode();
-        } else {
-            printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
-            returnCode = 1;
-        }
+    } else if ( isValidMode(argv[1]) ){
+        modeSwitcher(argv[1][1], argc, argv);
     } else {
-        // parsing argv
-        if (!isValidMode(argv[1])){
-            printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
-            returnCode = 1;
-        } else {
-            char mode = argv[1][1]; // -i, -s, -h
-            returnCode = modeSwitcher(mode, argc, argv);
-        }
+        printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
+        returnCode = 1;
     }
+    
+    // else if (argc <= 4){
+    //     if (isValidMode(argv[1]) && argv[1][1] == 'h'){
+    //         // Case -h
+    //         helpMode();
+    //     } else if((isValidMode(argv[1]) && argv[1][1] == 'i')){
+    //         // Case -i
+    //         interactiveMode();
+    //     } else {
+    //         printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
+    //         returnCode = 1;
+    //     }
+    // } else {
+    //     // Case -s
+    //     if (!isValidMode(argv[1])){
+    //         printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
+    //         returnCode = 1;
+    //     } else {
+    //         char mode = argv[1][1]; // -i, -s, -h
+    //         returnCode = modeSwitcher(mode, argc, argv);
+    //     }
+    // }
 
     return returnCode;
 }
@@ -98,30 +108,35 @@ int modeSwitcher(char mode, int argc, char *argv[]){
     int returnCode = 0;
 
     switch (mode){
-        // TODO: in switch(mode) è inutile il caso mode="-h" ora come ora
+
         case 'h':
             helpMode();
             break;
-        case 'i':
-            filePaths = constructorNamesList();
+        case 'i':            
             interactiveMode();
             break;
         case 's':
-            filePaths = constructorNamesList(); 
-            // TODO use strol/stroll for parsing integer values
-            n = atoi(argv[2]);
-            m = atoi(argv[3]);
-
-            // get file paths with the crawler
-            numOfFiles = getFilePathsFromArgv(argv, filePaths, argc-4);
-
-            if (n==0 || m==0){
-                printf("Error: specify numeric non-zero values for n and m\n");
-                returnCode = 2;
+            if(argc <= 4){
+                printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
+                returnCode = 1;
             } else {
-                staticMode(n, m, numOfFiles, filePaths);
+                
+                // TODO use strol/stroll for parsing integer values
+                n = atoi(argv[2]);
+                m = atoi(argv[3]);
+
+                // get file paths with the crawler
+                numOfFiles = getFilePathsFromArgv(argv, filePaths, argc-4);
+
+                if (n==0 || m==0){
+                    printf("Error: specify numeric non-zero values for n and m\n");
+                    returnCode = 2;
+                } else {
+                    staticMode(n, m, numOfFiles, filePaths);
+                }
             }
             break;
+
         default:
             printf("Error: mode not supported\n");
             returnCode = 3;
@@ -131,16 +146,26 @@ int modeSwitcher(char mode, int argc, char *argv[]){
 }
 
 void helpMode(){
-    printf("Help mode\n\n");
-    printf("Usages:\n");
-    printf("-i: interactive mode\n");
-    printf("-s: static mode\n");
-    printf("-h: help mode\n\n");
+    string help_message =   "Help mode\n\n"
+                            "Usages:\n"
+                            "-i: interactive mode\n"
+                            "\tInteractive mode commands:\n\n"
+                            "\t+_name_fi/fo_ to add a file/folder to the list\n"
+                            "\t-_name_file_  to remoove a file from the list\n"
+                            "\tn=_value_     to set the value of n\n"
+                            "\tm=_value_     to set the value of m\n"
+                            "\ts             to see the list of files at the current moment\n"
+                            "\tanalyze       to start the analisys\n"
+                            "\texit          to exit from the process\n\n"
+                            "-s: static mode\n"
+                            "\tmust insert arguments: n, m and at least one file/folder\n\n"
+                            "-h: help mode\n\n"
+                            "Error codes:\n"
+                            "1: missing arguments\n"
+                            "2: n and m are not numeric non-zero values\n"
+                            "3: usage mode not supported\n\n";
 
-    printf("Error codes:\n");
-    printf("1: missing arguments\n");
-    printf("2: n and m are not numeric non-zero values\n");
-    printf("3: usage mode not supported\n\n");
+    printf("%s", help_message);
 }
 
 // TODO - this should be executed inside a child
@@ -150,35 +175,51 @@ void interactiveMode(){
 
     printf("Interactive mode\n");
 
-    char command[5000]; // TODO change to fit max path length on linux
+    char command[MINIQ_MAX_BUFFER_SIZE];
+
     printf("> ");
     scanf("%s", command);
     while (strcmp(command, exitString) != 0){
         if (strcmp(command, analyzeString) == 0){
             // start analyzing process
             // controller(n, m, filePaths, numOfFiles);
+            
             controller("interactive");
             printf("Start analysis\n");
+
         } else if (command[0] == '+'){
+            
             int *j = malloc(sizeof(int));
-            // TODO: how to set wittly this dimension?
-            string new = malloc(5000);
-            strcpy(new,command + 1);
-            if(isDirectory(new, '/', j)){
-                crawler(new, filePaths, j);
-            } else if(isValidFile(new)) {
-                appendName(filePaths, new);
+            
+            if(isDirectory(command+1, '/', j)){
+                crawler(command+1, filePaths, j);
+            } else if(isValidFile(command+1)) {
+                appendName(filePaths, command+1);
             } else {
-                printf("File or folder desn't exist!\n");
+                printf("File/folder inserted desn't exist!\n");
             }
-            printf("Now the filelist is:\n");
+            printf("Now the file-list is:\n");
             printNamesList(filePaths);
+
         } else if (command[0] == '-'){
             printf("Remove file %s\n", command + 1);
+
+            removeByName(filePaths, command+1);
+
+            printf("Now the file-list is:\n");
+            printNamesList(filePaths);
         } else if (command[0] == 'n'){
             printf("Change n to %s\n", command + 2);
+
+            n=atoi(command+2);
+            printf("Now n=%d\n", n);
+
         } else if (command[0] == 'm'){
             printf("Change m to %s\n", command + 2);
+
+            m=atoi(command+2);
+            printf("Now m=%d\n", m);
+
         } else if (command[0] == 's'){
             printNamesList(filePaths);
         } else {
