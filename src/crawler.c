@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include "utils.c"
 
 #define READ 0
@@ -98,8 +99,7 @@ int crawler(string folder, string fileList[], int* outNumFilesFound){
     return returnCode;
 }
 
-
-// TODO make a child and call ls on file with exec
 bool isValidFile(string filename){
-    return true;
+    struct stat buffer;
+    return (stat(filename, &buffer) == 0);
 }

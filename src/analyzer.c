@@ -49,7 +49,7 @@ int getFilePathsFromArgv(string argv[], string fileLists[], int numPaths){
             int outNewFiles = 0;
             crawler(argv[i + padding], fileLists + numFiles, &outNewFiles);
             numFiles += outNewFiles;
-        } else if (out ==0 ){
+        } else if ( isValidFile(argv[i + padding]) && out == 0 ){
             fileLists[numFiles] = (string) malloc(strlen(argv[i + padding]) + 1);
             strcpy(fileLists[numFiles], argv[i + padding]);
             numFiles++;
