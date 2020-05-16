@@ -2,6 +2,7 @@
 #define __UTILS_H__
 
 #include <string.h>
+#include <sys/stat.h>
 #define INT_SIZE 4
 #define true 1
 #define false 0
@@ -66,6 +67,13 @@ bool isDirectory(string path, char endingChar, int *out){
 
     return isDirectory;
 }
+
+
+bool isValidFile(string filename){
+    struct stat buffer;
+    return (stat(filename, &buffer) == 0);
+}
+
 
 long min_l(long a, long b){
     return a < b ? a : b;

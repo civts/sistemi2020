@@ -3,24 +3,19 @@
 #include <stdlib.h>
 #include "utils.c"
 #include "crawler.c"
-// #include "controller.c"
+#include "packets.h"
+#include "controller.c"
 
-// TODO : ELIMINA
-void controller(string mode){
-    printf("Controller avviato in modalità: %s\n", mode);
-}
+#define READ 0
+#define WRITE 1
 
+typedef struct{
+    pid_t pid;
+    int pipeAC[2];
+    int pipeCA[2];
+} ControllerInstance;
 
-// Usages:
-// -i: interactive mode
-// -s: static mode
-// -h: help mode
-
-// Error codes:
-// 1: missing arguments
-// 2: n and m are not numeric non-zero values
-// 3: usage mode not supported
-
+ControllerInstance *controllerInstance;
 NamesList *filePaths;
 int numOfFiles = 0, n = 0, m = 0;
 
@@ -31,6 +26,7 @@ void staticMode(int, int, int, NamesList *);
 
 bool isValidMode(string);
 int getFilePathsFromArgv(string[], NamesList*, int);
+bool checkParameters();
 
 // check if the mode is a two char string, with the
 // first char being '-'
@@ -75,28 +71,6 @@ int main(int argc, char *argv[]){
         printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
         returnCode = 1;
     }
-    
-    // else if (argc <= 4){
-    //     if (isValidMode(argv[1]) && argv[1][1] == 'h'){
-    //         // Case -h
-    //         helpMode();
-    //     } else if((isValidMode(argv[1]) && argv[1][1] == 'i')){
-    //         // Case -i
-    //         interactiveMode();
-    //     } else {
-    //         printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
-    //         returnCode = 1;
-    //     }
-    // } else {
-    //     // Case -s
-    //     if (!isValidMode(argv[1])){
-    //         printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
-    //         returnCode = 1;
-    //     } else {
-    //         char mode = argv[1][1]; // -i, -s, -h
-    //         returnCode = modeSwitcher(mode, argc, argv);
-    //     }
-    // }
 
     return returnCode;
 }
@@ -182,10 +156,10 @@ void interactiveMode(){
     while (strcmp(command, exitString) != 0){
         if (strcmp(command, analyzeString) == 0){
             // start analyzing process
-            // controller(n, m, filePaths, numOfFiles);
+            if(checkParameters()){
+                printf("Start analysis\n");
+            }
             
-            controller("interactive");
-            printf("Start analysis\n");
 
         } else if (command[0] == '+'){
             
@@ -225,7 +199,7 @@ void interactiveMode(){
         } else {
             // command not supported
         }
-        printf("> ");
+        printf("\n> ");
         scanf("%s", command);
     }    
 }
@@ -234,5 +208,129 @@ void staticMode(int numOfP, int numOfQ, int numOfFiles, NamesList * listFilePath
     printf("Static mode\n");
     // printf("Files to process:\n");
     // printFileList(listFilePaths, numOfFiles);
-    // controller(numOfP, numOfQ, listFilePaths, true);
+}
+
+bool checkParameters(){
+    
+    if (n==0 || m==0){
+        printf("Error: specify numeric non-zero values for n and m\n");
+        return false;
+    } else if(filePaths->counter == 0){
+        printf("Error: specify at least one file/folder\n");
+        return false;
+    }
+    return true;
+}
+
+
+/**
+ * Generate an "empty" instance of controller, this method is to be used everytime.
+ */
+int generateNewControllerInstance(){
+    controllerInstance = (ControllerInstance *)malloc(sizeof(ControllerInstance));
+    int returnCode = 0;
+
+
+    if (pipe(controllerInstance->pipeAC) != -1 && pipe(controllerInstance->pipeCA) != -1){
+        // TODO check for error -1 for fcntl
+        // make the pipes non blocking
+        fcntl(controllerInstance->pipeAC[READ], F_SETFL, O_NONBLOCK);
+        fcntl(controllerInstance->pipeCA[READ], F_SETFL, O_NONBLOCK);
+
+        controllerInstance->pid = fork();
+
+        if (controllerInstance->pid < 0){
+            fprintf(stderr, "Found an error creating the controllerInstance\n");
+            returnCode = 2;
+        } else if (controllerInstance->pid == 0){
+            // child: new instance of Controller
+            fprintf(stderr, "controllerInstance created\n");
+            close(controllerInstance->pipeAC[WRITE]);
+            close(controllerInstance->pipeCA[READ]);
+
+            // TODO: ricreare il costruttore di controller.
+            // TODO: inserire l'istanza di se stesso come parametro
+            // TODO: creare i metodi per aggiornare n, m e la lista di files
+            // controller(controllerInstance);
+            exit(0);
+        } else {
+            // parent
+            close(controllerInstance->pipeAC[READ]);
+            close(controllerInstance->pipeCA[WRITE]);
+        }
+    } else {
+        fprintf(stderr, "Found an error creting pipes to controllerInstance\n");
+        returnCode = 1;
+    }
+
+    return returnCode;
+}
+
+/**
+ * Notifies the controller that a new file has been added.
+ */
+int processNewFile(byte packetData[], int packetDataSize){
+    // int i, returnCode = 0;
+    // for (i = 0; i < currM; i++){
+    //     returnCode = forwardPacket(qInstances[i].pipePQ, 0, packetDataSize, packetData);
+    //     if (returnCode < 0){
+    //         fprintf(stderr, "Could not forward file packet to Q\n");
+    //     }
+    // }
+
+    return 0;
+}
+
+/**
+ * Notifies the controller that a file has to be removed
+ */
+int processRemoveFile(byte packetData[], int packetDataSize){
+    int returnCode = 0;
+    
+    // int i;
+    // for (i = 0; i < currM; i++){
+    //     if (forwardPacket(qInstances[i].pipePQ, 1, packetDataSize, packetData) < 0){
+    //         returnCode = 1;
+    //         fprintf(stderr, "Error trying to remove file from P to Q\n");
+    //     }
+    // }
+
+    return returnCode;
+}
+
+/**
+ * Notifies the controller that exit command has been pressed.
+ * Provokes a waterfall effect tht kills every process.
+ */
+int processExit(){
+    // int i, returnCode;
+    // for (i = 0; i < currM; i++){
+    //     returnCode = sendDeathPacket(qInstances[i].pipePQ);
+    //     if (returnCode == 1){
+    //         // error killing the process Q[i]
+    //         // we should try to kill the process manually
+    //     }
+    // }
+
+    // free(qInstances);
+    // printf("P is dead\n");
+
+    exit(0); // to exit from infinite loop in waitForMessagesInP()
+}
+
+
+/**
+ * Notifies the controller that value of N has been changed.
+ */
+int processNewValueForN(byte packetData[], pInstance *instanceOfMySelf){
+    
+    return 0;
+}
+
+/**
+ * Notifies the controller that value of M has been changed.
+ */
+int processNewValueForM(byte packetData[], pInstance *instanceOfMySelf){
+    
+    return 0;
 }

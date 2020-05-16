@@ -4,7 +4,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
 #include "utils.c"
 #include "datastructures/namesList.c"
 
@@ -101,22 +100,16 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
     return returnCode;
 }
 
-// TODO: spostare in utils.c
-bool isValidFile(string filename){
-    struct stat buffer;
-    return (stat(filename, &buffer) == 0);
-}
+// int main(){
+//     NamesList *list = constructorNamesList();
+//     int *n = malloc(sizeof(int));
+//     crawler("./", list, n);
+//     printNamesList(list);
+//     Node *no = list->first;
+//     // while(no!=NULL){
+//     //     printf("node: %s\n", (no->name) );
+//     //     no = no->next;
+//     // }
 
-int main(){
-    NamesList *list = constructorNamesList();
-    int *n = malloc(sizeof(int));
-    crawler("./", list, n);
-    printNamesList(list);
-    Node *no = list->first;
-    // while(no!=NULL){
-    //     printf("node: %s\n", (no->name) );
-    //     no = no->next;
-    // }
-
-    return 0;
-}
+//     return 0;
+// }
