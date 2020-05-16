@@ -23,11 +23,11 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   int rdDati = read(pipe, dati, dimDati);
-  if(rdDati==dimDati){
+  if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
     bool isFromFolder = dati[INT_SIZE * 2];
-    char* path = dati+2*INT_SIZE+1;
+    char *path = dati + 2 * INT_SIZE + 1;
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
     if (a == NULL) {
       a = constructorAnalyzer(pid);
@@ -42,9 +42,9 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
       fileWithStats *file = constructorFWS(path, idFile, 0, NULL, isFromFolder);
       // printFileWithStats(file);
       append(a->mainList, file);
-      removeElementByID(a->deletedList,idFile,true);
+      removeElementByID(a->deletedList, idFile, true);
     }
-  }else{
+  } else {
     perror("aggiunta file fallita");
   }
   free(dati);
@@ -52,16 +52,15 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
 
 // Callback for A_NEW_FILE_INCOMPLETE_PART1 packets.
 //(2nd half of a file path)
-void got1stPathPartPacket(int pipe, byte *header,
-                          analyzerList *analyzers) {
+void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   int rdDati = read(pipe, dati, dimDati);
-  if(rdDati==dimDati){
+  if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
     bool isFromFolder = dati[INT_SIZE * 2];
-    char* path = dati+2*INT_SIZE+1;
+    char *path = dati + 2 * INT_SIZE + 1;
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
     if (a == NULL) {
       a = constructorAnalyzer(pid);
@@ -76,9 +75,9 @@ void got1stPathPartPacket(int pipe, byte *header,
       fileWithStats *file = constructorFWS(path, idFile, 0, NULL, isFromFolder);
       // printFileWithStats(file);
       append(a->incompleteList, file);
-      removeElementByID(a->deletedList,idFile,true);
+      removeElementByID(a->deletedList, idFile, true);
     }
-  }else{
+  } else {
     perror("aggiunta file p1 fallita");
   }
   free(dati);
@@ -86,8 +85,7 @@ void got1stPathPartPacket(int pipe, byte *header,
 
 // Callback for A_NEW_FILE_INCOMPLETE_PART2 packets.
 //(2nd half of a file path)
-void got2ndPathPartPacket(int pipe, byte *header,
-                          analyzerList *analyzers) {
+void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
   // printf("dati : %u\n",dimDati);
@@ -99,14 +97,14 @@ void got2ndPathPartPacket(int pipe, byte *header,
     char *path = dati + (2 * INT_SIZE);
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
     if (a != NULL) {
-      //fwsNode *nodeToUpdate = getNodeByID(a->incompleteList,idFile);
+      // fwsNode *nodeToUpdate = getNodeByID(a->incompleteList,idFile);
       updateFilePath(a->incompleteList, idFile, path);
-      fwsNode *updatedNode = getNodeByID(a->incompleteList,idFile);
-      removeElementByID(a->incompleteList,idFile,false);
-      appendNode(a->incompleteList,updatedNode);
+      fwsNode *updatedNode = getNodeByID(a->incompleteList, idFile);
+      removeElementByID(a->incompleteList, idFile, false);
+      appendNode(a->incompleteList, updatedNode);
       // printf("path %s",getFWSByID(a->mainList,idFile)->path);
-    }else{
-        perror("analyzer non esistente\n");
+    } else {
+      perror("analyzer non esistente\n");
     }
   } else {
     perror("update del path fallito\n");
@@ -122,7 +120,7 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   int rdDati = read(pipe, dati, dimDati);
-  if(rdDati ==dimDati){
+  if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
     uint m = fromBytesToInt(dati + 2 * INT_SIZE);
@@ -131,28 +129,29 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
     uint totChars = fromBytesToInt(dati + 5 * INT_SIZE);
     uint numeri[ASCII_LENGTH];
     int j;
-    for(j=0;j<ASCII_LENGTH;j++){
-      numeri[i] = fromBytesToInt(dati+ 6*INT_SIZE+i*INT_SIZE);
+    for (j = 0; j < ASCII_LENGTH; j++) {
+      numeri[i] = fromBytesToInt(dati + 6 * INT_SIZE + i * INT_SIZE);
     }
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
     if (a != NULL) {
-      fileWithStats *isDeleted = getFWSByID(a->deletedList,idFile);
-      if(isDeleted==NULL){
-        fileWithStats *exist = getFWSByID(a->mainList,idFile);
-        if(exist!=NULL){
-          updateFileData(a->mainList,idFile,dimFile,totChars,numeri);
-        }else{
-            perror("file non esistente\n");
-          }
-      }else{
-          perror("file rimosso\n");
+      fileWithStats *isDeleted = getFWSByID(a->deletedList, idFile);
+      if (isDeleted == NULL) {
+        fileWithStats *exist = getFWSByID(a->mainList, idFile);
+        if (exist != NULL) {
+          updateFileData(a->mainList, idFile, dimFile, totChars, numeri);
+        } else {
+          perror("file non esistente\n");
         }
-    }else{
-        perror("analyzer non esistente\n");
+      } else {
+        perror("file rimosso\n");
       }
-  }else{
+    } else {
+      perror("analyzer non esistente\n");
+    }
+  } else {
     perror("updateDelFileFallito\n");
   }
+  free(dati);
 }
 
 void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
@@ -170,16 +169,16 @@ void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
     analyzer *a = analyzerListGetAnalyzerByPid(analyzers, pid);
     if (a != NULL) {
       // printAnalyzer(a);
-      fwsNode *removedNode = getNodeByID(a->mainList,idFile);
-      removeElementByID(a->mainList,idFile,true);
-      addToIntList(a->deletedList,idFile);
+      fwsNode *removedNode = getNodeByID(a->mainList, idFile);
+      removeElementByID(a->mainList, idFile, true);
+      addToIntList(a->deletedList, idFile);
       // printAnalyzerList(analyzers);
       // printAnalyzer(a);
       // printList(a->mainList);
       // printf("mainlista :%p \n %d",a->mainList,(a->mainList)->count);
       // printf("mainlista :%d\n",(a->mainList)->count);
-    }else{
-        perror("analyzer non esistente\n");
+    } else {
+      perror("analyzer non esistente\n");
     }
   } else {
     perror("errore in eliminazione\n");
@@ -199,7 +198,7 @@ int report(int argc, const char *argv[]) {
     perror("No pipe");
   }
   while (pipe != -1) {
-    // lettura dalla pipeA sistemare in dinamica
+    // Reading new packet and taking appropriate action
     byte header[INT_SIZE + 1];
     int rdHeader = read(pipe, header, INT_SIZE + 1);
     if (rdHeader == INT_SIZE + 1) {
@@ -225,8 +224,21 @@ int report(int argc, const char *argv[]) {
         gotDeleteFilePacket(pipe, header, analyzers);
         break;
       }
+      if (system("clear")) {
+        printf("\n----------------------------------------\n");
+      }
+      // Print right recap info based on argv
+      if (argc == 1) {
+        printRecapCompact(analyzers);
+      } else if (contains(argc, argv, verboseFlag)) {
+        printRecapVerbose(analyzers, contains(argc, argv, groupFlag));
+      } else {
+        // Should never get here if args are valid
+        perror("Arguments are not valid, please use --help for reference");
+        retCode = 1;
+        break;
+      }
     }
-
   }
   return retCode;
 }
