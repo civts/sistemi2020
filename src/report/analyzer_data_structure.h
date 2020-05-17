@@ -112,6 +112,8 @@ void analyzerAddFile(analyzer * a,fwsList *l, fileWithStats *fs){
       fwsListAppend(l, fs);
       //rimuovo dalla lista dei file rimossi
       fwsListRemoveElementByID(a->deletedList, fs->id, true);
+    }else{
+      destructorFWS(fs);
     }
 }
 
