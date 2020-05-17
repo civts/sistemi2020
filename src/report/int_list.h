@@ -67,7 +67,7 @@ void intListAppend(intList * l, int value){
   if (intListIsEmpty(l)) {
     l->firstNode = v;
   } else {
-    analyzer *cursor = l->firstNode;
+    intNode *cursor = l->firstNode;
     while (cursor->nextNode != NULL) {
       cursor = cursor->nextNode;
     }

@@ -15,15 +15,14 @@ const char punctuationChars[] = {
 void printFirstInfoLine(analyzerList *aList);
 // Default print function (no additional argv).
 void printRecapCompact(analyzerList *aList);
-//Print function for the -v flag and possibly -g.
+// Print function for the -v flag and possibly -g.
 void printRecapVerbose(analyzerList *aList, bool shouldGroup);
 // Prints a signle file (you need to specify if you want to have letters grouped
 void printSingleFile(fileWithStats *f, bool group);
-//PRInts a progressbar numbers from 0 to 100 ?
+// PRInts a progressbar numbers from 0 to 100 ?
 void printProgressBar(uint percentage);
-//print percentage
+// print percentage
 void printPercentage(uint a, uint b);
-
 
 // Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
 void printFirstInfoLine(analyzerList *aList) {
@@ -37,7 +36,7 @@ void printFirstInfoLine(analyzerList *aList) {
   }
   printf("Analyzed %u files", totFiles);
   if (totAnalyzers > 1) {
-    printf(" with %d analyzers",totAnalyzers);
+    printf(" with %d analyzers", totAnalyzers);
   }
   printf(":\n");
 }
@@ -49,12 +48,14 @@ void printFirstInfoLine(analyzerList *aList) {
 //  ....
 //  total characters read: 16432 over 56600 (POTENZIALMENTE PROGRESSBAR)
 // 50 % complete
-//TESTED
+// TESTED
 void printRecapCompact(analyzerList *aList) {
   printFirstInfoLine(aList);
   analyzer *current = aList->firstNode;
-  uint az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead,totalChars;
-  az = AZ = digits = spaces = punctuation = otherChars = totalChars = totalCharsRead = 0;
+  uint az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead,
+      totalChars;
+  az = AZ = digits = spaces = punctuation = otherChars = totalChars =
+      totalCharsRead = 0;
   while (current != NULL) {
     fileWithStats *cursor = current->mainList->firstNode;
     while (cursor != NULL) {
@@ -91,11 +92,11 @@ void printRecapCompact(analyzerList *aList) {
     }
     current = current->nextNode;
   }
-  printf(
-      "a-z: %u\nA-Z: %u\ndigits: %u\npunctuation: %u\nspace: %u\nother: "
-      "%u\n\nTotal characters read: %u over %u\n",
-      az, AZ, digits, punctuation, spaces, otherChars, totalCharsRead,totalChars);
-  printPercentage(totalCharsRead,totalChars);
+  printf("a-z: %u\nA-Z: %u\ndigits: %u\npunctuation: %u\nspace: %u\nother: "
+         "%u\n\nTotal characters read: %u over %u\n",
+         az, AZ, digits, punctuation, spaces, otherChars, totalCharsRead,
+         totalChars);
+  printPercentage(totalCharsRead, totalChars);
 }
 
 // Print function for the -v flag and possibly -g.
@@ -156,12 +157,11 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
   }
 }
 
-
-// Prints a signle file (you need to specify if you want to have letters grouped
-// or
-// not). If group is false it prints occourrences of each letter, else clusters.
+// Prints a single file (you need to specify if you want to have letters grouped
+// or not). If group is false it prints occourrences of each letter, else
+// clusters.
 void printSingleFile(fileWithStats *f, bool group) {
-  printf("---------------%s---------------\n", f->path);
+  printf("---------------%s---------------\n", trimStringToLength(f->path, 70));
   short i;
   uint *oc = f->occorrenze;
   uint thisaz, thisAZ, thisDigits, thisSpaces, thisPunct, otherChars;
@@ -205,16 +205,47 @@ void printSingleFile(fileWithStats *f, bool group) {
            thisAZ, thisDigits, thisPunct, thisSpaces);
   }
   printf("others: %d\n", otherChars);
-  printf("\nTotal characters read: %u over %u\n", totalCharsRead,totalChars);
-  printPercentage(totalCharsRead,totalChars);
+  printf("\nTotal characters read: %u over %u\n", totalCharsRead, totalChars);
+  printPercentage(totalCharsRead, totalChars);
 }
 
-//prints something like this ? 
+// prints something like this ?
 // |||||||||||||||||||\
 // or just percentage a over b % of completion da sistemare i decimali da nascondere
-void printPercentage(uint a, uint b){
-  float percentage = (a==0 || b==0) ? 0 : (float)a/(float)b *100;
+void printPercentage(uint a, uint b) {
+  float percentage = (a == 0 || b == 0) ? 0 : (float)a / (float)b * 100;
   printf("\n");
-  printf("%f %% complete\n",percentage);
+  printf("%f %% complete\n", percentage);
 }
+
+// Print function for when the user specifies the --only flag. Accepts the
+// analyzers list + list of paths of the files and a bool to group or not.
+void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
+                        bool group) {
+  int i;
+  // for each path I search it across the analyzers and print it if found
+  for (i = 0; i < pathsLen; i++) {
+    bool printed = false;
+    char *path = paths[i];
+    analyzer *analyzer = analyzers->firstNode;
+    while (analyzer != NULL && !printed) {
+      fileWithStats *fws = analyzer->mainList->firstNode;
+      while (fws != NULL) {
+        if (streq(fws->path, path)) {
+          printSingleFile(fws, group);
+          printed = true;
+        }
+        fws = fws->nextNode;
+      }
+      analyzer = analyzer->nextNode;
+    }
+    if (!printed) {
+      char *msg = "File with path ";
+      strcat(msg, trimStringToLength(path, 80));
+      strcat(msg, "was not found\n");
+      perror(msg);
+    }
+  }
+}
+
 #endif

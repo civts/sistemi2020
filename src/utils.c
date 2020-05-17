@@ -40,11 +40,12 @@ void fromIntToBytes(uint value, byte out[]) {
 }
 
 // Util function for knowing if two strings are the same TESTED✔️
-bool streq(const char *p1,const char *p2) { return !strcmp(p1, p2); }
+bool streq(const char *p1, const char *p2) { return !strcmp(p1, p2); }
 
-// Returns if the array of strings [pool] contains the given option. TESTED✔️
+// Returns if the array of strings [pool] contains the given option.
+// TESTED✔️
 // (useful for checking that params are correct)
-bool contains(int poolLength,const char *pool[],const char *option) {
+bool contains(int poolLength, const char *pool[], const char *option) {
   int i;
   bool found = false;
   for (i = 0; i < poolLength; i++)
@@ -54,4 +55,31 @@ bool contains(int poolLength,const char *pool[],const char *option) {
     }
   return found;
 }
+
+// Ensures the given string is long at most maxLen. If it is longer the middle
+// part is cut out and three dots are inserted instead. Please use maxLen >= 6
+// (else it returns src). TESTED✔️
+char *trimStringToLength(char *src, int maxLen) {
+  int pathLen = strlen(src);
+  char *trimmedPath;
+  if (pathLen > maxLen && maxLen >= 6) {
+    char tp[maxLen + 1];
+    int i, split = maxLen / 2 - 3;
+    for (i = 0; i < split; i++) {
+      tp[i] = src[i];
+    }
+    for (i = split; i < split + 3; i++) {
+      tp[i] = '.';
+    }
+    for (i = split + 3; i < maxLen; i++) {
+      tp[i] = src[pathLen - (maxLen - i)];
+    }
+    tp[maxLen] = '\0';
+    trimmedPath = tp;
+  } else {
+    trimmedPath = src;
+  }
+  return trimmedPath;
+}
+
 #endif

@@ -18,7 +18,6 @@ const char *PATH_TO_PIPE = "./myfifo";
 // How many bytes to read every time from the pipe
 const int BATCH_SIZE = 128;
 
-
 // analyzer (eventually creating the fws if needed)
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers);
 // Callback for A_NEW_FILE_INCOMPLETE_PART1 packets.
@@ -33,7 +32,6 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers);
 void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers);
 // This is the function that implements report buisiness logic
 int report(int argc, const char *argv[]);
-
 
 // analyzer (eventually creating the fws if needed)
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
@@ -186,9 +184,22 @@ int report(int argc, const char *argv[]) {
         printf("\n----------------------------------------\n");
       }
       // Print right recap info based on argv
-      
+
       if (argc == 1) {
         printRecapCompact(analyzers);
+      } else if (contains(argc, argv, onlyFlag)) {
+        // Get file paths
+        int firstPathIdx = 2 + streq(argv[1], groupFlag) ? 1 : 0;
+        int pathsLen = argc - firstPathIdx;
+        char *paths[pathsLen];
+        short i;
+        //(I am sure of the format of the data because agv went through
+        // argsAreValid)
+        for (i = 0; i < pathsLen; i++) {
+          paths[i] = argv[i + firstPathIdx];
+        }
+        printSelectedFiles(analyzers, pathsLen, paths,
+                           contains(argc, argv, groupFlag));
       } else if (contains(argc, argv, verboseFlag)) {
         printRecapVerbose(analyzers, contains(argc, argv, groupFlag));
       } else {
