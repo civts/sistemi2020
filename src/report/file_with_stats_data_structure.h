@@ -23,7 +23,8 @@
 // constructorFWS       -> constructor
 // addStatsToFWS        -> add new data (from the other parts of this file)
 // deleteFWS            -> destructor
-typedef struct {
+// FileWithStats list node
+typedef struct fwsNode_t {
   // path to the file
   char *path;
   uint id;
@@ -34,22 +35,30 @@ typedef struct {
   // array where in position i we count how many chars w/ ASCII code i are in
   // the file
   uint occorrenze[ASCII_LENGTH];
-
   // if this file was analyzed because in a folder (for display purposes)
   bool fromFolder;
+  struct fwsNode_t *nextNode;
+  struct fwsNode_t *previousNode;
 } fileWithStats;
 
+
 // Creates a fileWithStats and returns pointer to it - TESTED
-fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
-                              uint occorrenze[ASCII_LENGTH], bool fromFolder) {
+fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,uint occorrenze[ASCII_LENGTH], bool fromFolder);
+// Destructor for fileWithStats
+void destructorFWS(fileWithStats *fs) ;
+// Adds new stats to this fileWithStats
+void fwsUpdateFileData(fileWithStats *fs, uint totChars,uint totCharsToAdd,uint occorrenze[ASCII_LENGTH]); 
+//appends the path
+void fwsUpdateFilePath(fileWithStats *fs,char * path);
+
+// Creates a fileWithStats and returns pointer to it - TESTED
+fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,uint occorrenze[ASCII_LENGTH], bool fromFolder) {
   fileWithStats *fs = (fileWithStats *)malloc(sizeof(fileWithStats));
   fs->path = (char *)malloc(strlen(path));
   fs->id = id;
   strcpy(fs->path, path);
   fs->totalCharacters = totalCharacters;
-
   fs->readCharacters = 0;
-
   if (occorrenze != NULL) {
     int i;
     for (i = 0; i < ASCII_LENGTH; i++) {
@@ -62,6 +71,8 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
     }
   }
   fs->fromFolder = fromFolder;
+  fs->previousNode = NULL;
+  fs->nextNode = NULL;
   if (DEBUGGING)
     printf("Creating a new FWS instance @%p for file w/ path %s\n", fs, path);
   return fs;
@@ -69,7 +80,7 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
 
 // Destructor for fileWithStats
 // TODO: seems ok but we need to test for memory leaks
-void deleteFWS(fileWithStats *fs) {
+void destructorFWS(fileWithStats *fs) {
   if (DEBUGGING)
     printf("Deleting FWS instance @%p of file w/ path %s\n", fs, fs->path);
   free(fs->path);
@@ -77,31 +88,42 @@ void deleteFWS(fileWithStats *fs) {
 }
 
 // Adds new stats to this fileWithStats
-void addStatsToFWS(fileWithStats *fs, uint totChars,uint totCharsToAdd,
+void  fwsUpdateFileData(fileWithStats *fs, uint totCharsFile,uint totCharsToAdd,
                    uint occorrenze[ASCII_LENGTH]) {
   if (DEBUGGING)
     printf("Adding new stats to FWS object of file %s\n", fs->path);
-
-  fs->totalCharacters += totChars;
+  //totale dei caratteri del file
+  fs->totalCharacters = totCharsFile;
+  //sommo la quantità letta in questa porzione
   fs->readCharacters += totCharsToAdd;
   int i;
   for (i = 0; i < ASCII_LENGTH; i++) {
     fs->occorrenze[i] += occorrenze[i];
   }
 }
+//append the path to fws
+void fwsUpdateFilePath(fileWithStats *fs,char * path){
+  char *oldPath = fs->path;
+  char *tmp = (char *)malloc(strlen(oldPath) + strlen(path) + 1);
+  strcpy(tmp, oldPath);
+  strcat(tmp, path);
+  fs->path = tmp;
+  free(oldPath);
+};
 // Prints the fileWithStats, just fore testing for now - TESTED
-void printFileWithStats(fileWithStats *fs) {
-  printf("path : %s\n", fs->path);
-  printf("id %u\n", fs->id);
-  printf("totlchar %u\n", fs->totalCharacters);
+void fwsPrint(fileWithStats *fs) {
+  printf("fws path: %s\n", fs->path);
+  printf("fws id: %u\n", fs->id);
+  printf("fws totalCharacters: %u\n", fs->totalCharacters);
   // lo tolgo solo per debug più veloce
+  printf("fws readCharacters: %u\n",fs->readCharacters);
+  
   /*
-  printf("%d\n",fs->totalCharacters);
-    int i;
-    for(i=0;i<256;i++){
-      printf("%d\n",fs->occorrenze[i]);
-    }
-    */
-  printf("from folder %u\n", fs->fromFolder);
+  int i;
+  for(i=0;i<256;i++){
+    printf("fws char:'%c' number:%u\n",i,fs->occorrenze[i]);
+  }
+  */
+  printf("fws from folder: %u\n", fs->fromFolder);
 }
 #endif

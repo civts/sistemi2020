@@ -1,31 +1,64 @@
 #include "../packet_codes.h"
 #include "../utils.c"
-#include "./file_with_stats_list.h"
+//#include "./file_with_stats_list.h"
+//#include "./analyzer_list.h"
 #include "./report_utils.h"
 #include <fcntl.h>
-#ifndef REPORT_PRINT_FUNCTIONS
-#define REPORT_PRINT_FUNCTIONS
+#ifndef REPORT_PRINT_FUNCTIONS_H
+#define REPORT_PRINT_FUNCTIONS_H
 
 const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
 const char punctuationChars[] = {
     ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
 };
+// Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
+void printFirstInfoLine(analyzerList *aList);
+// Default print function (no additional argv).
+void printRecapCompact(analyzerList *aList);
+//Print function for the -v flag and possibly -g.
+void printRecapVerbose(analyzerList *aList, bool shouldGroup);
+// Prints a signle file (you need to specify if you want to have letters grouped
+void printSingleFile(fileWithStats *f, bool group);
+//PRInts a progressbar numbers from 0 to 100 ?
+void printProgressBar(uint percentage);
+//print percentage
+void printPercentage(uint a, uint b);
+
+
+// Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
+void printFirstInfoLine(analyzerList *aList) {
+  uint totFiles = 0;
+  int totAnalyzers = 0;
+  analyzer *current = aList->firstNode;
+  while (current != NULL) {
+    totFiles += current->mainList->count;
+    current = current->nextNode;
+    totAnalyzers++;
+  }
+  printf("Analyzed %u files", totFiles);
+  if (totAnalyzers > 1) {
+    printf(" with %d analyzers",totAnalyzers);
+  }
+  printf(":\n");
+}
 
 // Default print function (no additional argv). Should look ilke this:
 //  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
 //  a-z: 2109
 //  A-Z: 42
 //  ....
-//  total characters: 16432
+//  total characters read: 16432 over 56600 (POTENZIALMENTE PROGRESSBAR)
+// 50 % complete
+//TESTED
 void printRecapCompact(analyzerList *aList) {
   printFirstInfoLine(aList);
-  analyzerNode *n = aList->firstNode;
-  long unsigned az, AZ, digits, spaces, punctuation, otherChars, totalChars;
-  az = AZ = digits = spaces = punctuation = otherChars = 0;
-  while (n != NULL) {
-    fwsNode *cursor = n->a->mainList->firstNode;
+  analyzer *current = aList->firstNode;
+  uint az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead,totalChars;
+  az = AZ = digits = spaces = punctuation = otherChars = totalChars = totalCharsRead = 0;
+  while (current != NULL) {
+    fileWithStats *cursor = current->mainList->firstNode;
     while (cursor != NULL) {
-      fileWithStats *fws = cursor->val;
+      fileWithStats *fws = cursor;
       short i;
       uint *oc = fws->occorrenze;
       uint thisaz, thisAZ, thisDigits, thisSpaces, thisPunct;
@@ -50,17 +83,19 @@ void printRecapCompact(analyzerList *aList) {
         thisPunct += oc[punctuationChars[i]];
       }
       punctuation += thisPunct;
-      otherChars += fws->totalCharacters - thisaz - thisAZ - thisDigits -
+      otherChars += fws->readCharacters - thisaz - thisAZ - thisDigits -
                     thisPunct - thisSpaces;
-      totalChars = fws->totalCharacters;
+      totalCharsRead = fws->readCharacters;
+      totalChars += fws->totalCharacters;
       cursor = cursor->nextNode;
     }
-    n = n->nextNode;
+    current = current->nextNode;
   }
   printf(
-      "a-z: %lu\nA-Z: %lu\ndigits: %lu\npunctuation: %lu\nspace: %lu\nother: "
-      "%lu\n\nTotal charcters: %lu\n",
-      az, AZ, digits, punctuation, spaces, otherChars, totalChars);
+      "a-z: %u\nA-Z: %u\ndigits: %u\npunctuation: %u\nspace: %u\nother: "
+      "%u\n\nTotal characters read: %u over %u\n",
+      az, AZ, digits, punctuation, spaces, otherChars, totalCharsRead,totalChars);
+  printPercentage(totalCharsRead,totalChars);
 }
 
 // Print function for the -v flag and possibly -g.
@@ -99,49 +134,34 @@ void printRecapCompact(analyzerList *aList) {
 //    ...
 void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
   printFirstInfoLine(aList);
-  analyzerNode *n = aList->firstNode;
+  analyzer *current = aList->firstNode;
   // Print file paths
-  while (n != NULL) {
-    fwsNode *fNode = n->a->mainList->firstNode;
+  while (current != NULL) {
+    fileWithStats *fNode = current->mainList->firstNode;
     while (fNode != NULL) {
-      pritnf("%s\n", fNode->val->path);
+      printf("%s\n", fNode->path);
       fNode = fNode->nextNode;
     }
-    n = n->nextNode;
+    current = current->nextNode;
   }
-  n = aList->firstNode;
+  current = aList->firstNode;
   // Print stats of each file
-  while (n != NULL) {
-    fwsNode *fNode = n->a->mainList->firstNode;
+  while (current != NULL) {
+    fileWithStats *fNode = current->mainList->firstNode;
     while (fNode != NULL) {
-      printSingleFile(fNode->val, shouldGroup);
+      printSingleFile(fNode, shouldGroup);
+      fNode = fNode->nextNode;
     }
-    n = n->nextNode;
+    current = current->nextNode;
   }
 }
 
-// Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
-void printFirstInfoLine(analyzerList *aList) {
-  long totFiles = 0;
-  int totAnalyzers = 0;
-  analyzerNode *n = aList->firstNode;
-  while (n != NULL) {
-    totFiles += n->a->mainList->count;
-    n = n->nextNode;
-    totAnalyzers++;
-  }
-  printf("Analyzed %d files", totFiles);
-  if (totAnalyzers > 1) {
-    pritnf(" with %d analyzers");
-  }
-  printf(":\n");
-}
 
 // Prints a signle file (you need to specify if you want to have letters grouped
 // or
 // not). If group is false it prints occourrences of each letter, else clusters.
 void printSingleFile(fileWithStats *f, bool group) {
-  printf("---------------%s---------------", f->path);
+  printf("---------------%s---------------\n", f->path);
   short i;
   uint *oc = f->occorrenze;
   uint thisaz, thisAZ, thisDigits, thisSpaces, thisPunct, otherChars;
@@ -176,15 +196,25 @@ void printSingleFile(fileWithStats *f, bool group) {
     }
     thisPunct += oc[punctuationChars[i]];
   }
-  long totalChars = f->totalCharacters;
+  uint totalCharsRead = f->readCharacters;
+  uint totalChars = f->totalCharacters;
   otherChars =
-      totalChars - thisaz - thisAZ - thisDigits - thisPunct - thisSpaces;
+      totalCharsRead - thisaz - thisAZ - thisDigits - thisPunct - thisSpaces;
   if (group) {
     printf("a-z: %u\nA-Z: %u\ndigits: %u\npunctuation: %u\nspace: %u\n", thisaz,
            thisAZ, thisDigits, thisPunct, thisSpaces);
   }
   printf("others: %d\n", otherChars);
-  printf("\nTotal charcters: %lu\n", totalChars);
+  printf("\nTotal characters read: %u over %u\n", totalCharsRead,totalChars);
+  printPercentage(totalCharsRead,totalChars);
 }
 
+//prints something like this ? 
+// |||||||||||||||||||\
+// or just percentage a over b % of completion da sistemare i decimali da nascondere
+void printPercentage(uint a, uint b){
+  float percentage = (a==0 || b==0) ? 0 : (float)a/(float)b *100;
+  printf("\n");
+  printf("%f %% complete\n",percentage);
+}
 #endif
