@@ -30,7 +30,7 @@ typedef struct fwsNode_t {
   uint id;
   // how many characters are present in this file
   uint totalCharacters;
-  //how characters hav been rdHeader
+  // how characters hav been rdHeader
   uint readCharacters;
   // array where in position i we count how many chars w/ ASCII code i are in
   // the file
@@ -41,18 +41,19 @@ typedef struct fwsNode_t {
   struct fwsNode_t *previousNode;
 } fileWithStats;
 
-
 // Creates a fileWithStats and returns pointer to it - TESTED
-fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,uint occorrenze[ASCII_LENGTH], bool fromFolder);
+fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
+                              uint occorrenze[ASCII_LENGTH], bool fromFolder);
 // Destructor for fileWithStats
-void destructorFWS(fileWithStats *fs) ;
+void destructorFWS(fileWithStats *fs);
 // Adds new stats to this fileWithStats
-void fwsUpdateFileData(fileWithStats *fs, uint totChars,uint totCharsToAdd,uint occorrenze[ASCII_LENGTH]); 
-//appends the path
-void fwsUpdateFilePath(fileWithStats *fs,char * path);
+void fwsUpdateFileData(fileWithStats *fs, uint totChars, uint totCharsToAdd,
+                       uint occorrenze[ASCII_LENGTH]);
+// appends the path
+void fwsUpdateFilePath(fileWithStats *fs, char *path);
 
-// Creates a fileWithStats and returns pointer to it - TESTED
-fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,uint occorrenze[ASCII_LENGTH], bool fromFolder) {
+fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
+                              uint occorrenze[ASCII_LENGTH], bool fromFolder) {
   fileWithStats *fs = (fileWithStats *)malloc(sizeof(fileWithStats));
   fs->path = (char *)malloc(strlen(path));
   fs->id = id;
@@ -78,8 +79,6 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,uint occ
   return fs;
 }
 
-// Destructor for fileWithStats
-// TODO: seems ok but we need to test for memory leaks
 void destructorFWS(fileWithStats *fs) {
   if (DEBUGGING)
     printf("Deleting FWS instance @%p of file w/ path %s\n", fs, fs->path);
@@ -87,22 +86,21 @@ void destructorFWS(fileWithStats *fs) {
   free(fs);
 }
 
-// Adds new stats to this fileWithStats
-void  fwsUpdateFileData(fileWithStats *fs, uint totCharsFile,uint totCharsToAdd,
-                   uint occorrenze[ASCII_LENGTH]) {
+void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsToAdd,
+                       uint occorrenze[ASCII_LENGTH]) {
   if (DEBUGGING)
     printf("Adding new stats to FWS object of file %s\n", fs->path);
-  //totale dei caratteri del file
+  // totale dei caratteri del file
   fs->totalCharacters = totCharsFile;
-  //sommo la quantità letta in questa porzione
+  // sommo la quantità letta in questa porzione
   fs->readCharacters += totCharsToAdd;
   int i;
   for (i = 0; i < ASCII_LENGTH; i++) {
     fs->occorrenze[i] += occorrenze[i];
   }
 }
-//append the path to fws
-void fwsUpdateFilePath(fileWithStats *fs,char * path){
+
+void fwsUpdateFilePath(fileWithStats *fs, char *path) {
   char *oldPath = fs->path;
   char *tmp = (char *)malloc(strlen(oldPath) + strlen(path) + 1);
   strcpy(tmp, oldPath);
@@ -116,8 +114,8 @@ void fwsPrint(fileWithStats *fs) {
   printf("fws id: %u\n", fs->id);
   printf("fws totalCharacters: %u\n", fs->totalCharacters);
   // lo tolgo solo per debug più veloce
-  printf("fws readCharacters: %u\n",fs->readCharacters);
-  
+  printf("fws readCharacters: %u\n", fs->readCharacters);
+
   /*
   int i;
   for(i=0;i<256;i++){

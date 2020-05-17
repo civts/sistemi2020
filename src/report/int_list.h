@@ -6,7 +6,7 @@
 typedef struct intNode_t {
   struct intNode_t *nextNode;
   struct intNode_t *previousNode;
-  // struct intNode_t *previuosNode; ? 
+  // struct intNode_t *previuosNode; ?
   int value;
 } intNode;
 
@@ -15,23 +15,22 @@ typedef struct {
   int count;
 } intList;
 
-
 // list node with a int
 intNode *constructorIntNode(int v);
-//destructor for intNode  
-void destructorIntNode(intNode * n);
-//constructor for a empty int list
+// destructor for intNode
+void destructorIntNode(intNode *n);
+// constructor for a empty int list
 intList *constructorIntListEmpty();
-//constructor for a int list with one element
+// constructor for a int list with one element
 intList *constructorIntListOne(int v);
 // Returns wether the analyzeranalyzerList is empty or not
-bool intListIsEmpty(intList *l) ;
-// Returns reference to the int in the list w/ the given pid or NULL if none founded
-intNode *intListGetElementByValue(intList *l, int v); 
+bool intListIsEmpty(intList *l);
+// Returns reference to the int in the list w/ the given pid or NULL if none
+// founded
+intNode *intListGetElementByValue(intList *l, int v);
 // Removes the element with the specified value (first occourrence only).
 void intListRemoveElementByValue(intList *l, int v);
 
-// list node with a int
 intNode *constructorIntNode(int v) {
   intNode *node = (intNode *)malloc(sizeof(intNode));
   node->value = v;
@@ -40,30 +39,23 @@ intNode *constructorIntNode(int v) {
   return node;
 }
 
-//destructor for intNode  
-void destructorIntNode(intNode * n){
-  free(n);
-}
+void destructorIntNode(intNode *n) { free(n); }
 
-//constructor for a empty int list
 intList *constructorIntListEmpty() {
   intList *l = (intList *)malloc(sizeof(intList));
   l->firstNode = NULL;
-  l->count=0;
+  l->count = 0;
 }
 
-//constructor for a int list with one element
 intList *constructorIntListOne(int v) {
   intList *l = constructorIntListEmpty();
-  intListAppend(l,v);
+  intListAppend(l, v);
 }
 
-// Returns wether the analyzeranalyzerList is empty or not
 bool intListIsEmpty(intList *l) { return l->count == 0; }
 
-//appends element v to the end of the list v
-void intListAppend(intList * l, int value){
-  intNode * v = constructorIntNode(value);
+void intListAppend(intList *l, int value) {
+  intNode *v = constructorIntNode(value);
   if (intListIsEmpty(l)) {
     l->firstNode = v;
   } else {
@@ -77,7 +69,6 @@ void intListAppend(intList * l, int value){
   l->count++;
 }
 
-// Returns reference to the int in the list w/ the given pid or NULL if none founded
 intNode *intListGetIntNodeByValue(intList *l, int v) {
   intNode *current = l->firstNode;
   while (current != NULL) {
@@ -89,14 +80,14 @@ intNode *intListGetIntNodeByValue(intList *l, int v) {
   return NULL;
 }
 
-void intListRemoveElementByValue(intList *l, int v){
+void intListRemoveElementByValue(intList *l, int v) {
   intNode *targetNode = intListGetIntNodeByValue(l, v);
   if (targetNode != NULL) {
     intNode *prev = targetNode->previousNode;
     intNode *next = targetNode->nextNode;
     if (prev != NULL)
       prev->nextNode = next;
-    //se è il primo nodo
+    // se è il primo nodo
     else
       l->firstNode = next;
     if (next != NULL)
@@ -104,8 +95,6 @@ void intListRemoveElementByValue(intList *l, int v){
     destructorIntNode(targetNode);
     l->count--;
   }
-
-
 }
 void destructorIntList(intList *l) {
   intNode *node = l->firstNode;

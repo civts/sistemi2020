@@ -11,20 +11,66 @@ const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
 const char punctuationChars[] = {
     ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
 };
+
 // Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
 void printFirstInfoLine(analyzerList *aList);
-// Default print function (no additional argv).
+// Default print function (no additional argv). Should look ilke this:
+//  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
+//  a-z: 2109
+//  A-Z: 42
+//  ....
+//  total characters read: 16432 over 56600 (POTENZIALMENTE PROGRESSBAR)
+// 50 % complete
+// TESTED
 void printRecapCompact(analyzerList *aList);
 // Print function for the -v flag and possibly -g.
+//
+//---------------------------------------------------------------
+// If shouldGroup is TRUE output should look like the following:
+//
+// Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
+//      text1.txt
+//      text2.txt
+//      ....
+//      textN.txt
+//    ------------text1.txt------------
+//    a-z: 2109
+//    A-Z: 42
+//    ....
+//    total characters: 16432
+//    ------------text2.txt------------
+//    a-z: 912
+//    ...
+//---------------------------------------------------------------
+// If shouldGroup is FALSE output should look like the following:
+//
+// Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
+//      text1.txt
+//      text2.txt
+//      ....
+//      textN.txt
+//    ------------text1.txt------------
+//    a: 2109
+//    b: 42
+//    ....
+//    total characters: 16432
+//    ------------text2.txt------------
+//    a: 912
+//    ...
 void printRecapVerbose(analyzerList *aList, bool shouldGroup);
-// Prints a signle file (you need to specify if you want to have letters grouped
+// Prints a single file (you need to specify if you want to have letters grouped
+// or not). If group is false it prints occourrences of each letter, else
+// clusters.
 void printSingleFile(fileWithStats *f, bool group);
 // PRInts a progressbar numbers from 0 to 100 ?
 void printProgressBar(uint percentage);
-// print percentage
+// Prints a progress bar with the percentage of a/b*100
 void printPercentage(uint a, uint b);
+// Print function for when the user specifies the --only flag. Accepts the
+// analyzers list + list of paths of the files and a bool to group or not.
+void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
+                        bool group);
 
-// Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
   int totAnalyzers = 0;
@@ -41,14 +87,6 @@ void printFirstInfoLine(analyzerList *aList) {
   printf(":\n");
 }
 
-// Default print function (no additional argv). Should look ilke this:
-//  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
-//  a-z: 2109
-//  A-Z: 42
-//  ....
-//  total characters read: 16432 over 56600 (POTENZIALMENTE PROGRESSBAR)
-// 50 % complete
-// TESTED
 void printRecapCompact(analyzerList *aList) {
   printFirstInfoLine(aList);
   analyzer *current = aList->firstNode;
@@ -99,40 +137,6 @@ void printRecapCompact(analyzerList *aList) {
   printPercentage(totalCharsRead, totalChars);
 }
 
-// Print function for the -v flag and possibly -g.
-//
-//---------------------------------------------------------------
-// If shouldGroup is TRUE output should look like the following:
-//
-// Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
-//      text1.txt
-//      text2.txt
-//      ....
-//      textN.txt
-//    ------------text1.txt------------
-//    a-z: 2109
-//    A-Z: 42
-//    ....
-//    total characters: 16432
-//    ------------text2.txt------------
-//    a-z: 912
-//    ...
-//---------------------------------------------------------------
-// If shouldGroup is FALSE output should look like the following:
-//
-// Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
-//      text1.txt
-//      text2.txt
-//      ....
-//      textN.txt
-//    ------------text1.txt------------
-//    a: 2109
-//    b: 42
-//    ....
-//    total characters: 16432
-//    ------------text2.txt------------
-//    a: 912
-//    ...
 void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
   printFirstInfoLine(aList);
   analyzer *current = aList->firstNode;
@@ -157,9 +161,6 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
   }
 }
 
-// Prints a single file (you need to specify if you want to have letters grouped
-// or not). If group is false it prints occourrences of each letter, else
-// clusters.
 void printSingleFile(fileWithStats *f, bool group) {
   printf("---------------%s---------------\n", trimStringToLength(f->path, 70));
   short i;
@@ -209,9 +210,6 @@ void printSingleFile(fileWithStats *f, bool group) {
   printPercentage(totalCharsRead, totalChars);
 }
 
-// prints something like this ?
-// |||||||||||||||||||\
-// or just percentage a over b % of completion da sistemare i decimali da nascondere
 void printPercentage(uint a, uint b) {
   const int barWidth = 30;
   float percentage = b == 0 ? 0 : a / (float)b;
@@ -228,8 +226,6 @@ void printPercentage(uint a, uint b) {
   printf("] %.2f%% complete\n", percentage * 100);
 }
 
-// Print function for when the user specifies the --only flag. Accepts the
-// analyzers list + list of paths of the files and a bool to group or not.
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group) {
   int i;

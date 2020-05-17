@@ -33,7 +33,6 @@ void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers);
 // This is the function that implements report buisiness logic
 int report(int argc, const char *argv[]);
 
-// analyzer (eventually creating the fws if needed)
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
@@ -51,8 +50,6 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   free(dati);
 }
 
-// Callback for A_NEW_FILE_INCOMPLETE_PART1 packets.
-//(2nd half of a file path)
 void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
@@ -70,8 +67,6 @@ void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   free(dati);
 }
 
-// Callback for A_NEW_FILE_INCOMPLETE_PART2 packets.
-//(2nd half of a file path)
 void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
@@ -93,7 +88,6 @@ void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   free(dati);
 }
 
-// Callback for Q_NEW_DATA_CODE packets.
 void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
@@ -123,7 +117,6 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
   free(dati);
 }
 
-// Callback for A_DELETE_FILE_CODE packets.
 void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
