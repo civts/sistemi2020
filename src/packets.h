@@ -160,7 +160,7 @@ int sendNewNPacket(int fd[], int newN){
  * Error codes:
  * 1 - Error with fd sending the death packet
  */
-int startAnalysisPacket(int fd[]){
+int sendStartAnalysisPacket(int fd[]){
     int returnCode = 0;
     byte packet[1 + INT_SIZE];
     
