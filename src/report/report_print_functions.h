@@ -213,9 +213,19 @@ void printSingleFile(fileWithStats *f, bool group) {
 // |||||||||||||||||||\
 // or just percentage a over b % of completion da sistemare i decimali da nascondere
 void printPercentage(uint a, uint b) {
-  float percentage = (a == 0 || b == 0) ? 0 : (float)a / (float)b * 100;
-  printf("\n");
-  printf("%f %% complete\n", percentage);
+  const int barWidth = 30;
+  float percentage = b == 0 ? 0 : a / (float)b;
+  printf("\n[");
+  int i, pos = barWidth * percentage;
+  for (i = 0; i < barWidth; i++) {
+    if (i < pos)
+      printf("=");
+    else if (i == pos && percentage != 0) {
+      printf(">");
+    } else
+      printf(" ");
+  }
+  printf("] %.2f%% complete\n", percentage * 100);
 }
 
 // Print function for when the user specifies the --only flag. Accepts the
