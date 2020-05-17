@@ -174,12 +174,12 @@ void fwsListRemoveLast(fwsList *l) {
   }
 }
 
-void fwsListUpdateFileData(fwsList *l, uint id, uint charTot, uint charsToAdd,
+void fwsListUpdateFileData(fwsList *l, uint id, uint charTot, uint charsRead,
                            uint *occourrrences) {
   fileWithStats *target = fwsListGetElementByID(l, id);
   if (target != NULL) {
     // if already exists
-    fwsUpdateFileData(target, charTot, charsToAdd, occourrrences);
+    fwsUpdateFileData(target, charTot, charsRead, occourrrences);
   }
   /*
   else{

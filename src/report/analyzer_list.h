@@ -70,15 +70,16 @@ void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs);
 void analyzerListAddIncompleteFile(analyzerList *l, uint pid,
                                    fileWithStats *fs);
 // updatas the path of the file with id and places it into mainList from
-// incompleteList if analyzes does not exits, packet is discarded
+// incompleteList if analyzerss or file does not exits, packet is discarded
 void analyzerListUpdateFilePath(analyzerList *l, uint pid, uint idFile,
                                 char *path);
 // updates the file corresponding to the file with that ID of the analyzer with
-// pid. If none is found, the packet is discarded
+// pid. IF there are no matches, the packet is
+// discarded
 void analyzerListUpdateFileData(analyzerList *l, uint pid, uint idFile,
                                 uint totChars, uint readChars,
                                 uint occurrences[INT_SIZE]);
-// delete a file with given id of pid, IF there are no matches, the packet is
+// delete a file with given id of pid, If there are no matches, the packet is
 // discarded
 void analyzerListDeleteFile(analyzerList *l, uint pid, uint idFile);
 
@@ -221,7 +222,6 @@ void analyzerListUpdateFilePath(analyzerList *l, uint pid, uint idFile,
                                 char *path) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
-    ;
     // funzione che esegue l'update
     analyzerUpdateFilePath(a, idFile, path);
   } else {
@@ -234,16 +234,10 @@ void analyzerListUpdateFileData(analyzerList *l, uint pid, uint idFile,
                                 uint occurrences[INT_SIZE]) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
-    // check if was deleted, if so ignore the packet
-    fileWithStats *isDeleted = fwsListGetElementByID(a->deletedList, idFile);
-    if (isDeleted == NULL) {
-      // update
-      fwsListUpdateFileData(a->mainList, idFile, totChars, readChars,
-                            occurrences);
-    } else {
-      // perror("file rimosso\n");
-    }
-  } else {
+    // update
+    fwsListUpdateFileData(a->mainList, idFile, totChars, readChars,
+                          occurrences);
+    }else {
     // perror("analyzer non esistente\n");
   }
 }

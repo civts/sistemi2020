@@ -37,10 +37,7 @@ typedef struct analyzer_t {
   uint pid;
   // List of the files with stats relative to this analyzer
   fwsList *mainList;
-  // blacklist: files that have been removed from this analyzer which we should
-  // not include in the final stats
-  // per semplificare i debugging per adesso non uso una intList
-  fwsList *deletedList;
+
   // lista di file parziali
   fwsList *incompleteList;
 
@@ -59,7 +56,7 @@ void destructorAnalyzer(analyzer *a);
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs);
 // function that adds new file to the incompleteList
 void analyzerAddIncompleteFile(analyzer *a, fileWithStats *fs);
-// function that adds new file to a list
+// function that adds new file to a list. if already present, ignored
 void analyzerAddFile(analyzer *a, fwsList *l, fileWithStats *fs);
 // updatas the path of the file with id and places it into mainList from
 // incompleteList. if analyzes does not exits, packet is discarded
@@ -76,7 +73,6 @@ analyzer *constructorAnalyzer(uint pid) {
   analyzer *a = (analyzer *)malloc(sizeof(analyzer));
   a->pid = pid;
   a->mainList = constructorFwsListEmpty();
-  a->deletedList = constructorFwsListEmpty();
   a->incompleteList = constructorFwsListEmpty();
   a->previousNode = NULL;
   a->nextNode = NULL;
@@ -93,7 +89,6 @@ void destructorAnalyzer(analyzer *a) {
     printf("Deleting Analyzer instance @%p for Analyzer with pid %u\n", a,
            a->pid);
   destructorFwsList(a->mainList);
-  destructorFwsList(a->deletedList);
   destructorFwsList(a->incompleteList);
   free(a);
 }
@@ -107,12 +102,11 @@ void analyzerAddIncompleteFile(analyzer *a, fileWithStats *fs) {
 }
 
 void analyzerAddFile(analyzer *a, fwsList *l, fileWithStats *fs) {
+  //controllo non sia già presente
   fileWithStats *n = fwsListGetElementByID(a->mainList, fs->id);
   if (n == NULL) {
     // aggiungo alla lista, mainList o IncompleteList a seconda della chiamata
     fwsListAppend(l, fs);
-    // rimuovo dalla lista dei file rimossi
-    fwsListRemoveElementByID(a->deletedList, fs->id, true);
   } else {
     destructorFWS(fs);
   }
@@ -131,18 +125,9 @@ void analyzerUpdateFilePath(analyzer *a, uint idFile, char *path) {
 }
 
 void analyzerDeleteFile(analyzer *a, uint idFile) {
-  fileWithStats *alreadyDeleted = fwsListGetElementByID(a->deletedList, idFile);
-  if (alreadyDeleted == NULL) {
-    // get the item to remove
-    fileWithStats *deletedNode = fwsListGetElementByID(a->mainList, idFile);
-    // printAnalyzer(a);
-    // remove from mainList
-    fwsListRemoveElementByID(a->mainList, idFile, false);
-    // addToIntList(a->deletedList, idFile);
-    // append to deleted
-    if (deletedNode != NULL)
-      fwsListAppend(a->deletedList, deletedNode);
-  }
+  //remove from mainlist
+  fwsListRemoveElementByID(a->mainList, idFile, true);
+
 }
 // stampa debug
 void analyzerPrint(analyzer *a) {
@@ -150,8 +135,6 @@ void analyzerPrint(analyzer *a) {
   printf("analyzer mainList:\n");
   fwsListPrint(a->mainList);
   printf("analyzer incompleteList:\n");
-  fwsListPrint(a->incompleteList);
-  printf("analyzer deleteList:\n");
-  fwsListPrint(a->deletedList);
+  fwsListPrint(a->incompleteList);  
 }
 #endif

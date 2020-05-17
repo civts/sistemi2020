@@ -86,14 +86,14 @@ void destructorFWS(fileWithStats *fs) {
   free(fs);
 }
 
-void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsToAdd,
+void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsRead,
                        uint occorrenze[ASCII_LENGTH]) {
   if (DEBUGGING)
     printf("Adding new stats to FWS object of file %s\n", fs->path);
   // totale dei caratteri del file
   fs->totalCharacters = totCharsFile;
   // sommo la quantità letta in questa porzione
-  fs->readCharacters += totCharsToAdd;
+  fs->readCharacters += totCharsRead;
   int i;
   for (i = 0; i < ASCII_LENGTH; i++) {
     fs->occorrenze[i] += occorrenze[i];
