@@ -25,25 +25,32 @@ int main(int argc, char **argv) {
   fd = open(myfifo, O_WRONLY);
 
   byte header[INT_SIZE + 1] = {'\0', '\0', '\0', '\0', '\0'};
-  fromIntToBytes(INT_SIZE * 2 + 6 + 1, header + 1);
-  int i = 0;
+  
   header[0] = A_NEW_FILE_INCOMPLETE_PART1;
+  fromIntToBytes(INT_SIZE * 2 + 6 + 1, header + 1);
 
-  // header[0]= NEW_FILE_CODE_P2;
-  printf("%c\n", header[0]);
-  /*
-  uint sei = fromBytesToInt(header+1);
+  printf("CODE: %u\n",*(header));
+  printf("DataSize: %u\n",(uint)fromBytesToInt(header+1));
 
-  printf("%u\n",sei);
-  */
   write(fd, header, INT_SIZE + 1);
-  byte dati[INT_SIZE * 2 + 6 + 1] = {'\0', '\0', '\0', '\0', '\0',
-                                     '\0', '\0', '\0', '\0', 'a',
-                                     'b',  'a',  'c',  'o',  '\0'};
+
+
+  byte dati[INT_SIZE * 2 + 6 + 1] = {'\0', '\0', '\0', '\0',
+                                     '\0', '\0', '\0', '\0',
+                                     '\0',
+                                     'a', 'b',  'a',  'c',  'o',  '\0'};
+  
   uint pid = 55;
   fromIntToBytes(pid, dati);
-  uint idFile = 333;
+  uint idFile = 444;
   fromIntToBytes(idFile, dati + INT_SIZE);
+
+  
+  printf("pid: %u\n",fromBytesToInt(dati));
+  printf("idFile: %u\n",fromBytesToInt(dati+INT_SIZE));    
+  printf("fromFolder: %u\n",*(dati+2*INT_SIZE) );
+  printf("path: %s\n",dati+(2*INT_SIZE+1));
+
   write(fd, dati, INT_SIZE * 2 + 6 + 1);
   close(fd);
   return 0;
