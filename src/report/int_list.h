@@ -95,7 +95,7 @@ void intListRemoveElementByValue(intList *l, int v){
     intNode *prev = targetNode->previousNode;
     intNode *next = targetNode->nextNode;
     if (prev != NULL)
-      prev->nextNode = next;else
+      prev->nextNode = next;
     //se è il primo nodo
     else
       l->firstNode = next;
