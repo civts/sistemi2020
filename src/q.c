@@ -111,7 +111,7 @@ int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize
 int processMessageInQFromMiniQ(byte packetCode, byte *packetData, int packetDataSize, qInstance *instanceOfMySelf){
     int returnCode;
     switch (packetCode){
-        case 4:
+        case 6:
             returnCode = processQFileResults(packetData, packetDataSize, instanceOfMySelf);
             break;
         default:
@@ -122,9 +122,6 @@ int processMessageInQFromMiniQ(byte packetCode, byte *packetData, int packetData
     return returnCode;
 }
 
-
-
-// TODO do I have to free pathName in both parent and child?
 int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* instanceOfMySelf){
     bool isInsideFolder = packetData[0];
     char pathName[packetDataSize];
@@ -136,7 +133,7 @@ int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* inst
     newMiniQ.currM = instanceOfMySelf->currM;
     newMiniQ.index = instanceOfMySelf->index;
 
-    // create
+    // create miniQ
     pid_t f;
     f = fork();
     if (f < 0){

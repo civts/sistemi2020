@@ -36,22 +36,20 @@ void miniQ(string fileName, bool isInsideFolder, miniQInstance *instanceOfMySelf
             
             // get character occurences from the file
             ull occurences[256];
-
-            // bufferOccurecesSize should be endPosition-startPosition
             int numCharsInPortion = getBigOccurences(fileName, startPosition, endPosition, occurences);
             // sendOccurencesToReport(fileName, isInsideFolder, numCharsInPortion, occurences);
             printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
-            // TODO - inform q that miniQ has finished through instanceOfMySelf->pipeMiniQQ
-        }        
-
-        exit(0);
+        }
     }
+
+    // TODO - inform q that miniQ has finished through instanceOfMySelf->pipeMiniQQ
+    exit(0);
 }
 
 // TODO atm I'm doing output on a normal file, change the it to the nominal pipe according to report.c
 // send char occureces to the report through a nominal pipe
 void sendOccurencesToReport(string fileName, bool isInsideFolder, int numCharInPortion, ull occurences[NUM_OCCURENCES]){
-    int fd = open ("file.txt", O_WRONLY|O_CREAT, 0644);
+    int fd = open("file.txt", O_WRONLY|O_CREAT, 0644);
 
     if (fd == -1){
         // TODO if errors try again after a delay (set max number of attemps)
@@ -185,7 +183,6 @@ int getBigOccurences(string fileName, long startPosition, long endPosition, ull 
 // it gets file length using stat syscall
 long getFileLength(string fileName){
     struct stat stbuf;
-
     long fileLength = -1;
     
     if (stat(fileName, &stbuf) == 0){

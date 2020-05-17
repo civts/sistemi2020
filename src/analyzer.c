@@ -10,12 +10,11 @@
 #define WRITE 1
 
 /**
- * TODO: Fra, could u please check the functions I added to packets.h?
  * TODO: Insert possibility to remove an entire folder? (un casin)
  * NOTE: processExit() è dichiarata come funzione (invece che essere scritta all'interno del codice
  *       perché dovrà essere richiamata anche alla ricezione di SIGKILL)
  * TODO: Impostare tutti i vari controlli sui comandi in ingresso in modalità dinamica
- * TODO: Decidere cosa fare mentre l'analisi statica si ta completando (una mezza soluzione è
+ * TODO: Decidere cosa fare mentre l'analisi statica si sta completando (una mezza soluzione è
  *       già implementata, dai un'occhiata)
  */
 
@@ -52,8 +51,8 @@ bool isValidMode(string mode){
 // it uses the crawler to inspect inner files and folders.
 // It returns the number of scanned files.
 int getFilePathsFromArgv(string argv[], NamesList *fileList, int numPaths){
-    const int padding = 4;    // index inside argv from which filenames occur
-    unsigned long numFiles=0; // number of files recognized
+    const int padding = 4;      // index inside argv from which filenames occur
+    unsigned long numFiles = 0; // number of files recognized
     int out;
     fileList = constructorNamesList();
 
@@ -76,13 +75,13 @@ int main(int argc, char *argv[]){
     int returnCode = 0;
     filePaths = constructorNamesList();
 
-    if (argc == 1){
-        printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
+    if (argc <= 1){
+        fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
         returnCode = 1;
-    } else if ( isValidMode(argv[1]) ){
+    } else if (isValidMode(argv[1])){
         modeSwitcher(argv[1][1], argc, argv);
     } else {
-        printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
+        fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
         returnCode = 1;
     }
 
@@ -91,6 +90,8 @@ int main(int argc, char *argv[]){
 
 // Switch mode of the analyzer (interactive, static, help)
 // Error codes:
+// 1 - not enough args for static mode
+// 2 - n, m and files are not valid
 // 3 - mode not supported
 int modeSwitcher(char mode, int argc, char *argv[]){
     int returnCode = 0;
@@ -104,28 +105,25 @@ int modeSwitcher(char mode, int argc, char *argv[]){
             interactiveMode();
             break;
         case 's':
-            if(argc <= 4){
-                printf("?Error: specify a valid mode, n, m and at least one file/folder\n");
+            if (argc <= 4){
+                fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
                 returnCode = 1;
             } else {
-                
-                // TODO use strol/stroll for parsing integer values
                 n = atoi(argv[2]);
                 m = atoi(argv[3]);
 
                 // Get file paths with the crawler
-                numOfFiles = getFilePathsFromArgv(argv, filePaths, argc-4);
+                numOfFiles = getFilePathsFromArgv(argv, filePaths, argc - 4);
 
-                if ( !checkParameters() ){
+                if (!checkParameters()){
                     returnCode = 2;
                 } else {
                     staticMode(n, m, numOfFiles, filePaths);
                 }
             }
             break;
-
         default:
-            printf("Error: mode not supported\n");
+            fprintf(stderr, "Error: mode not supported\n");
             returnCode = 3;
     }
 
@@ -133,29 +131,29 @@ int modeSwitcher(char mode, int argc, char *argv[]){
 }
 
 void helpMode(){
-    string help_message =   "Help mode\n\n"
-                            "Usages:\n"
-                            "-i: interactive mode\n"
-                            "\tInteractive mode commands:\n\n"
-                            "\t+_name_fi/fo_ to add a file/folder to the list\n"
-                            "\t-_name_file_  to remoove a file from the list\n"
-                            "\tn=_value_     to set the value of n\n"
-                            "\tm=_value_     to set the value of m\n"
-                            "\tshow          to see the list of files at the current moment\n"
-                            "\tanalyze       to start the analisys\n"
-                            "\texit          to exit from the process\n\n"
-                            "-s: static mode\n"
-                            "\tmust insert arguments: n, m and at least one file/folder\n\n"
-                            "-h: help mode\n\n"
-                            "Error codes:\n"
-                            "1: missing arguments\n"
-                            "2: n and m are not numeric non-zero values\n"
-                            "3: usage mode not supported\n\n";
+    string help_message = "Help mode\n\n"
+                          "Usages:\n"
+                          "-i: interactive mode\n"
+                          "\tInteractive mode commands:\n\n"
+                          "\t+_name_fi/fo_ to add a file/folder to the list\n"
+                          "\t-_name_file_  to remove a file from the list\n"
+                          "\tn=_value_     to set the value of n\n"
+                          "\tm=_value_     to set the value of m\n"
+                          "\tshow          to see the list of files at the current moment\n"
+                          "\tanalyze       to start the analysis\n"
+                          "\texit          to exit from the process\n\n"
+                          "-s: static mode\n"
+                          "\tmust insert arguments: n, m and at least one file/folder\n\n"
+                          "-h: help mode\n\n"
+                          "Error codes:\n"
+                          "1: missing arguments\n"
+                          "2: n and m are not numeric non-zero values\n"
+                          "3: usage mode not supported\n";
 
-    printf("%s", help_message);
+    printf("%s\n", help_message);
 }
 
-// TODO - this should be executed inside a child
+// TODO - check all error codes from sys calls and from out functions
 void interactiveMode(){
     int returnCode = generateNewControllerInstance();
     const char analyzeString[] = "analyze";
@@ -173,62 +171,63 @@ void interactiveMode(){
             // start analyzing process (if parameters are good)
             if(checkParameters()){
                 printf("Start analysis\n");
-                startAnalisysPacket(controllerInstance->pipeAC);
+                sendStartAnalysisPacket(controllerInstance->pipeAC);
             }
 
-        } else if(strcmp(command, showString) == 0){
-            // Print-show file list
-            printNamesList(filePaths);
+        } else if (strcmp(command, showString) == 0){
+            printNamesList(filePaths); // Print-show file list
 
         } else if (command[0] == '+'){
             // Managment of addition of file or folder
-            int *j = malloc(sizeof(int));
+            // int *j = malloc(sizeof(int));
+            int j;
             int added;
             int oldNumberOfFiles = filePaths->counter;
-            if(isDirectory(command+1, '/', j)){
-                crawler(command+1, filePaths, j);
+            if(isDirectory(command + 1, '/', &j)){
+                crawler(command + 1, filePaths, &j);
                 added = 1;
-            } else if(isValidFile(command+1)) {
-                appendName(filePaths, command+1);
+            } else if (isValidFile(command + 1)) {
+                appendName(filePaths, command + 1);
                 added = 2;
             } else {
-                printf("File/folder inserted desn't exist!\n");
-                added  = 3;
+                fprintf(stderr, "File/folder inserted doesn't exist!\n");
+                added = 3;
             }
-            if(added == 1){
+            // TODO per Sam: perché esiste added? Non si poteva inserire
+            // tutto negli if qui sopra?
+            if (added == 1){
                 sendNewFolder(oldNumberOfFiles);
-                printf("Added folder %s\n", command+1);
+                printf("Added folder %s\n", command + 1);
             } else if(added == 2){
                 sendNewFilePacket(controllerInstance->pipeAC, command);
-                printf("Added file %s\n", command+1);
+                printf("Added file %s\n", command + 1);
             }
-            free(j);
-
+            // free(j);
         } else if (command[0] == '-'){
             // Management of removal of file or folder
             printf("Remove file %s\n", command + 1);
-            int removedResult = removeByName(filePaths, command+1);
-            if(removedResult == 0){
-                removeFilePacket(controllerInstance->pipeAC, command+1);
+            if (removeByName(filePaths, command + 1) == 0){
+                removeFilePacket(controllerInstance->pipeAC, command + 1);
             }
-            
+        // TODO per Sam: ATTENZIONE: stai supponendo che command sia di almeno tre caratteri!
+        // rischiamo un out of bound! (sia per n che per m)
         } else if (command[0] == 'n'){
             // Update the value of N
             printf("Change n to %s\n", command + 2);
-            n=atoi(command+2);
+            n = atoi(command + 2);
             sendNewNPacket(controllerInstance->pipeAC, n);
             printf("Now n=%d\n", n);
 
         } else if (command[0] == 'm'){
             // Update the value of M
             printf("Change m to %s\n", command + 2);
-            m=atoi(command+2);
+            m = atoi(command + 2);
             sendNewMPacket(controllerInstance->pipeAC, m);
             printf("Now m=%d\n", m);
 
         } else {
-            // Cmmand not supported
-            printf("This command is not supported.\n");
+            // Command not supported
+            fprintf(stderr, "This command is not supported.\n");
 
         }
         printf("\n> ");
@@ -245,35 +244,34 @@ void staticMode(int numOfP, int numOfQ, int numOfFiles, NamesList * listFilePath
     sendNewMPacket(controllerInstance->pipeAC, m);
     // Trick: to send all files in the list call sendNewFolder with oldNumberOfFiles=0
     sendNewFolder(0);
-    startAnalisysPacket(controllerInstance->pipeAC);
+    sendStartAnalysisPacket(controllerInstance->pipeAC);
 
     // TODO: what do we do when static analisys is started?
+    // da FRA: io direi niente... è statica per qualche motivo
     waitAnalisysEnd();
     processExit();
 }
 
-/**
- * Returns true if n, m and at least one file/folder are set with valid values
- */
+// Returns true if n, m and at least one file/folder are set with valid values
 bool checkParameters(){
-    
-    if (n<=0 || m<=0){
-        printf("Error: specify numeric non-zero positive values for n and m\n");
-        return false;
+    int returnValue = true;
+    if (n <= 0 || m <= 0){
+        fprintf(stderr, "Error: specify numeric non-zero positive values for n and m\n");
+        returnValue = false;
     } else if(filePaths->counter == 0){
-        printf("Error: specify at least one file/folder\n");
-        return false;
+        fprintf(stderr, "Error: specify at least one file/folder\n");
+        returnValue = false;
     }
-    return true;
+
+    return returnValue;
 }
 
-/**
- * Generate an "empty" instance of controller, this method is to be used everytime.
- */
-int generateNewControllerInstance(){
-    controllerInstance = (ControllerInstance *)malloc(sizeof(ControllerInstance));
-    int returnCode = 0;
 
+// Generate an "empty" instance of controller, this method is to be used everytime.
+int generateNewControllerInstance(){
+    int returnCode = 0;
+    // TODO: check for null return from malloc
+    controllerInstance = (ControllerInstance*) malloc(sizeof(ControllerInstance));
 
     if (pipe(controllerInstance->pipeAC) != -1 && pipe(controllerInstance->pipeCA) != -1){
         // TODO check for error -1 for fcntl
@@ -323,12 +321,12 @@ void sendNewFolder(int oldNumberOfFiles){
     Node *firstNewFile = filePaths->first;
     int i;
     // This cycle brings firstNewFile to the pointer of the first new file
-    for(i=oldNumberOfFiles; i>0; i--){
+    for(i = oldNumberOfFiles; i > 0; i--){
         firstNewFile = firstNewFile->next;
     }
 
     // this cycle calls sendNewFilePacket for each new packet
-    for(i=newNumberOFfiles; i>0; i--){
+    for(i = newNumberOFfiles; i > 0; i--){
         sendNewFilePacket(controllerInstance->pipeAC, firstNewFile->name);
         firstNewFile = firstNewFile->next;
     }
@@ -350,15 +348,14 @@ int processExit(){
     exit(0); // to exit from infinite loop
 }
 
-/**
- * Function that animates the waiting for static analisys to end.
- */
+// TODO: this function should wait a packet from the Controller
+// Function that animates the waiting for static analisys to end.
 void waitAnalisysEnd(){
     int numberOfPoints = 10;
     int i;
-    while(true){
+    while (true){
         // wait untill reading the analisys-ended packet from controller
-        for(i=numberOfPoints; i>0; i--){
+        for (i = numberOfPoints; i>0; i--){
             sleep(1);
             printf(".");
         }

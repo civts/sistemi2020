@@ -9,6 +9,8 @@
 #define READ 0
 #define WRITE 1
 
+// TODO: a lot of repeated code in packets 0-1 and 3-4
+
 typedef struct{
     pid_t pid;
     int pipeCP[2];
@@ -53,7 +55,6 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 // 6: file results (backpropagation)
 
 /**
- * TODO: Fracheck !
  * This function sends the newFilePacket to the file descriptor
  * in the arguments.
  * Error codes:
@@ -61,14 +62,15 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
  */
 int sendNewFilePacket(int fd[], string fileName){
     int returnCode = 0;
+    int fileNameLength = strlen(fileName);
+    int packetSize = 1 + INT_SIZE + fileNameLength;
+    byte newFilePacket[packetSize];
 
-    int thisSize = 1 + INT_SIZE + sizeof(fileName);
-    byte newFilePacket[thisSize];
     newFilePacket[0] = 0;
-    fromIntToBytes(sizeof(fileName), newFilePacket + 1);
-    memcpy(newFilePacket+2, fileName, sizeof(fileName));
+    fromIntToBytes(fileNameLength, newFilePacket + 1);
+    memcpy(newFilePacket + 1 + INT_SIZE, fileName, fileNameLength);
 
-    if (write(fd[WRITE], newFilePacket, thisSize) != (thisSize)){
+    if (write(fd[WRITE], newFilePacket, packetSize) != (packetSize)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the new file packet\n");
     }
@@ -77,21 +79,21 @@ int sendNewFilePacket(int fd[], string fileName){
 }
 
 /**
- * TODO: Fracheck !
  * This function sends the removeFilePacket to the 
  * file descriptor as argument.
  * 1 - Error with the fd sending name packet
  */
 int removeFilePacket(int fd[], string fileName){
     int returnCode = 0;
+    int fileNameLength = strlen(fileName);
+    int packetSize = 1 + INT_SIZE + fileNameLength;
+    byte newFilePacket[packetSize];
 
-    int thisSize = 1 + INT_SIZE + sizeof(fileName);
-    byte newFilePacket[thisSize];
     newFilePacket[0] = 1;
-    fromIntToBytes(sizeof(fileName), newFilePacket + 1);
-    memcpy(newFilePacket+2, fileName, sizeof(fileName));
+    fromIntToBytes(fileNameLength, newFilePacket + 1);
+    memcpy(newFilePacket + 1 + INT_SIZE, fileName, fileNameLength);
 
-    if (write(fd[WRITE], newFilePacket, thisSize) != (thisSize)){
+    if (write(fd[WRITE], newFilePacket, packetSize) != (packetSize)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the remove file packet\n");
     }
@@ -106,8 +108,8 @@ int removeFilePacket(int fd[], string fileName){
 // 1 - Error with fd sending the death packet
 int sendDeathPacket(int fd[]){
     int returnCode = 0;
-
     byte deathPacket[1 + INT_SIZE];
+
     deathPacket[0] = 2;
     fromIntToBytes(0, deathPacket + 1);
 
@@ -119,45 +121,52 @@ int sendDeathPacket(int fd[]){
     return returnCode;
 }
 
-/**
- * This function sends the packet with the new value of M.
- */
+// This function sends the packet with the new value of M.
 int sendNewMPacket(int fd[], int newM){
+    int returnCode = 0;
     byte packet[1 + 2 * INT_SIZE];
 
     packet[0] = 3;
     fromIntToBytes(INT_SIZE, packet + 1);
     fromIntToBytes(newM, packet + 1 + INT_SIZE); // new value for m
 
-    write(fd[WRITE], packet, 1 + 2 * INT_SIZE);
+    if (write(fd[WRITE], packet, 1 + 2 * INT_SIZE) != (1 + 2 * INT_SIZE)){
+        returnCode = 1;
+        fprintf(stderr, "Error with fd sending the new M packet\n");
+    }
+
+    return returnCode;
 }
 
-/**
- * TODO: Fracheck !
- * This function sends the packet with the new value of N.
- */
+// This function sends the packet with the new value of N.
 int sendNewNPacket(int fd[], int newN){
+    int returnCode = 0;
     byte packet[1 + 2 * INT_SIZE];
 
     packet[0] = 4;
     fromIntToBytes(INT_SIZE, packet + 1);
     fromIntToBytes(newN, packet + 1 + INT_SIZE); // new value for n
 
-    write(fd[WRITE], packet, 1 + 2 * INT_SIZE);
+    if (write(fd[WRITE], packet, 1 + 2 * INT_SIZE) != (1 + 2 * INT_SIZE)){
+        returnCode = 1;
+        fprintf(stderr, "Error with fd sending the new N packet\n");
+    }
+
+    return returnCode;
 }
 
 /**
- * TODO: Fracheck !
- * This function sends the start analisys packet.
+ * This function sends the start analysis packet.
  * Error codes:
  * 1 - Error with fd sending the death packet
  */
-int startAnalisysPacket(int fd[]){
+int startAnalysisPacket(int fd[]){
     int returnCode = 0;
     byte packet[1 + INT_SIZE];
     
     packet[0] = 5;
     fromIntToBytes(0, packet + 1);
+
     if (write(fd[WRITE], packet, 1 + INT_SIZE) != (1 + INT_SIZE)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the death packet\n");
@@ -165,6 +174,5 @@ int startAnalisysPacket(int fd[]){
 
     return returnCode;
 }
-
 
 #endif

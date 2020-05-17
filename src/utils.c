@@ -27,7 +27,7 @@ uint fromBytesToInt(byte *bytes){
     uint result = 0, base = 1;
 
     int i;
-    for (i=INT_SIZE-1; i>=0; i--){
+    for (i = INT_SIZE - 1; i >= 0; i--){
         result += bytes[i] * base;
         base *= 256;
     }
@@ -39,7 +39,7 @@ uint fromBytesToInt(byte *bytes){
 void fromIntToBytes(uint value, byte out[]){
     uint result = 0, base = 0;
     int i;
-    for (i=INT_SIZE-1; i>=0; i--){
+    for (i = INT_SIZE - 1; i >= 0; i--){
         out[i] = ((value >> base) & 0xFF);
         base += 8;
     }
@@ -68,7 +68,7 @@ bool isDirectory(string path, char endingChar, int *out){
     return isDirectory;
 }
 
-
+// check if a file exists
 bool isValidFile(string filename){
     struct stat buffer;
     return (stat(filename, &buffer) == 0);
@@ -90,6 +90,5 @@ int min_i(int a, int b){
 int max_i(int a, int b){
     return a > b ? a : b;
 }
-
 
 #endif

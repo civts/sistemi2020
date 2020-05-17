@@ -143,7 +143,7 @@ void waitForMessagesInPFromController(pInstance *instanceOfMySelf){
 int processMessageInPFromQ(byte packetCode, byte *packetData, int packetDataSize, pInstance *instanceOfMySelf){
     int returnCode;
     switch (packetCode){
-        case 4:
+        case 6:
             returnCode = processPFileResults(packetData, packetDataSize, instanceOfMySelf);
             break;
         default:
