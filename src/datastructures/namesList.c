@@ -115,10 +115,13 @@ Node *getNodeByName(NamesList *list, string fileName){
 
 /**
  * Removes a Node given the fileName of the file it contains
+ * return:
+ * 0 if Node removed correctly
+ * 1 if Node not found
  */
-void removeByName(NamesList *list, string fileName){
+int removeByName(NamesList *list, string fileName){
     Node *toRemove = getNodeByName(list, fileName);
-    
+    int result = 1;
     if(toRemove == NULL){
         printf("There is no file %s in the list\n", fileName);
     } else {
@@ -136,7 +139,9 @@ void removeByName(NamesList *list, string fileName){
         deleteNode(toRemove);
         list->counter--;
         printf("%s deleted.\n", fileName);
+        result = 0;
     }
+    return result;
 }
 
 // int main(){

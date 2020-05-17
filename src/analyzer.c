@@ -9,6 +9,16 @@
 #define READ 0
 #define WRITE 1
 
+/**
+ * TODO: Fra, could u please check the functions I added to packets.h?
+ * TODO: Insert possibility to remove an entire folder? (un casin)
+ * NOTE: processExit() è dichiarata come funzione (invece che essere scritta all'interno del codice
+ *       perché dovrà essere richiamata anche alla ricezione di SIGKILL)
+ * TODO: Impostare tutti i vari controlli sui comandi in ingresso in modalità dinamica
+ * TODO: Decidere cosa fare mentre l'analisi statica si ta completando (una mezza soluzione è
+ *       già implementata, dai un'occhiata)
+ */
+
 typedef struct{
     pid_t pid;
     int pipeAC[2];
@@ -27,6 +37,10 @@ void staticMode(int, int, int, NamesList *);
 bool isValidMode(string);
 int getFilePathsFromArgv(string[], NamesList*, int);
 bool checkParameters();
+int generateNewControllerInstance();
+void sendNewFolder(int);
+int processExit();
+void waitAnalisysEnd();
 
 // check if the mode is a two char string, with the
 // first char being '-'
@@ -99,11 +113,10 @@ int modeSwitcher(char mode, int argc, char *argv[]){
                 n = atoi(argv[2]);
                 m = atoi(argv[3]);
 
-                // get file paths with the crawler
+                // Get file paths with the crawler
                 numOfFiles = getFilePathsFromArgv(argv, filePaths, argc-4);
 
-                if (n==0 || m==0){
-                    printf("Error: specify numeric non-zero values for n and m\n");
+                if ( !checkParameters() ){
                     returnCode = 2;
                 } else {
                     staticMode(n, m, numOfFiles, filePaths);
@@ -128,7 +141,7 @@ void helpMode(){
                             "\t-_name_file_  to remoove a file from the list\n"
                             "\tn=_value_     to set the value of n\n"
                             "\tm=_value_     to set the value of m\n"
-                            "\ts             to see the list of files at the current moment\n"
+                            "\tshow          to see the list of files at the current moment\n"
                             "\tanalyze       to start the analisys\n"
                             "\texit          to exit from the process\n\n"
                             "-s: static mode\n"
@@ -144,8 +157,10 @@ void helpMode(){
 
 // TODO - this should be executed inside a child
 void interactiveMode(){
+    int returnCode = generateNewControllerInstance();
     const char analyzeString[] = "analyze";
     const char exitString[] = "exit";
+    const char showString[] = "show";
 
     printf("Interactive mode\n");
 
@@ -155,65 +170,95 @@ void interactiveMode(){
     scanf("%s", command);
     while (strcmp(command, exitString) != 0){
         if (strcmp(command, analyzeString) == 0){
-            // start analyzing process
+            // start analyzing process (if parameters are good)
             if(checkParameters()){
                 printf("Start analysis\n");
+                startAnalisysPacket(controllerInstance->pipeAC);
             }
-            
+
+        } else if(strcmp(command, showString) == 0){
+            // Print-show file list
+            printNamesList(filePaths);
 
         } else if (command[0] == '+'){
-            
+            // Managment of addition of file or folder
             int *j = malloc(sizeof(int));
-            
+            int added;
+            int oldNumberOfFiles = filePaths->counter;
             if(isDirectory(command+1, '/', j)){
                 crawler(command+1, filePaths, j);
+                added = 1;
             } else if(isValidFile(command+1)) {
                 appendName(filePaths, command+1);
+                added = 2;
             } else {
                 printf("File/folder inserted desn't exist!\n");
+                added  = 3;
             }
-            printf("Now the file-list is:\n");
-            printNamesList(filePaths);
+            if(added == 1){
+                sendNewFolder(oldNumberOfFiles);
+                printf("Added folder %s\n", command+1);
+            } else if(added == 2){
+                sendNewFilePacket(controllerInstance->pipeAC, command);
+                printf("Added file %s\n", command+1);
+            }
+            free(j);
 
         } else if (command[0] == '-'){
+            // Management of removal of file or folder
             printf("Remove file %s\n", command + 1);
-
-            removeByName(filePaths, command+1);
-
-            printf("Now the file-list is:\n");
-            printNamesList(filePaths);
+            int removedResult = removeByName(filePaths, command+1);
+            if(removedResult == 0){
+                removeFilePacket(controllerInstance->pipeAC, command+1);
+            }
+            
         } else if (command[0] == 'n'){
+            // Update the value of N
             printf("Change n to %s\n", command + 2);
-
             n=atoi(command+2);
+            sendNewNPacket(controllerInstance->pipeAC, n);
             printf("Now n=%d\n", n);
 
         } else if (command[0] == 'm'){
+            // Update the value of M
             printf("Change m to %s\n", command + 2);
-
             m=atoi(command+2);
+            sendNewMPacket(controllerInstance->pipeAC, m);
             printf("Now m=%d\n", m);
 
-        } else if (command[0] == 's'){
-            printNamesList(filePaths);
         } else {
-            // command not supported
+            // Cmmand not supported
+            printf("This command is not supported.\n");
+
         }
         printf("\n> ");
         scanf("%s", command);
-    }    
+    }
+    // Management of exit command
+    processExit();    
 }
 
 void staticMode(int numOfP, int numOfQ, int numOfFiles, NamesList * listFilePaths){
+    int returnCode = generateNewControllerInstance();
     printf("Static mode\n");
-    // printf("Files to process:\n");
-    // printFileList(listFilePaths, numOfFiles);
+    sendNewNPacket(controllerInstance->pipeAC, n);
+    sendNewMPacket(controllerInstance->pipeAC, m);
+    // Trick: to send all files in the list call sendNewFolder with oldNumberOfFiles=0
+    sendNewFolder(0);
+    startAnalisysPacket(controllerInstance->pipeAC);
+
+    // TODO: what do we do when static analisys is started?
+    waitAnalisysEnd();
+    processExit();
 }
 
+/**
+ * Returns true if n, m and at least one file/folder are set with valid values
+ */
 bool checkParameters(){
     
-    if (n==0 || m==0){
-        printf("Error: specify numeric non-zero values for n and m\n");
+    if (n<=0 || m<=0){
+        printf("Error: specify numeric non-zero positive values for n and m\n");
         return false;
     } else if(filePaths->counter == 0){
         printf("Error: specify at least one file/folder\n");
@@ -221,7 +266,6 @@ bool checkParameters(){
     }
     return true;
 }
-
 
 /**
  * Generate an "empty" instance of controller, this method is to be used everytime.
@@ -259,43 +303,35 @@ int generateNewControllerInstance(){
             close(controllerInstance->pipeCA[WRITE]);
         }
     } else {
-        fprintf(stderr, "Found an error creting pipes to controllerInstance\n");
+        fprintf(stderr, "Found an error creting pipes to Controller\n");
         returnCode = 1;
     }
 
     return returnCode;
 }
 
-/**
- * Notifies the controller that a new file has been added.
- */
-int processNewFile(byte packetData[], int packetDataSize){
-    // int i, returnCode = 0;
-    // for (i = 0; i < currM; i++){
-    //     returnCode = forwardPacket(qInstances[i].pipePQ, 0, packetDataSize, packetData);
-    //     if (returnCode < 0){
-    //         fprintf(stderr, "Could not forward file packet to Q\n");
-    //     }
-    // }
-
-    return 0;
-}
 
 /**
- * Notifies the controller that a file has to be removed
+ * Function called when the user adds a folder to the list of files.
+ * It iterates trough the new files (last added in filePaths) and
+ * sends each of them to the controller.
+ * TODO: inert controls on errors
  */
-int processRemoveFile(byte packetData[], int packetDataSize){
-    int returnCode = 0;
-    
-    // int i;
-    // for (i = 0; i < currM; i++){
-    //     if (forwardPacket(qInstances[i].pipePQ, 1, packetDataSize, packetData) < 0){
-    //         returnCode = 1;
-    //         fprintf(stderr, "Error trying to remove file from P to Q\n");
-    //     }
-    // }
+void sendNewFolder(int oldNumberOfFiles){
+    int newNumberOFfiles = filePaths->counter - oldNumberOfFiles;
 
-    return returnCode;
+    Node *firstNewFile = filePaths->first;
+    int i;
+    // This cycle brings firstNewFile to the pointer of the first new file
+    for(i=oldNumberOfFiles; i>0; i--){
+        firstNewFile = firstNewFile->next;
+    }
+
+    // this cycle calls sendNewFilePacket for each new packet
+    for(i=newNumberOFfiles; i>0; i--){
+        sendNewFilePacket(controllerInstance->pipeAC, firstNewFile->name);
+        firstNewFile = firstNewFile->next;
+    }
 }
 
 /**
@@ -303,34 +339,30 @@ int processRemoveFile(byte packetData[], int packetDataSize){
  * Provokes a waterfall effect tht kills every process.
  */
 int processExit(){
-    // int i, returnCode;
-    // for (i = 0; i < currM; i++){
-    //     returnCode = sendDeathPacket(qInstances[i].pipePQ);
-    //     if (returnCode == 1){
-    //         // error killing the process Q[i]
-    //         // we should try to kill the process manually
-    //     }
-    // }
+    // Start the waterfall effect
+    sendDeathPacket(controllerInstance->pipeAC);
 
-    // free(qInstances);
-    // printf("P is dead\n");
+    // free occupied memory:
+    free(controllerInstance);
+    deleteNamesList(filePaths);
 
-    exit(0); // to exit from infinite loop in waitForMessagesInP()
-}
-
-
-/**
- * Notifies the controller that value of N has been changed.
- */
-int processNewValueForN(byte packetData[], pInstance *instanceOfMySelf){
-    
-    return 0;
+    printf("Cleanup complete, see you next time!\n");
+    exit(0); // to exit from infinite loop
 }
 
 /**
- * Notifies the controller that value of M has been changed.
+ * Function that animates the waiting for static analisys to end.
  */
-int processNewValueForM(byte packetData[], pInstance *instanceOfMySelf){
-    
-    return 0;
+void waitAnalisysEnd(){
+    int numberOfPoints = 10;
+    int i;
+    while(true){
+        // wait untill reading the analisys-ended packet from controller
+        for(i=numberOfPoints; i>0; i--){
+            sleep(1);
+            printf(".");
+        }
+        printf("\n");
+    }
+    printf("\nAnalisys ended\n");
 }
