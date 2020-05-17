@@ -142,7 +142,8 @@ void analyzerDeleteFile(analyzer *a,uint idFile){
     fwsListRemoveElementByID(a->mainList, idFile, false);
     //addToIntList(a->deletedList, idFile);
     //append to deleted
-    fwsListAppend(a->deletedList,deletedNode);
+    if(deletedNode!=NULL)
+      fwsListAppend(a->deletedList,deletedNode);
   }
 }
 //stampa debug
