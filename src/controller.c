@@ -16,39 +16,25 @@
  *  es: oldController(...) non riceve più una lista di stringhe come parametro (con i nomi dei file)
  */
 
-
-/** TODO: remove from here datastructure and put in utils.c or packets.h */
-typedef struct{
-    pid_t pid;
-    int pipeAC[2];
-    int pipeCA[2];
-    pInstance *pInstances; // P processes associated to C
-    NamesList *fileNameList;
-    int currN;
-    int currM;
-} ControllerInstance;
-
-
 /** FUNCTIONS **/
-void controller(ControllerInstance*);
-void waitForMessagesInController(ControllerInstance*);
-void oldController(int, int, string[], int, ControllerInstance*);
-int  shapeTree(int, int, ControllerInstance*);
+void controller(controllerInstance*);
+void waitForMessagesInController(controllerInstance*);
+void oldController(int, int, int, controllerInstance*);
+int  shapeTree(int, int, controllerInstance*);
 void notifyNewMToPInstance(pInstance*, int);
-void killInstanceOfP(int, ControllerInstance*);
-void sendPathNameToP(string, int, bool, ControllerInstance*);
-int  processCNewFilePacket(byte[], int, ControllerInstance*);
-int  processCRemoveFilePacket(byte[], int, ControllerInstance*);
+void killInstanceOfP(int, controllerInstance*);
+void sendPathNameToP(string, int, bool, controllerInstance*);
+int  processCNewFilePacket(byte[], int, controllerInstance*);
+int  processCRemoveFilePacket(byte[], int, controllerInstance*);
 int  processCDeathPacket();
-int  processCNewValueForM(byte[], ControllerInstance*);
-int  processCNewValueForN(byte[], ControllerInstance*);
-
-
+int  processCNewValueForM(byte[], controllerInstance*);
+int  processCNewValueForN(byte[], controllerInstance*);
+int  processMessageInControllerFromAnalyzer(byte, byte*, int, controllerInstance*);
 
 /**
  * "Empty" constructor for controller. 
  */
-void controller(ControllerInstance *instanceOfMySelf){
+void controller(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->pInstances = NULL;
     instanceOfMySelf->currM = 0;
     instanceOfMySelf->currN = 0;
@@ -59,7 +45,7 @@ void controller(ControllerInstance *instanceOfMySelf){
 /**
  * Function that waits and reads messages from the Analyzer.
  */
-void waitForMessagesInController(ControllerInstance *instanceOfMySelf){
+void waitForMessagesInController(controllerInstance *instanceOfMySelf){
     while(true){
         int numBytesRead, dataSectionSize, offset;
         byte packetHeader[1 + INT_SIZE];
@@ -89,13 +75,13 @@ void waitForMessagesInController(ControllerInstance *instanceOfMySelf){
 
 
 // main worker of the C process
-void oldController(int n, int m, string files[], int numFiles, ControllerInstance *instanceOfMySelf){
+void oldController(int n, int m, int numFiles, controllerInstance *instanceOfMySelf){
     shapeTree(n, m, instanceOfMySelf);
 
-    int i;
-    for (i = 0; i < numFiles; i++){
-        sendPathNameToP(files[i], i % instanceOfMySelf->currN, false, instanceOfMySelf);
-    }
+    // int i;
+    // for (i = 0; i < numFiles; i++){
+    //     sendPathNameToP(files[i], i % instanceOfMySelf->currN, false, instanceOfMySelf);
+    // }
 
     // backbone of the correct implementation
     // while (true){
@@ -147,7 +133,7 @@ int generateNewPInstance(pInstance *newP, int index, int newM){
 // Error codes:
 // 1 - Not enough space to allocate new P table
 // 2 - Failed to generate new P process
-int shapeTree(int newN, int newM, ControllerInstance *instanceOfMySelf){
+int shapeTree(int newN, int newM, controllerInstance *instanceOfMySelf){
     int i, returnCode = 0;
 
     // free exceeding instances of P and update M value for old ones
@@ -186,13 +172,13 @@ void notifyNewMToPInstance(pInstance *instanceOfP, int newM){
     sendNewMPacket(instanceOfP->pipeCP, newM);
 }
 
-void killInstanceOfP(int pIndex, ControllerInstance *instanceOfMySelf){
+void killInstanceOfP(int pIndex, controllerInstance *instanceOfMySelf){
     // TODO - free resources
     printf("Stacca stacca: %d\n", pIndex);
     sendDeathPacket(instanceOfMySelf->pInstances[pIndex].pipeCP);
 }
 
-void sendPathNameToP(string pathName, int indexOfP, bool isInsideFolder, ControllerInstance *instanceOfMySelf){
+void sendPathNameToP(string pathName, int indexOfP, bool isInsideFolder, controllerInstance *instanceOfMySelf){
     int packetLength = 1 + INT_SIZE + 1 + strlen(pathName); // packet type, data length, isInFolder, pathName
     byte* packet = (byte*) malloc(packetLength * sizeof(byte));
     int offset = 0;
@@ -217,7 +203,7 @@ void sendPathNameToP(string pathName, int indexOfP, bool isInsideFolder, Control
 }
 
 
-int processMessageInControllerFromAnalyzer(byte packetCode, byte *packetData, int packetDataSize, pInstance *instanceOfMySelf){
+int processMessageInControllerFromAnalyzer(byte packetCode, byte *packetData, int packetDataSize, controllerInstance *instanceOfMySelf){
     int returnCode;
     switch (packetCode){
         case 0:
@@ -246,7 +232,7 @@ int processMessageInControllerFromAnalyzer(byte packetCode, byte *packetData, in
     return returnCode;
 }
 
-int processCNewFilePacket(byte packetData[], int packetDataSize, ControllerInstance *instanceOfMySelf){
+int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     
     // read file name
@@ -254,13 +240,13 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, ControllerInsta
     memcpy(buffer, packetData, packetDataSize);
     buffer[packetDataSize - 1] = '\0';
     // add file to the list
-    append(instanceOfMySelf->fileNameList, buffer);
+    appendNameToNamesList(instanceOfMySelf->fileNameList, buffer);
 
     return returnCode;
 }
 
 
-int processCRemoveFilePacket(byte packetData[], int packetDataSize, ControllerInstance *instanceOfMySelf){
+int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     
     // read file name
@@ -268,7 +254,7 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, ControllerIn
     memcpy(buffer, packetData, packetDataSize);
     buffer[packetDataSize - 1] = '\0';
     // remove file from the list
-    append(instanceOfMySelf->fileNameList, buffer);
+    appendNameToNamesList(instanceOfMySelf->fileNameList, buffer);
 
     return returnCode;
 }
@@ -286,7 +272,7 @@ int processCDeathPacket(){
  * Sets new value for M.
  * TODO: implement dynamic change! (with shapetree)
  */
-int processCNewValueForM(byte packetData[], ControllerInstance *instanceOfMySelf){
+int processCNewValueForM(byte packetData[], controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     
     uint new_m = fromBytesToInt(packetData);
@@ -299,7 +285,7 @@ int processCNewValueForM(byte packetData[], ControllerInstance *instanceOfMySelf
  * Sets new value for N.
  * TODO: implement dynamic change! (with shapetree)
  */
-int processCNewValueForN(byte packetData[], ControllerInstance *instanceOfMySelf){
+int processCNewValueForN(byte packetData[], controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     
     uint new_n = fromBytesToInt(packetData);
@@ -312,13 +298,12 @@ int processCNewValueForN(byte packetData[], ControllerInstance *instanceOfMySelf
  * Start the analysis.
  * TODO: check all the mechanics
  */
-int processCStartAnalysis(ControllerInstance *instanceOfMySelf){
+int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     int returnCode = 0;
 
     // Start analysis
     oldController(instanceOfMySelf->currN, instanceOfMySelf->currM,
-                  instanceOfMySelf->fileNameList, instanceOfMySelf->fileNameList->counter,
-                  instanceOfMySelf);    
+                  instanceOfMySelf->fileNameList->counter, instanceOfMySelf);    
 
     return returnCode;  
 }

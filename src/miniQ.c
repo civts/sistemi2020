@@ -7,12 +7,11 @@
 #include <string.h>   // for strlen()
 #include "packets.h"
 #include "utils.c"
-
-#define NUM_OCCURENCES 256 // this should be un utils...
+#include "datastructures/miniQlist.c"
 
 // IMPORTANT: compile this with -lm to make ceil works...
 
-void  miniQ(string, bool, miniQInstance*);
+void  miniQ(string, bool, miniQinfo*);
 void  sendOccurencesToReport(string, bool, int, ull[NUM_OCCURENCES]);
 byte* encodePacketForReport(string, bool, int, ull[NUM_OCCURENCES], int*);
 int   getOccurences(string, long, long, ull[NUM_OCCURENCES]);
@@ -21,7 +20,7 @@ void  printOccurencesTemp(string, ull[NUM_OCCURENCES]);
 
 // principal core of a miniQ: it's goal is to detect the char occurences
 // for a single file of his parent Qij process
-void miniQ(string fileName, bool isInsideFolder, miniQInstance *instanceOfMySelf){
+void miniQ(string fileName, bool isInsideFolder, miniQinfo *instanceOfMySelf){
     if (instanceOfMySelf->index >= instanceOfMySelf->currM){
         // should never come here
         fprintf(stderr, "Error, index of miniQ bigger than its M value\n");

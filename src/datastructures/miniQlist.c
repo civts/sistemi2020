@@ -1,3 +1,6 @@
+#ifndef __MINIQLIST__
+#define __MINIQLIST__
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -259,3 +262,5 @@ int main(){
     return 0;
 }
 */
+
+#endif

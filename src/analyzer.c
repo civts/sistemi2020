@@ -18,13 +18,7 @@
  *       già implementata, dai un'occhiata)
  */
 
-typedef struct{
-    pid_t pid;
-    int pipeAC[2];
-    int pipeCA[2];
-} ControllerInstance;
-
-ControllerInstance *controllerInstance;
+controllerInstance *cInstance;
 NamesList *filePaths;
 int numOfFiles = 0, n = 0, m = 0;
 
@@ -63,7 +57,7 @@ int getFilePathsFromArgv(string argv[], NamesList *fileList, int numPaths){
             crawler(argv[i + padding], fileList, &outNewFiles);
             numFiles += outNewFiles;
         } else if ( isValidFile(argv[i + padding]) && out == 0 ){
-            appendName(fileList, argv[i + padding]);
+            appendNameToNamesList(fileList, argv[i + padding]);
             numFiles++;
         }
     }
@@ -171,7 +165,7 @@ void interactiveMode(){
             // start analyzing process (if parameters are good)
             if(checkParameters()){
                 printf("Start analysis\n");
-                sendStartAnalysisPacket(controllerInstance->pipeAC);
+                sendStartAnalysisPacket(cInstance->pipeAC);
             }
 
         } else if (strcmp(command, showString) == 0){
@@ -187,7 +181,7 @@ void interactiveMode(){
                 crawler(command + 1, filePaths, &j);
                 added = 1;
             } else if (isValidFile(command + 1)) {
-                appendName(filePaths, command + 1);
+                appendNameToNamesList(filePaths, command + 1);
                 added = 2;
             } else {
                 fprintf(stderr, "File/folder inserted doesn't exist!\n");
@@ -199,15 +193,15 @@ void interactiveMode(){
                 sendNewFolder(oldNumberOfFiles);
                 printf("Added folder %s\n", command + 1);
             } else if(added == 2){
-                sendNewFilePacket(controllerInstance->pipeAC, command);
+                sendNewFilePacket(cInstance->pipeAC, command);
                 printf("Added file %s\n", command + 1);
             }
             // free(j);
         } else if (command[0] == '-'){
             // Management of removal of file or folder
             printf("Remove file %s\n", command + 1);
-            if (removeByName(filePaths, command + 1) == 0){
-                removeFileByNamePacket(controllerInstance->pipeAC, command + 1);
+            if (removeNodeNameByName(filePaths, command + 1) == 0){
+                removeFileByNamePacket(cInstance->pipeAC, command + 1);
             }
         // TODO per Sam: ATTENZIONE: stai supponendo che command sia di almeno tre caratteri!
         // rischiamo un out of bound! (sia per n che per m)
@@ -215,14 +209,14 @@ void interactiveMode(){
             // Update the value of N
             printf("Change n to %s\n", command + 2);
             n = atoi(command + 2);
-            sendNewNPacket(controllerInstance->pipeAC, n);
+            sendNewNPacket(cInstance->pipeAC, n);
             printf("Now n=%d\n", n);
 
         } else if (command[0] == 'm'){
             // Update the value of M
             printf("Change m to %s\n", command + 2);
             m = atoi(command + 2);
-            sendNewMPacket(controllerInstance->pipeAC, m);
+            sendNewMPacket(cInstance->pipeAC, m);
             printf("Now m=%d\n", m);
 
         } else {
@@ -237,14 +231,14 @@ void interactiveMode(){
     processExit();    
 }
 
-void staticMode(int numOfP, int numOfQ, int numOfFiles, NamesList * listFilePaths){
+void staticMode(int numOfP, int numOfQ, int numOfFiles, NamesList *listFilePaths){
     int returnCode = generateNewControllerInstance();
     printf("Static mode\n");
-    sendNewNPacket(controllerInstance->pipeAC, n);
-    sendNewMPacket(controllerInstance->pipeAC, m);
+    sendNewNPacket(cInstance->pipeAC, n);
+    sendNewMPacket(cInstance->pipeAC, m);
     // Trick: to send all files in the list call sendNewFolder with oldNumberOfFiles=0
     sendNewFolder(0);
-    sendStartAnalysisPacket(controllerInstance->pipeAC);
+    sendStartAnalysisPacket(cInstance->pipeAC);
 
     // TODO: what do we do when static analisys is started?
     // da FRA: io direi niente... è statica per qualche motivo
@@ -271,35 +265,35 @@ bool checkParameters(){
 int generateNewControllerInstance(){
     int returnCode = 0;
     // TODO: check for null return from malloc
-    controllerInstance = (ControllerInstance*) malloc(sizeof(ControllerInstance));
+    cInstance = (controllerInstance*) malloc(sizeof(cInstance));
 
-    if (pipe(controllerInstance->pipeAC) != -1 && pipe(controllerInstance->pipeCA) != -1){
+    if (pipe(cInstance->pipeAC) != -1 && pipe(cInstance->pipeCA) != -1){
         // TODO check for error -1 for fcntl
         // make the pipes non blocking
-        fcntl(controllerInstance->pipeAC[READ], F_SETFL, O_NONBLOCK);
-        fcntl(controllerInstance->pipeCA[READ], F_SETFL, O_NONBLOCK);
+        fcntl(cInstance->pipeAC[READ], F_SETFL, O_NONBLOCK);
+        fcntl(cInstance->pipeCA[READ], F_SETFL, O_NONBLOCK);
 
-        controllerInstance->pid = fork();
+        cInstance->pid = fork();
 
-        if (controllerInstance->pid < 0){
+        if (cInstance->pid < 0){
             fprintf(stderr, "Found an error creating the controllerInstance\n");
             returnCode = 2;
-        } else if (controllerInstance->pid == 0){
+        } else if (cInstance->pid == 0){
             // child: new instance of Controller
             fprintf(stderr, "controllerInstance created\n");
-            close(controllerInstance->pipeAC[WRITE]);
-            close(controllerInstance->pipeCA[READ]);
+            close(cInstance->pipeAC[WRITE]);
+            close(cInstance->pipeCA[READ]);
 
             while (true);
             // TODO: ricreare il costruttore di controller.
             // TODO: inserire l'istanza di se stesso come parametro
             // TODO: creare i metodi per aggiornare n, m e la lista di files
-            // controller(controllerInstance);
+            // controller(cInstance);
             exit(0);
         } else {
             // parent
-            close(controllerInstance->pipeAC[READ]);
-            close(controllerInstance->pipeCA[WRITE]);
+            close(cInstance->pipeAC[READ]);
+            close(cInstance->pipeCA[WRITE]);
         }
     } else {
         fprintf(stderr, "Found an error creting pipes to Controller\n");
@@ -319,7 +313,7 @@ int generateNewControllerInstance(){
 void sendNewFolder(int oldNumberOfFiles){
     int newNumberOFfiles = filePaths->counter - oldNumberOfFiles;
 
-    Node *firstNewFile = filePaths->first;
+    NodeName *firstNewFile = filePaths->first;
     int i;
     // This cycle brings firstNewFile to the pointer of the first new file
     for(i = oldNumberOfFiles; i > 0; i--){
@@ -328,7 +322,7 @@ void sendNewFolder(int oldNumberOfFiles){
 
     // this cycle calls sendNewFilePacket for each new packet
     for(i = newNumberOFfiles; i > 0; i--){
-        sendNewFilePacket(controllerInstance->pipeAC, firstNewFile->name);
+        sendNewFilePacket(cInstance->pipeAC, firstNewFile->name);
         firstNewFile = firstNewFile->next;
     }
 }
@@ -339,10 +333,10 @@ void sendNewFolder(int oldNumberOfFiles){
  */
 int processExit(){
     // Start the waterfall effect
-    sendDeathPacket(controllerInstance->pipeAC);
+    sendDeathPacket(cInstance->pipeAC);
 
     // free occupied memory:
-    free(controllerInstance);
+    free(cInstance);
     deleteNamesList(filePaths);
 
     printf("Cleanup complete, see you next time!\n");

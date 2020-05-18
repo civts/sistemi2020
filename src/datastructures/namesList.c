@@ -1,44 +1,47 @@
+#ifndef __NAMES_LIST__
+#define __NAMES_LIST__
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include "../utils.c"
 
-typedef struct Node {
+typedef struct NodeName {
     string       name;
-    struct Node *next;
-    struct Node *prev;
-} Node;
+    struct NodeName *next;
+    struct NodeName *prev;
+} NodeName;
 
 typedef struct {
-    struct Node *first;
-    struct Node *last;
+    struct NodeName *first;
+    struct NodeName *last;
     int counter;
 } NamesList;
 
-void printNode(Node*);
+void printNodeName(NodeName*);
 
-Node *constructorNode(string fileName){
-    Node *node = (Node *)malloc(sizeof(Node));
+NodeName *constructorNodeName(string fileName){
+    NodeName *node = (NodeName *)malloc(sizeof(NodeName));
     node->name = (string)malloc(sizeof(fileName));
     strcpy(node->name, fileName);
     node->next = node->prev = NULL;
     // printf("constructed node %s\n", node->name);
-    // printNode(node);
+    // printNodeName(node);
     return node;
 }
 
-void printNode(Node *node){
+void printNodeName(NodeName *node){
     printf("File: %s \n", node->name);
 }
 
-void deleteNode(Node *node){
+void deleteNodeName(NodeName *node){
     free(node->name);
     free(node);
 }
 
 /**
- * Returns a pointer to an empty list of Node (fileName) elements
+ * Returns a pointer to an empty list of NodeName (fileName) elements
  */
 NamesList *constructorNamesList(){
     NamesList *list = (NamesList *)malloc(sizeof(NamesList));
@@ -53,10 +56,10 @@ void printNamesList(NamesList *list){
     if(list->counter == 0){
         printf("miniQlist is empty!\n");
     } else {
-        struct Node *element = list->first; 
+        struct NodeName *element = list->first; 
         int i;
         while(element!=NULL){
-            printNode(element);
+            printNodeName(element);
             element = element->next;
         }
     }
@@ -64,10 +67,10 @@ void printNamesList(NamesList *list){
 
 void deleteNamesList(NamesList *list){
     if(list->counter > 0){
-        struct Node *element = list->first; 
+        struct NodeName *element = list->first; 
         int i;
         for(i=0; i<list->counter; i++){
-            deleteNode(element);
+            deleteNodeName(element);
             element = element->next;
         }
     }
@@ -75,9 +78,9 @@ void deleteNamesList(NamesList *list){
 }
 
 /**
- * Append a Node to the list 
+ * Append a NodeName to the list 
  */
-void append(NamesList *list, struct Node *newNode){
+void appendToNamesList(NamesList *list, struct NodeName *newNode){
     newNode->prev = list->last;
     newNode->next = NULL;
     if(list->counter > 0){
@@ -90,17 +93,17 @@ void append(NamesList *list, struct Node *newNode){
     list->counter++;
 }
 
-void appendName(NamesList *list, string name){
-    Node *newNode = constructorNode(name);
-    append(list, newNode);
+void appendNameToNamesList(NamesList *list, string name){
+    NodeName *newNode = constructorNodeName(name);
+    appendToNamesList(list, newNode);
 }
 
 /**
- * Returns the Node given the fileName of the file assigned
- * returns NULL if there's no Node with that fileName
+ * Returns the NodeName given the fileName of the file assigned
+ * returns NULL if there's no NodeName with that fileName
  */
-Node *getNodeByName(NamesList *list, string fileName){
-    struct Node *node = list->first;
+NodeName *getNodeNameByName(NamesList *list, string fileName){
+    struct NodeName *node = list->first;
     int i;
     
     for(i=0; i<list->counter; i++) {
@@ -114,13 +117,13 @@ Node *getNodeByName(NamesList *list, string fileName){
 }
 
 /**
- * Removes a Node given the fileName of the file it contains
+ * Removes a NodeName given the fileName of the file it contains
  * return:
- * 0 if Node removed correctly
- * 1 if Node not found
+ * 0 if NodeName removed correctly
+ * 1 if NodeName not found
  */
-int removeByName(NamesList *list, string fileName){
-    Node *toRemove = getNodeByName(list, fileName);
+int removeNodeNameByName(NamesList *list, string fileName){
+    NodeName *toRemove = getNodeNameByName(list, fileName);
     int result = 1;
     if(toRemove == NULL){
         printf("There is no file %s in the list\n", fileName);
@@ -136,7 +139,7 @@ int removeByName(NamesList *list, string fileName){
             toRemove->next->prev = toRemove->prev;
             
         }
-        deleteNode(toRemove);
+        deleteNodeName(toRemove);
         list->counter--;
         printf("%s deleted.\n", fileName);
         result = 0;
@@ -146,19 +149,21 @@ int removeByName(NamesList *list, string fileName){
 
 // int main(){
 
-//     Node *node1 = constructorNode("Marciello");
-//     Node *node2 = constructorNode("Giovanni");
-//     // printNode(node1);
-//     // printNode(node2);
+//     NodeName *node1 = constructorNodeName("Marciello");
+//     NodeName *node2 = constructorNodeName("Giovanni");
+//     // printNodeName(node1);
+//     // printNodeName(node2);
 
 //     NamesList *list = constructorNamesList();
-//     append(list, node1);
-//     append(list, node2);
+//     appendToNamesList(list, node1);
+//     appendToNamesList(list, node2);
 
 //     printNameList(list);
-//     removeByName(list, "Marciello");
-//     removeByName(list, "Marciello");
+//     removeNodeNameByName(list, "Marciello");
+//     removeNodeNameByName(list, "Marciello");
 //     printNameList(list);
 
 //     return 0;
 // }
+
+#endif

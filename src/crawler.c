@@ -51,8 +51,8 @@ int getOutputFromLSRec(int readDescriptor, NamesList *fileList){
                 if (completeName != NULL){
                     addFolderToFileName(completeName, currentFolder, stringRead);
 
-                    Node *newNode = constructorNode(completeName);
-                    append(fileList, newNode);
+                    NodeName *newNode = constructorNodeName(completeName);
+                    appendToNamesList(fileList, newNode);
 
                     numOfFileNamesProcessed++;
                 }
@@ -108,7 +108,7 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
 //     int *n = malloc(sizeof(int));
 //     crawler("./", list, n);
 //     printNamesList(list);
-//     Node *no = list->first;
+//     NodeName *no = list->first;
 //     // while(no!=NULL){
 //     //     printf("node: %s\n", (no->name) );
 //     //     no = no->next;

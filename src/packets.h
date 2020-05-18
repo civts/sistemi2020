@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "utils.c"
+#include "datastructures/namesList.c"
 
 #define READ 0
 #define WRITE 1
@@ -32,6 +33,16 @@ typedef struct{
     int currM; // number of parts in which to split the file
     int index; // index of the file part this Q needs to analyze
 } miniQInstance;
+
+typedef struct{
+    pid_t pid;
+    int pipeAC[2];
+    int pipeCA[2];
+    pInstance *pInstances; // P processes associated to C
+    NamesList *fileNameList;
+    int currN;
+    int currM;
+} controllerInstance;
 
 // forward a packet without looking inside it's content. Useful for new filepath
 int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSection){
@@ -227,7 +238,7 @@ int removeFileByIdPacket(int fd[], pid_t pidAnalyzer, int fileId){
     fromIntToBytes(pidAnalyzer, packet + 1 + INT_SIZE);
     fromIntToBytes(fileId, packet + 1 + 2*INT_SIZE);
 
-    if (write(fd[WRITE], newFilePacket, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
+    if (write(fd[WRITE], packet, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the remove file packet\n");
     }
@@ -254,7 +265,7 @@ int _internal_newFileNameToReportPacket(int packetType, int fd[], pid_t pidAnaly
     offset += INT_SIZE;
     memcpy(packet + offset, filePath, filePathLength);
 
-    if (write(fd[WRITE], newFilePacket, packetSize) != packetSize){
+    if (write(fd[WRITE], packet, packetSize) != packetSize){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the remove file packet\n");
     }
@@ -286,7 +297,7 @@ int reportErrorOnFilePacket(int fd[], pid_t pidAnalyzer, int fileId){
     fromIntToBytes(pidAnalyzer, packet + 1 + INT_SIZE);
     fromIntToBytes(fileId, packet + 1 + 2*INT_SIZE);
 
-    if (write(fd[WRITE], newFilePacket, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
+    if (write(fd[WRITE], packet, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the remove file packet\n");
     }

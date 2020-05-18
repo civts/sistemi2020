@@ -144,7 +144,7 @@ int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* inst
         fprintf(stderr, "Error, creating miniQ\n");
     } else if (f == 0){
         printf("Created miniQ\n");
-        miniQ(pathName, isInsideFolder, &newMiniQ);
+        miniQ(pathName, isInsideFolder, newMiniQ);
     } else {
         newMiniQ->pid = f;
         appendMiniQ(miniQs, constructorNodeMiniQ(newMiniQ));

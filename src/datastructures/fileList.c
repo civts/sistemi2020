@@ -13,25 +13,25 @@ typedef struct {
   int  idFile;
   int  numOfRemainingPortionsToRead;
   int  pIndex;
-} fileState;
+} FileState;
 
-typedef struct Node {
-    fileState *data;
-    struct Node *next;
-    struct Node *prev;
-} Node;
+typedef struct NodeFileState {
+    FileState *data;
+    struct NodeFileState *next;
+    struct NodeFileState *prev;
+} NodeFileState;
 
-typedef struct FileNameList {
-    struct Node *first;
-    struct Node *last;
+typedef struct FileList {
+    struct NodeFileState *first;
+    struct NodeFileState *last;
     long long int number_of_nodes;
-} FileNameList;
+} FileList;
 
 /**
- * Create a new fileState, returns the pointer
+ * Create a new FileState, returns the pointer
  */
-fileState *constructorFileState(char *fileName, int fileId, int portions, int indexOfP){
-    fileState *newFileState = (fileState *)malloc(sizeof(fileState));
+FileState *constructorFileState(char *fileName, int fileId, int portions, int indexOfP){
+    FileState *newFileState = (FileState *)malloc(sizeof(FileState));
     newFileState->fileName = (char *)malloc(sizeof(fileName));
     strcpy(newFileState->fileName, fileName);
     newFileState->idFile = fileId;
@@ -41,13 +41,13 @@ fileState *constructorFileState(char *fileName, int fileId, int portions, int in
     return newFileState;
 }
 
-void printFileState(fileState *state){
+void printFileState(FileState *state){
     printf("FileState id: %3d, File name: %s\n", state->idFile, state->fileName);
     printf("Remaining portions: %3d, index of P: %3d\n", state->numOfRemainingPortionsToRead, state->pIndex);
     printf("================\n");
 }
 
-void deleteFileState(fileState *state){
+void deleteFileState(FileState *state){
     free(state->fileName);
     free(state);
 }
@@ -57,21 +57,21 @@ void deleteFileState(fileState *state){
  * Create a new fileNode (given a filestate)
  * next and prev will be added at the moment of appending the node in the list
  */
-Node *constructorFileNode(fileState *newFileState){
-    Node *newNode = (Node *) malloc(sizeof(Node));
+NodeFileState *constructorFileNode(FileState *newFileState){
+    NodeFileState *newNode = (NodeFileState *) malloc(sizeof(NodeFileState));
     newNode->data = newFileState;
     newNode->prev = newNode->next = NULL;
 
     return newNode;
 }
 
-void printNode(Node *node){
-    // printf("Node: %p\n", node);
+void printNode(NodeFileState *node){
+    // printf("NodeFileState: %p\n", node);
     printFileState(node->data);
     print("==================");
 }
 
-void deleteNode(Node *node){
+void deleteNode(NodeFileState *node){
     deleteFileState(node->data);
     free(node);
     printf("node destroied\n");
@@ -81,8 +81,8 @@ void deleteNode(Node *node){
 /**
  * Create a new empty fileList
  */
-FileNameList *constructorFileNameList(FileNameList *list){
-    list = (FileNameList *)malloc(sizeof(FileNameList));
+FileList *constructorFileNameList(FileList *list){
+    list = (FileList *)malloc(sizeof(FileList));
     list->first = NULL;
     list->last = NULL;
     list->number_of_nodes = 0;
@@ -90,24 +90,24 @@ FileNameList *constructorFileNameList(FileNameList *list){
     return list;
 }
 
-void printList(FileNameList *list) {
+void printList(FileList *list) {
     if(list->number_of_nodes==0){
         printf("List is empty!\n");
         return;
     }
 
-    struct Node *node = list->first;
+    struct NodeFileState *node = list->first;
     int i;
     for(i=0; i<list->number_of_nodes; i++) {
-        printf("Node: %3d\n", i);
+        printf("NodeFileState: %3d\n", i);
         printNode(node);
         node = node->next;
     }
 }
 
-void deleteList(FileNameList *list){
-    Node *node = list->first;
-    Node *next;
+void deleteList(FileList *list){
+    NodeFileState *node = list->first;
+    NodeFileState *next;
     int i;
     for(i=0; i<list->number_of_nodes; i++){
         next = node->next;
@@ -119,9 +119,9 @@ void deleteList(FileNameList *list){
 
 
 /**
- * Append a Node to the list 
+ * Append a NodeFileState to the list 
  */
-void *append(FileNameList *list, struct Node *newNode){
+void *append(FileList *list, struct NodeFileState *newNode){
     newNode->prev = list->last;
     newNode->next = NULL;
     if(list->number_of_nodes>0){
@@ -139,11 +139,11 @@ void appendName(){
 }
 
 /**
- * Returns the first Node with a file with the argument name
+ * Returns the first NodeFileState with a file with the argument name
  * returns NULL if there's no file with that name
  */
-Node *getNodeByName(FileNameList *list, char *nodeName){  
-    struct Node *node = list->first;
+NodeFileState *getNodeByName(FileList *list, char *nodeName){  
+    struct NodeFileState *node = list->first;
     int i;
     
     for(i=0; i<list->number_of_nodes; i++) {
@@ -158,12 +158,12 @@ Node *getNodeByName(FileNameList *list, char *nodeName){
 }
 
 /**
- * Returns the Node given the id of the fileState
- * returns NULL if there's no fileState with that id
- * returns the only first Node if more nodes have that id
+ * Returns the NodeFileState given the id of the FileState
+ * returns NULL if there's no FileState with that id
+ * returns the only first NodeFileState if more nodes have that id
  */
-Node *getNodeById(FileNameList *list, int id){
-    struct Node *node = list->first;
+NodeFileState *getNodeById(FileList *list, int id){
+    struct NodeFileState *node = list->first;
     int i;
     
     for(i=0; i<list->number_of_nodes; i++) {
@@ -182,8 +182,8 @@ Node *getNodeById(FileNameList *list, int id){
  * If there's no node with that name it does noting.
  * If there are more nodes with that name it deletes the first one.
  */
-void removeNode(FileNameList *list, char *name){
-    Node *toRemove = getNodeByName(list, name);
+void removeNode(FileList *list, char *name){
+    NodeFileState *toRemove = getNodeByName(list, name);
     
     if(toRemove == NULL){
         printf("No node found with name %s\n", name);
@@ -209,9 +209,9 @@ void removeNode(FileNameList *list, char *name){
  * returns the new value of numOfRemainingPortionsToRead, or -1 in the case that the 
  * file was not found
  */
-int decrementRemainingPortionsById(FileNameList *list, int idFile){
+int decrementRemainingPortionsById(FileList *list, int idFile){
     int newValue=-1;
-    Node *node = getNodeById(list, idFile);
+    NodeFileState *node = getNodeById(list, idFile);
     if(node==NULL){
         printf("Cannot decrement, idFile not found\n");
     } else {
@@ -229,9 +229,9 @@ int decrementRemainingPortionsById(FileNameList *list, int idFile){
  * Returns true if numOfRemainingPortionsToRead is equal to 0 for every file,
  * false otherwise.
  */
-bool isAnalisiFinita(FileNameList *list){
+bool isAnalisiFinita(FileList *list){
     bool finished = true;
-    Node *element = list->first;
+    NodeFileState *element = list->first;
     int i;
 
     for(i=0; i<list->number_of_nodes; i++){
@@ -243,23 +243,23 @@ bool isAnalisiFinita(FileNameList *list){
     return finished;
 }
 
-void assignFileTo(FileNameList *list, int idFile, int portions){
+void assignFileTo(FileList *list, int idFile, int portions){
     // TODO: implementare/capire questa funzione
-    // A che cosa mi serve qui il numOfRemainingPortions se l'ho già settato nel fileState?'
+    // A che cosa mi serve qui il numOfRemainingPortions se l'ho già settato nel FileState?'
 }
 
 
 /**
 int main(){
-    fileState *file = constructorFileState("prova1", 2, 1, 4);
-    fileState *file2 = constructorFileState("prova2", 3, 1, 4);
+    FileState *file = constructorFileState("prova1", 2, 1, 4);
+    FileState *file2 = constructorFileState("prova2", 3, 1, 4);
 //    printFileState(file);
 
-    Node *nodo = constructorFileNode(file);
-    Node *nodo2 = constructorFileNode(file2);
+    NodeFileState *nodo = constructorFileNode(file);
+    NodeFileState *nodo2 = constructorFileNode(file2);
 //    printNode(nodo);
 
-    FileNameList *lista = constructorFileNameList(lista);
+    FileList *lista = constructorFileNameList(lista);
     lista = append(lista, nodo);
     lista = append(lista, nodo2);
 
@@ -274,7 +274,7 @@ int main(){
 
     printList(lista);
 
-    // Node *trovato = getNodeById(lista, 2);
+    // NodeFileState *trovato = getNodeById(lista, 2);
     // if(trovato == NULL){
     //     printf("Nodo non trovato\n");
     // } else {
