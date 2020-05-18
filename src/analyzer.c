@@ -207,7 +207,7 @@ void interactiveMode(){
             // Management of removal of file or folder
             printf("Remove file %s\n", command + 1);
             if (removeByName(filePaths, command + 1) == 0){
-                removeFilePacket(controllerInstance->pipeAC, command + 1);
+                removeFileByNamePacket(controllerInstance->pipeAC, command + 1);
             }
         // TODO per Sam: ATTENZIONE: stai supponendo che command sia di almeno tre caratteri!
         // rischiamo un out of bound! (sia per n che per m)
@@ -290,6 +290,7 @@ int generateNewControllerInstance(){
             close(controllerInstance->pipeAC[WRITE]);
             close(controllerInstance->pipeCA[READ]);
 
+            while (true);
             // TODO: ricreare il costruttore di controller.
             // TODO: inserire l'istanza di se stesso come parametro
             // TODO: creare i metodi per aggiornare n, m e la lista di files

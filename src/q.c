@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include "utils.c"
 #include "miniQ.c"
+#include "datastructures/miniQlist.c"
 
 #define READ 0
 #define WRITE 1
@@ -21,8 +22,10 @@ int  processQDeathPacket();
 int  processQNewValueForM(byte[], qInstance*);
 int  processQFileResults(byte[], int, qInstance*);
 
+miniQlist *miniQs = NULL;
+
 void q(qInstance *instanceOfMySelf){
-    // TODO - create the list of miniQ
+    miniQs = constructorMiniQlist();
 
     waitForMessagesInQ(instanceOfMySelf);
 }
@@ -64,7 +67,6 @@ void waitForMessagesInQFromP(qInstance *instanceOfMySelf){
     }
 }
 
-// TODO we need list of miniQ(file id and miniQ pid) to implement this
 // here the messages arrives always atomically, so we don't
 // need to check if the message is complete
 void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
@@ -72,17 +74,18 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
     byte packetHeader[1 + INT_SIZE];
 
     int i;
-    // for (i = 0; i < numMiniQinList; i++){
-    //     numBytesRead = read(listMiniQ[i].pipeMiniQQ[READ], packetHeader, 1 + INT_SIZE);
+    NodeMiniQ *currElement = miniQs->first;
+    for (i = 0; i < miniQs->counter; i++){
+        numBytesRead = read(currElement->data->pipeToQ[READ], packetHeader, 1 + INT_SIZE);
+        if (numBytesRead == (1 + INT_SIZE)){
+            dataSectionSize = fromBytesToInt(packetHeader + 1);
+            byte packetData[dataSectionSize];
 
-    //     if (numBytesRead == (1 + INT_SIZE)){
-    //         dataSectionSize = fromBytesToInt(packetHeader + 1);
-    //         byte packetData[dataSectionSize];
-
-    //         numBytesRead  = read(qInstances[i].pipeQP[READ], packetData, dataSectionSize);
-    //         processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
-    //     }
-    // }
+            numBytesRead  = read(currElement->data->pipeToQ[READ], packetData, dataSectionSize);
+            processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
+        }
+        currElement = currElement->next;
+    }
 }
 
 int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize, qInstance *instanceOfMySelf){
@@ -129,11 +132,12 @@ int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* inst
     memcpy(pathName, packetData + 1, packetDataSize - 1);
     pathName[packetDataSize - 1] = '\0';
 
-    miniQInstance newMiniQ;
-    newMiniQ.currM = instanceOfMySelf->currM;
-    newMiniQ.index = instanceOfMySelf->index;
+    int pipeMiniQQ[2];
+    pipe(pipeMiniQQ);
+    fcntl(pipeMiniQQ[READ], F_SETFL, O_NONBLOCK);
+    miniQinfo *newMiniQ = constructorMiniQinfo(0, 0, pipeMiniQQ, instanceOfMySelf->currM, instanceOfMySelf->index);
 
-    // create miniQ
+    // create miniQ process
     pid_t f;
     f = fork();
     if (f < 0){
@@ -142,7 +146,8 @@ int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* inst
         printf("Created miniQ\n");
         miniQ(pathName, isInsideFolder, &newMiniQ);
     } else {
-        // TODO - append newMiniQ to the list of miniQs
+        newMiniQ->pid = f;
+        appendMiniQ(miniQs, constructorNodeMiniQ(newMiniQ));
     }
 
     return 0;
@@ -171,8 +176,8 @@ int processQFileResults(byte packetData[], int packetDataSize, qInstance *instan
     if (forwardPacket(instanceOfMySelf->pipeQP, 4, packetDataSize, packetData) < 0){
         returnCode = 1;
     }
-
-    // TODO - remove corresponding miniQ from miniQ list since it has finished its work
+    // TODO - get file id from packetData
+    removeMiniQByFileId(miniQs, 0);
 
     return returnCode;
 }
