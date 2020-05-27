@@ -25,7 +25,7 @@
 //                                 filePath
 //- removeFirst                 -> Remove (and de-allocates) first node
 //- removeLast                  -> Remove (and de-allocates) last node
-//- updateFileData              -> Adds new stats to the relative fileWithStats
+//- updateFileData {}             -> Adds new stats to the relative fileWithStats
 //                                 (if not present appends a new node)
 //- removeLast                  -> Remove (and de-allocates) last node
 //- printfwsList                   -> prints the fwsList
