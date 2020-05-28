@@ -25,11 +25,15 @@ intList *constructorIntListEmpty();
 intList *constructorIntListOne(int v);
 // Returns wether the analyzeranalyzerList is empty or not
 bool intListIsEmpty(intList *l);
+//appends element
+void intListAppend(intList *l, int value);
 // Returns reference to the int in the list w/ the given pid or NULL if none
 // founded
 intNode *intListGetElementByValue(intList *l, int v);
 // Removes the element with the specified value (first occourrence only).
 void intListRemoveElementByValue(intList *l, int v);
+// destroys the list
+void destructorIntList(intList *l);
 
 intNode *constructorIntNode(int v) {
   intNode *node = (intNode *)malloc(sizeof(intNode));
@@ -96,6 +100,7 @@ void intListRemoveElementByValue(intList *l, int v) {
     l->count--;
   }
 }
+
 void destructorIntList(intList *l) {
   intNode *node = l->firstNode;
   while (node != NULL) {

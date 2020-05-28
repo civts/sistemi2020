@@ -65,11 +65,11 @@ void fwsListUpdateFileData(fwsList *l, uint id, uint charTot, uint charsToAdd,
 // ignored
 void fwsListUpdateFilePath(fwsList *fwsList, uint id, char *path);
 // remove element with given id from fwsList, delete true if deletion of said
-// node id necessary. Does nothing if element is not found
-void fwsListRemoveElementByID(fwsList *fwsList, uint id, bool delete);
+// node id necessary. Returns true if the element was successfully removed from the list
+bool fwsListRemoveElementByID(fwsList *fwsList, uint id, bool delete);
 // remove element with given PATH from fwsList, delete true if deletion of said
-// node id necessary. Does nothing if element is not found
-void fwsListRemoveElementByPath(fwsList *fwsList, char *path, bool delete);
+// node id necessary. Returns true if the element was successfully removed from the list
+bool fwsListRemoveElementByPath(fwsList *fwsList, char *path, bool delete);
 
 void fwsListPrint(fwsList *l);
 
@@ -198,7 +198,8 @@ void fwsListUpdateFilePath(fwsList *l, uint id, char *path) {
   }
 }
 
-void fwsListRemoveElementByID(fwsList *l, uint id, bool delete) {
+bool fwsListRemoveElementByID(fwsList *l, uint id, bool delete) {
+  bool deleted = false;
   fileWithStats *target = fwsListGetElementByID(l, id);
   if (target != NULL) {
     fileWithStats *prev = target->previousNode;
@@ -215,10 +216,13 @@ void fwsListRemoveElementByID(fwsList *l, uint id, bool delete) {
     if (next != NULL)
       next->previousNode = prev;
     l->count--;
+    deleted=true;
   }
+  return deleted;
 }
 
-void fwsListRemoveElementByPath(fwsList *l, char *path, bool delete) {
+bool fwsListRemoveElementByPath(fwsList *l, char *path, bool delete) {
+  bool deleted = false;
   fileWithStats *target = fwsListGetElementByPath(l, path);
   if (target != NULL) {
     fileWithStats *prev = target->previousNode;
@@ -232,7 +236,9 @@ void fwsListRemoveElementByPath(fwsList *l, char *path, bool delete) {
     if (next != NULL)
       next->previousNode = prev;
     l->count--;
+    deleted=true;
   }
+  return deleted;
 }
 // Prints the fwsList debug
 void fwsListPrint(fwsList *l) {

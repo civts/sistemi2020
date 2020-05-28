@@ -37,7 +37,7 @@ typedef struct analyzer_t {
   // Analyzer process pid
   uint pid;
   // List of the files with stats relative to this analyzer
-  folderList *mainList; //main list diventa la lista doppia
+  folder *mainList;
 
   // lista di file parziali
   fwsList *incompleteList;
@@ -53,19 +53,20 @@ void destructorAnalyzer(analyzer *a);
 
 // funzioni che gestiscono i pacchetti
 
-// function that adds new file to the mainList
+// function that adds new file to the mainList. If already present, it is ignored. It automatically manages the tree
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs);
-// function that adds new file to the incompleteList
+// function that adds new file to the incompleteList. If already present, it is ignored
 void analyzerAddIncompleteFile(analyzer *a, fileWithStats *fs);
-// function that adds new file to a list. if already present, ignored
-void analyzerAddFile(analyzer *a, fwsList *l, fileWithStats *fs);
 // updatas the path of the file with id and places it into mainList from
 // incompleteList. if analyzes does not exits, packet is discarded
 void analyzerUpdateFilePath(analyzer *a, uint idFile, char *path);
 // delete a file with given id of pid, IF there are no matches, the packet is
 // discarded
 void analyzerDeleteFile(analyzer *a, uint idFile);
-
+// update file with new data. If no file with given id is found, nothing is done
+void analyzerUpdateFileData(analyzer *a, uint idFile,
+                                uint totChars, uint readChars,
+                                uint occurrences[INT_SIZE]);
 // stampa debug
 void analyzerPrint(analyzer *a);
 
@@ -73,7 +74,7 @@ void analyzerPrint(analyzer *a);
 analyzer *constructorAnalyzer(uint pid) {
   analyzer *a = (analyzer *)malloc(sizeof(analyzer));
   a->pid = pid;
-  a->mainList = constructorFwsListEmpty();
+  a->mainList = constructorFolder("");
   a->incompleteList = constructorFwsListEmpty();
   a->previousNode = NULL;
   a->nextNode = NULL;
@@ -89,25 +90,26 @@ void destructorAnalyzer(analyzer *a) {
   if (DEBUGGING)
     printf("Deleting Analyzer instance @%p for Analyzer with pid %u\n", a,
            a->pid);
-  destructorFwsList(a->mainList);
+  destructorFolder(a->mainList);
   destructorFwsList(a->incompleteList);
   free(a);
 }
 
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs) {
-  analyzerAddFile(a, a->mainList, fs);
+  //controllo non sia già presente
+  fileWithStats *n = folderGetElementByID(a->mainList, fs->id);
+  if (n == NULL) {
+    folderAddFile(a->mainList, fs,fs->path);
+  } else {
+    destructorFWS(fs);
+  }
 }
 
 void analyzerAddIncompleteFile(analyzer *a, fileWithStats *fs) {
-  analyzerAddFile(a, a->incompleteList, fs);
-}
-
-void analyzerAddFile(analyzer *a, fwsList *l, fileWithStats *fs) {
   //controllo non sia già presente
-  fileWithStats *n = fwsListGetElementByID(a->mainList, fs->id);
+  fileWithStats *n = fwsListGetElementByID(a->incompleteList, fs->id);
   if (n == NULL) {
-    // aggiungo alla lista, mainList o IncompleteList a seconda della chiamata
-    fwsListAppend(l, fs);
+    fwsListAppend(a->mainList, fs);
   } else {
     destructorFWS(fs);
   }
@@ -122,13 +124,21 @@ void analyzerUpdateFilePath(analyzer *a, uint idFile, char *path) {
   fwsListRemoveElementByID(a->incompleteList, idFile, false);
   // add to mainList
   if (updatedNode != NULL)
-    fwsListAppend(a->mainList, updatedNode);
+    folderAddFile(a->mainList, updatedNode,updatedNode->path);
 }
 
 void analyzerDeleteFile(analyzer *a, uint idFile) {
   //remove from mainlist
-  fwsListRemoveElementByID(a->mainList, idFile, true);
+  folderRemoveElementByID(a->mainList, idFile);
+}
 
+void analyzerUpdateFileData(analyzer *a, uint idFile,
+                                uint totChars, uint readChars,
+                                uint occurrences[INT_SIZE]) {
+  fileWithStats * searched = folderGetElementByID(a->mainList,idFile);
+  if(searched!=NULL){
+    fwsUpdateFileData(searched,totChars,readChars,occurrences);
+  }
 }
 // stampa debug
 void analyzerPrint(analyzer *a) {

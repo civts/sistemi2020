@@ -52,8 +52,8 @@ void analyzerListAppend(analyzerList *l, analyzer *an);
 // found
 analyzer *analyzerListGetElementByPid(analyzerList *l, uint pid);
 // Removes the element with the specified pid (first occourrence only). Does
-// nothing if element is not found
-void analyzerListRemoveElementByPid(analyzerList *l, uint pid);
+// nothing if element is not found. Returns true if the element was successfully removed from the list
+bool analyzerListRemoveElementByPid(analyzerList *l, uint pid);
 // Removes first element from the analyzerNodeanalyzerList.
 void analyzerListRemoveFirst(analyzerList *l);
 // Removes the last element from the analyzerList.
@@ -142,7 +142,8 @@ analyzer *analyzerListGetElementByPid(analyzerList *l, uint pid) {
   return NULL;
 }
 
-void analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
+bool analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
+  bool deleted = false
   if (DEBUGGING)
     printf("Getting element with pid %u for deletion\n", pid);
   analyzer *targetNode = analyzerListGetElementByPid(l, pid);
@@ -160,6 +161,7 @@ void analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
       next->previousNode = prev;
     destructorAnalyzer(targetNode);
     l->count--;
+    deleted=true; 
   } else {
     if (DEBUGGING)
       printf(
@@ -167,6 +169,7 @@ void analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
           "deleted\n",
           pid);
   }
+  return deleted;
 }
 
 void analyzerListRemoveFirst(analyzerList *l) {
@@ -235,7 +238,7 @@ void analyzerListUpdateFileData(analyzerList *l, uint pid, uint idFile,
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
     // update
-    fwsListUpdateFileData(a->mainList, idFile, totChars, readChars,
+    analyzerUpdateFileData(a, idFile, totChars, readChars,
                           occurrences);
     }else {
     // perror("analyzer non esistente\n");

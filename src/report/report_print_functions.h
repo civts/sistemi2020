@@ -69,8 +69,9 @@ void printSingleFile(fileWithStats *f, bool group);
 // analyzers list + list of paths of the files and a bool to group or not.
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group);
-int countFilesInFolderList(folderList *root);
-
+//int countFilesInFolderList(folderList *root); Non credo di aver capito troppo cosa vuoi. 
+// Funzione magica che conta il numero di file contenuti in una cartella e tutte le sue sottocartelle annidate ( TESTED !)
+int countFilesInFolder(folder *root);
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
   int totAnalyzers = 0;
@@ -86,16 +87,29 @@ void printFirstInfoLine(analyzerList *aList) {
   }
   printf(":\n");
 }
+// ??? 
+// immagino sia una funzione ricorsiva che conta tutti i file contenuti in una cartella e sottocartelle
+// int countFilesInFolderList(folderList *root) {
+//   int result = root->firstNode->fileList->count;
+//   folderList *subFolders = root->firstNode->subfolders;
+//   if (subFolders != NULL) {
+//     result += countFilesInFolderList(subFolders);
+//   }
+//   return result;
+// }
 
-int countFilesInFolderList(folderList *root) {
-  int result = root->firstNode->fileList->count;
-  folderList *subFolders = root->firstNode->subfolders;
-  if (subFolders != NULL) {
-    result += countFilesInFolderList(subFolders);
+int countFilesInFolder(folder *root) {
+  int result = root->fileList->count;
+  folderList *subFolders = root->subfolders;
+  if (subFolders != NULL) { //controllo non necessario in quanto una cartella ha sempre una lista di sottocartelle, possibilmente vuota
+    folder* nested = subFolders->firstNode;
+    while(nested!=NULL){
+      result += countFilesInFolder(nested);
+      nested = nested->nextNode;
+    }
   }
   return result;
 }
-
 void printPercentage(uint a, uint b) {
   const int barWidth = 30;
   float percentage = b == 0 ? 0 : a / (float)b;
