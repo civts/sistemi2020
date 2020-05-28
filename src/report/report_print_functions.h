@@ -1,7 +1,7 @@
 #include "../packet_codes.h"
 #include "../utils.c"
 //#include "./file_with_stats_list.h"
-//#include "./analyzer_list.h"
+#include "./analyzer_list.h"
 #include "./report_utils.h"
 #include <fcntl.h>
 #ifndef REPORT_PRINT_FUNCTIONS_H
@@ -14,6 +14,8 @@ const char punctuationChars[] = {
 
 // Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
 void printFirstInfoLine(analyzerList *aList);
+// Prints a progress bar with the percentage of a/b*100
+void printPercentage(uint a, uint b);
 // Default print function (no additional argv). Should look ilke this:
 //  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
 //  a-z: 2109
@@ -23,6 +25,7 @@ void printFirstInfoLine(analyzerList *aList);
 // 50 % complete
 // TESTED
 void printRecapCompact(analyzerList *aList);
+
 // Print function for the -v flag and possibly -g.
 //
 //---------------------------------------------------------------
@@ -62,22 +65,19 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup);
 // or not). If group is false it prints occourrences of each letter, else
 // clusters.
 void printSingleFile(fileWithStats *f, bool group);
-// PRInts a progressbar numbers from 0 to 100 ?
-void printProgressBar(uint percentage);
-// Prints a progress bar with the percentage of a/b*100
-void printPercentage(uint a, uint b);
 // Print function for when the user specifies the --only flag. Accepts the
 // analyzers list + list of paths of the files and a bool to group or not.
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group);
+int countFilesInFolderList(folderList *root);
 
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
   int totAnalyzers = 0;
-  analyzer *current = aList->firstNode;
-  while (current != NULL) {
-    totFiles += current->mainList->count;
-    current = current->nextNode;
+  analyzer *currentAnalyzer = aList->firstNode;
+  folderList *currentFoldersList = currentAnalyzer->mainList->firstNode;
+  while (currentAnalyzer != NULL) {
+    totFiles += countFilesInFolderList(currentFoldersList->firstNode);
     totAnalyzers++;
   }
   printf("Analyzed %u files", totFiles);
@@ -87,11 +87,36 @@ void printFirstInfoLine(analyzerList *aList) {
   printf(":\n");
 }
 
+int countFilesInFolderList(folderList *root) {
+  int result = root->firstNode->fileList->count;
+  folderList *subFolders = root->firstNode->subfolders;
+  if (subFolders != NULL) {
+    result += countFilesInFolderList(subFolders);
+  }
+  return result;
+}
+
+void printPercentage(uint a, uint b) {
+  const int barWidth = 30;
+  float percentage = b == 0 ? 0 : a / (float)b;
+  printf("\n[");
+  int i, pos = barWidth * percentage;
+  for (i = 0; i < barWidth; i++) {
+    if (i < pos)
+      printf("=");
+    else if (i == pos && percentage != 0) {
+      printf(">");
+    } else
+      printf(" ");
+  }
+  printf("] %.2f%% complete\n", percentage * 100);
+}
+
 void printRecapCompact(analyzerList *aList) {
   printFirstInfoLine(aList);
   analyzer *current = aList->firstNode;
-  uint az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead,
-      totalChars;
+  uint az, AZ, digits, spaces, punctuation, otherChars;
+  long totalCharsRead, totalChars;
   az = AZ = digits = spaces = punctuation = otherChars = totalChars =
       totalCharsRead = 0;
   while (current != NULL) {
@@ -124,7 +149,7 @@ void printRecapCompact(analyzerList *aList) {
       punctuation += thisPunct;
       otherChars += fws->readCharacters - thisaz - thisAZ - thisDigits -
                     thisPunct - thisSpaces;
-      totalCharsRead = fws->readCharacters;
+      totalCharsRead += fws->readCharacters;
       totalChars += fws->totalCharacters;
       cursor = cursor->nextNode;
     }
@@ -208,22 +233,6 @@ void printSingleFile(fileWithStats *f, bool group) {
   printf("others: %d\n", otherChars);
   printf("\nTotal characters read: %u over %u\n", totalCharsRead, totalChars);
   printPercentage(totalCharsRead, totalChars);
-}
-
-void printPercentage(uint a, uint b) {
-  const int barWidth = 30;
-  float percentage = b == 0 ? 0 : a / (float)b;
-  printf("\n[");
-  int i, pos = barWidth * percentage;
-  for (i = 0; i < barWidth; i++) {
-    if (i < pos)
-      printf("=");
-    else if (i == pos && percentage != 0) {
-      printf(">");
-    } else
-      printf(" ");
-  }
-  printf("] %.2f%% complete\n", percentage * 100);
 }
 
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],

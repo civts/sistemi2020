@@ -32,7 +32,7 @@
 typedef struct {
   // pointer to the first node
   fileWithStats *firstNode;
-  // how many nodes are currently in the fwsfwsList
+  // how many nodes are currently in the fwsList
   int count;
 } fwsList;
 

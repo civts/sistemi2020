@@ -1,6 +1,6 @@
 #include "../utils.c"
 #include "./file_with_stats_list.h"
-#include "./folder_list.h"
+#include "./folder_list.c"
 //#include "int_list.h" per semplificare i debugging per adesso non uso una
 //intList
 #include <stdio.h>  //print etc
@@ -37,7 +37,7 @@ typedef struct analyzer_t {
   // Analyzer process pid
   uint pid;
   // List of the files with stats relative to this analyzer
-  folder_list *mainList; //main list diventa la lista doppia
+  folderList *mainList; //main list diventa la lista doppia
 
   // lista di file parziali
   fwsList *incompleteList;
