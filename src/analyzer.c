@@ -26,13 +26,12 @@ int  modeSwitcher(char, int, char**);
 void helpMode();
 void interactiveMode();
 void staticMode(int, int, int, NamesList *);
-
 bool isValidMode(string);
-int getFilePathsFromArgv(string[], NamesList*, int);
+int  getFilePathsFromArgv(string[], NamesList*, int);
 bool checkParameters();
-int generateNewControllerInstance();
-void sendNewFolder(int);
-int processExit();
+int  generateNewControllerInstance();
+void sendAllFiles();
+int  processExit();
 void waitAnalisysEnd();
 
 // check if the mode is a two char string, with the
@@ -150,6 +149,8 @@ void helpMode(){
 // TODO - check all error codes from sys calls and from out functions
 void interactiveMode(){
     int returnCode = generateNewControllerInstance();
+    sendAllFiles();
+
     const char analyzeString[] = "analyze";
     const char exitString[] = "exit";
     const char showString[] = "show";
@@ -175,34 +176,23 @@ void interactiveMode(){
             // Managment of addition of file or folder
             // int *j = malloc(sizeof(int));
             int j;
-            int added;
             int oldNumberOfFiles = filePaths->counter;
             if(isDirectory(command + 1, '/', &j)){
                 crawler(command + 1, filePaths, &j);
-                added = 1;
+                sendAllFiles();
+                printf("Added folder %s\n", command + 1);
             } else if (isValidFile(command + 1)) {
                 appendNameToNamesList(filePaths, command + 1);
-                added = 2;
+                sendAllFiles();
+                printf("Added file %s\n", command + 1);
             } else {
                 fprintf(stderr, "File/folder inserted doesn't exist!\n");
-                added = 3;
             }
-            // TODO per Sam: perché esiste added? Non si poteva inserire
-            // tutto negli if qui sopra?
-            if (added == 1){
-                sendNewFolder(oldNumberOfFiles);
-                printf("Added folder %s\n", command + 1);
-            } else if(added == 2){
-                sendNewFilePacket(cInstance->pipeAC, command);
-                printf("Added file %s\n", command + 1);
-            }
-            // free(j);
+
         } else if (command[0] == '-'){
             // Management of removal of file or folder
-            printf("Remove file %s\n", command + 1);
-            if (removeNodeNameByName(filePaths, command + 1) == 0){
-                removeFileByNamePacket(cInstance->pipeAC, command + 1);
-            }
+            printf("Remove file %s\n", command + 1); 
+            removeFileByNamePacket(cInstance->pipeAC, command + 1);
         // TODO per Sam: ATTENZIONE: stai supponendo che command sia di almeno tre caratteri!
         // rischiamo un out of bound! (sia per n che per m)
         } else if (command[0] == 'n'){
@@ -237,8 +227,8 @@ void staticMode(int numOfP, int numOfQ, int numOfFiles, NamesList *listFilePaths
     sendNewNPacket(cInstance->pipeAC, n);
     sendNewMPacket(cInstance->pipeAC, m);
     // Trick: to send all files in the list call sendNewFolder with oldNumberOfFiles=0
-    sendNewFolder(0);
-    sendStartAnalysisPacket(cInstance->pipeAC);
+    sendAllFIles();
+    sendStartAnalysisPacket(cInstance->pipeAC);    
 
     // TODO: what do we do when static analisys is started?
     // da FRA: io direi niente... è statica per qualche motivo
@@ -268,7 +258,7 @@ int generateNewControllerInstance(){
     cInstance = (controllerInstance*) malloc(sizeof(cInstance));
 
     if (pipe(cInstance->pipeAC) != -1 && pipe(cInstance->pipeCA) != -1){
-        // TODO check for error -1 for fcntl
+        // TODO: check for error -1 for fcntl
         // make the pipes non blocking
         fcntl(cInstance->pipeAC[READ], F_SETFL, O_NONBLOCK);
         fcntl(cInstance->pipeCA[READ], F_SETFL, O_NONBLOCK);
@@ -283,12 +273,7 @@ int generateNewControllerInstance(){
             fprintf(stderr, "controllerInstance created\n");
             close(cInstance->pipeAC[WRITE]);
             close(cInstance->pipeCA[READ]);
-
-            while (true);
-            // TODO: ricreare il costruttore di controller.
-            // TODO: inserire l'istanza di se stesso come parametro
-            // TODO: creare i metodi per aggiornare n, m e la lista di files
-            // controller(cInstance);
+            controller(cInstance);
             exit(0);
         } else {
             // parent
@@ -310,21 +295,17 @@ int generateNewControllerInstance(){
  * sends each of them to the controller.
  * TODO: inert controls on errors
  */
-void sendNewFolder(int oldNumberOfFiles){
-    int newNumberOFfiles = filePaths->counter - oldNumberOfFiles;
+void sendAllFiles(){
+    int numberOFfiles = filePaths->counter;
 
-    NodeName *firstNewFile = filePaths->first;
+    NodeName *file = filePaths->first;
     int i;
-    // This cycle brings firstNewFile to the pointer of the first new file
-    for(i = oldNumberOfFiles; i > 0; i--){
-        firstNewFile = firstNewFile->next;
+    // this cycle calls sendNewFilePacket for each file packet
+    for(i = 0; i < numberOFfiles; i++){
+        sendNewFilePacket(cInstance->pipeAC, file->name);
+        file = file->next;
     }
-
-    // this cycle calls sendNewFilePacket for each new packet
-    for(i = newNumberOFfiles; i > 0; i--){
-        sendNewFilePacket(cInstance->pipeAC, firstNewFile->name);
-        firstNewFile = firstNewFile->next;
-    }
+    emptyNameList(filePaths);
 }
 
 /**

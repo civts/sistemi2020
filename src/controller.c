@@ -9,6 +9,8 @@
 #define READ 0
 #define WRITE 1
 
+char* RECORD_FIFO = "/tmp/record_controller_fifo";
+
 /**
  * Arrivato fino ad implementare processCStartAnalysis().
  * Controllo sulle altre funzioni di ricezione pacchetto.
@@ -19,6 +21,8 @@
 /** FUNCTIONS **/
 void controller(controllerInstance*);
 void waitForMessagesInController(controllerInstance*);
+void waitForMessagesInCFromA(controllerInstance*);
+void waitForMessagesInCFromP(controllerInstance*);
 void oldController(int, int, int, controllerInstance*);
 int  shapeTree(int, int, controllerInstance*);
 void notifyNewMToPInstance(pInstance*, int);
@@ -30,6 +34,8 @@ int  processCDeathPacket();
 int  processCNewValueForM(byte[], controllerInstance*);
 int  processCNewValueForN(byte[], controllerInstance*);
 int  processMessageInControllerFromAnalyzer(byte, byte*, int, controllerInstance*);
+int  openFifoToRecord(controllerInstance*);
+
 
 /**
  * "Empty" constructor for controller. 
@@ -39,6 +45,8 @@ void controller(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->currM = 0;
     instanceOfMySelf->currN = 0;
     instanceOfMySelf->fileNameList = constructorNamesList();
+    instanceOfMySelf->removedFileNames = constructorNamesList();
+    openPipeToRecord(instanceOfMySelf); 
     waitForMessagesInController(instanceOfMySelf);
 }
 
@@ -47,32 +55,59 @@ void controller(controllerInstance *instanceOfMySelf){
  */
 void waitForMessagesInController(controllerInstance *instanceOfMySelf){
     while(true){
-        int numBytesRead, dataSectionSize, offset;
-        byte packetHeader[1 + INT_SIZE];
-
-        numBytesRead = read(instanceOfMySelf->pipeAC[READ], packetHeader, 1 + INT_SIZE);
-
-        if (numBytesRead == (1 + INT_SIZE)){
-            dataSectionSize = fromBytesToInt(packetHeader + 1);
-
-            offset = 0;
-            byte packetData[dataSectionSize];
-
-            // if we get a header then block and wait the whole message
-            while (offset != dataSectionSize){
-                numBytesRead = read(instanceOfMySelf->pipeAC[READ], packetData + offset, dataSectionSize - offset);
-                if (numBytesRead > 0){
-                    offset += numBytesRead;
-                } else if (numBytesRead < 0){
-                    fprintf(stderr, "Error reading from pipe A->C\n");
-                }
-            }
-
-            processMessageInControllerFromAnalyzer(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
-        }
+        waitForMessagesInCFromA(instanceOfMySelf);
+        waitForMessagesInCFromP(instanceOfMySelf);
     }
 }
 
+void waitForMessagesInCFromA(controllerInstance *instanceOfMySelf){
+    int numBytesRead, dataSectionSize, offset;
+    byte packetHeader[1 + INT_SIZE];
+
+    numBytesRead = read(instanceOfMySelf->pipeAC[READ], packetHeader, 1 + INT_SIZE);
+
+    if (numBytesRead == (1 + INT_SIZE)){
+        dataSectionSize = fromBytesToInt(packetHeader + 1);
+
+        offset = 0;
+        byte packetData[dataSectionSize];
+
+        // if we get a header then block and wait the whole message
+        while (offset != dataSectionSize){
+            numBytesRead = read(instanceOfMySelf->pipeAC[READ], packetData + offset, dataSectionSize - offset);
+            if (numBytesRead > 0){
+                offset += numBytesRead;
+            } else if (numBytesRead < 0){
+                fprintf(stderr, "Error reading from pipe A->C\n");
+            }
+        }
+
+        processMessageInControllerFromAnalyzer(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
+    }
+}
+
+/**
+ * TODO:  implementare. Decidere come creare e mantenere la lista di P.
+ * CHECK: i messaggi che possono arrivare da P sono aotmici? se sì allora niente controlli complicati
+ */
+void waitForMessagesInCFromP(controllerInstance *instanceOfMySelf){
+    // int numBytesRead, dataSectionSize, offset;
+    // byte packetHeader[1 + INT_SIZE];
+
+    // int i;
+    // NodeP *currElement = instanceOfMySelf->pInstances;
+    // for (i = 0; i < miniQs->counter; i++){
+    //     numBytesRead = read(currElement->data->pipeToQ[READ], packetHeader, 1 + INT_SIZE);
+    //     if (numBytesRead == (1 + INT_SIZE)){
+    //         dataSectionSize = fromBytesToInt(packetHeader + 1);
+    //         byte packetData[dataSectionSize];
+
+    //         numBytesRead  = read(currElement->data->pipeToQ[READ], packetData, dataSectionSize);
+    //         processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
+    //     }
+    //     currElement = currElement->next;
+    // }
+}
 
 // main worker of the C process
 void oldController(int n, int m, int numFiles, controllerInstance *instanceOfMySelf){
@@ -167,16 +202,19 @@ int shapeTree(int newN, int newM, controllerInstance *instanceOfMySelf){
     return returnCode;
 }
 
+
 void notifyNewMToPInstance(pInstance *instanceOfP, int newM){
     printf("Update m to %d\n", newM);
     sendNewMPacket(instanceOfP->pipeCP, newM);
 }
+
 
 void killInstanceOfP(int pIndex, controllerInstance *instanceOfMySelf){
     // TODO - free resources
     printf("Stacca stacca: %d\n", pIndex);
     sendDeathPacket(instanceOfMySelf->pInstances[pIndex].pipeCP);
 }
+
 
 void sendPathNameToP(string pathName, int indexOfP, bool isInsideFolder, controllerInstance *instanceOfMySelf){
     int packetLength = 1 + INT_SIZE + 1 + strlen(pathName); // packet type, data length, isInFolder, pathName
@@ -232,6 +270,7 @@ int processMessageInControllerFromAnalyzer(byte packetCode, byte *packetData, in
     return returnCode;
 }
 
+
 int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     
@@ -241,6 +280,8 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInsta
     buffer[packetDataSize - 1] = '\0';
     // add file to the list
     appendNameToNamesList(instanceOfMySelf->fileNameList, buffer);
+    // remove the file from the list of removed files (in case it has been removed first and readded then)
+    removeNodeNameByName(instanceOfMySelf->removedFileNames, buffer);
 
     return returnCode;
 }
@@ -253,8 +294,9 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerIn
     char buffer[packetDataSize];
     memcpy(buffer, packetData, packetDataSize);
     buffer[packetDataSize - 1] = '\0';
-    // remove file from the list
-    appendNameToNamesList(instanceOfMySelf->fileNameList, buffer);
+    // add the file to the removed files
+    appendNameToNamesList(instanceOfMySelf->removedFileNames, buffer);
+    // TODO: remove from fileList? 
 
     return returnCode;
 }
@@ -306,6 +348,14 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
                   instanceOfMySelf->fileNameList->counter, instanceOfMySelf);    
 
     return returnCode;  
+}
+
+/**
+ * Creates the named pipe to the report
+ */
+int  openFifoToRecord(controllerInstance *instanceOfMySelf){
+    mkfifo(RECORD_FIFO, 0666);
+    instanceOfMySelf->pipeToRecord = open(RECORD_FIFO, O_WRONLY);
 }
 
 

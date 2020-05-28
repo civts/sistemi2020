@@ -15,7 +15,6 @@ void waitForMessagesInQFromP(qInstance*);
 void waitForMessagesInQFromMiniQ(qInstance*);
 int  processMessageInQFromP(byte, byte*, int, qInstance*);
 int  processMessageInQFromMiniQ(byte, byte*, int, qInstance*);
-
 int  processQNewFilePacket(byte[], int, qInstance*);
 int  processQRemoveFilePacket(byte[], int);
 int  processQDeathPacket();
@@ -157,6 +156,7 @@ int processQRemoveFilePacket(byte packetData[], int packetDataSize){
     // TODO search in miniQ list for that file and kill it
     return -1;
 }
+
 int processQDeathPacket(){
     // TODO kill miniQs
     // TODO free list of miniQ
@@ -164,6 +164,7 @@ int processQDeathPacket(){
     exit(0);
     return 0;
 }
+
 int processQNewValueForM(byte packetData[], qInstance* instanceOfMySelf){
     instanceOfMySelf->currM = fromBytesToInt(packetData);
 

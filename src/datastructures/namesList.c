@@ -66,15 +66,19 @@ void printNamesList(NamesList *list){
 }
 
 void deleteNamesList(NamesList *list){
-    if(list->counter > 0){
-        struct NodeName *element = list->first; 
-        int i;
-        for(i=0; i<list->counter; i++){
-            deleteNodeName(element);
-            element = element->next;
+    if(list != NULL){
+        if(list->counter > 0){
+            struct NodeName *element = list->first; 
+            int i;
+            NodeName *temp;
+            for(i=0; i<list->counter; i++){
+                temp = element->next;
+                deleteNodeName(element);
+                element = temp;
+            }
         }
+        free(list);
     }
-    free(list);
 }
 
 /**
@@ -147,6 +151,11 @@ int removeNodeNameByName(NamesList *list, string fileName){
     return result;
 }
 
+void empltyNameList(NamesList *list){
+    deleteNamesList(list);
+    list = constructorNamesList();
+}
+
 // int main(){
 
 //     NodeName *node1 = constructorNodeName("Marciello");
@@ -158,10 +167,13 @@ int removeNodeNameByName(NamesList *list, string fileName){
 //     appendToNamesList(list, node1);
 //     appendToNamesList(list, node2);
 
-//     printNameList(list);
+//     printNamesList(list);
 //     removeNodeNameByName(list, "Marciello");
 //     removeNodeNameByName(list, "Marciello");
-//     printNameList(list);
+//     printNamesList(list);
+
+//     deleteNamesList(list);
+//     deleteNamesList(list);
 
 //     return 0;
 // }

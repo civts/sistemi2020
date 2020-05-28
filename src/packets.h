@@ -36,12 +36,15 @@ typedef struct{
 
 typedef struct{
     pid_t pid;
-    int pipeAC[2];
-    int pipeCA[2];
+    int   pipeAC[2];
+    int   pipeCA[2];
+    int   pipeToRecord;
+    int   currN;
+    int   currM;
+    // TODO per Fra: Non dovrebbe essere un array o una lista di pInstance?
     pInstance *pInstances; // P processes associated to C
     NamesList *fileNameList;
-    int currN;
-    int currM;
+    NamesList *removedFileNames;
 } controllerInstance;
 
 // forward a packet without looking inside it's content. Useful for new filepath
