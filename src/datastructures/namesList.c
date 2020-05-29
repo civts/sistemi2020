@@ -151,7 +151,7 @@ int removeNodeNameByName(NamesList *list, string fileName){
     return result;
 }
 
-void empltyNameList(NamesList *list){
+void emptyNameList(NamesList *list){
     deleteNamesList(list);
     list = constructorNamesList();
 }

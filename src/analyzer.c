@@ -4,7 +4,7 @@
 #include "utils.c"
 #include "crawler.c"
 #include "packets.h"
-#include "controller.c"
+// #include "controller.c"
 
 #define READ 0
 #define WRITE 1
@@ -20,6 +20,7 @@
 
 controllerInstance *cInstance;
 NamesList *filePaths;
+string myPath;
 int numOfFiles = 0, n = 0, m = 0;
 
 int  modeSwitcher(char, int, char**);
@@ -67,6 +68,7 @@ int getFilePathsFromArgv(string argv[], NamesList *fileList, int numPaths){
 int main(int argc, char *argv[]){
     int returnCode = 0;
     filePaths = constructorNamesList();
+    getMyPath(&myPath);
 
     if (argc <= 1){
         fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
@@ -227,7 +229,7 @@ void staticMode(int numOfP, int numOfQ, int numOfFiles, NamesList *listFilePaths
     sendNewNPacket(cInstance->pipeAC, n);
     sendNewMPacket(cInstance->pipeAC, m);
     // Trick: to send all files in the list call sendNewFolder with oldNumberOfFiles=0
-    sendAllFIles();
+    sendAllFiles();
     sendStartAnalysisPacket(cInstance->pipeAC);    
 
     // TODO: what do we do when static analisys is started?
@@ -273,7 +275,8 @@ int generateNewControllerInstance(){
             fprintf(stderr, "controllerInstance created\n");
             close(cInstance->pipeAC[WRITE]);
             close(cInstance->pipeCA[READ]);
-            controller(cInstance);
+            while(true);
+            // controller(cInstance);
             exit(0);
         } else {
             // parent
@@ -317,6 +320,7 @@ int processExit(){
     sendDeathPacket(cInstance->pipeAC);
 
     // free occupied memory:
+    free(myPath);
     free(cInstance);
     deleteNamesList(filePaths);
 

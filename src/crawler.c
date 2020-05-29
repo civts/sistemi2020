@@ -20,6 +20,7 @@ void addFolderToFileName(string out, string folder, string fileName){
     strcat(out, fileName);
 }
 
+
 int getOutputFromLSRec(int readDescriptor, NamesList *fileList){
     FILE *pipeToRead = fdopen(readDescriptor, "r");
     int numOfFileNamesProcessed = 0;
@@ -63,6 +64,7 @@ int getOutputFromLSRec(int readDescriptor, NamesList *fileList){
     return numOfFileNamesProcessed;
 }
 
+
 // Get all the file path inside a folder
 // Error codes:
 // 1: it was not possible to fork a child
@@ -103,16 +105,61 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
     return returnCode;
 }
 
+
+void getOutputFromPwd(int readDescriptor, string *path){
+    FILE *pipeToRead = fdopen(readDescriptor, "r");
+    
+    char buffer[SIZE_OF_BUFFER_TO_READ_PIPE];
+    int out;
+
+    fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead);
+    string stringRead = strtok(buffer, "\n");
+    int byteRead = strlen(stringRead)+1;
+    *path = (char *)malloc(byteRead);
+    memcpy(*path, stringRead, byteRead);
+}
+
+int getMyPath(string *path){
+    int returnCode = 0;
+    int fds[2];
+    pipe(fds);
+    string pwdArgs[] = {"pwd", NULL};
+
+    pid_t f = fork();
+    if (f < 0){
+        fprintf(stderr, "\nError searching for analyzer path\n");
+        returnCode = 1;
+    } else if (f == 0){
+        // child
+        close(fds[READ]);
+        dup2(fds[WRITE], 1); // substitute stdout with fds[WRITE] for ls
+        execvp("pwd", pwdArgs);
+        fprintf(stderr, "Error in crawler: it is not possibile to find my path\n");
+        returnCode = 2; // should never be here if exec works fine
+    } else {
+        // parent
+        close(fds[WRITE]);
+        
+        // TODO check out == 0
+        int out; // return code from pwd
+        pid_t pid = waitpid(f, &out, 0);
+        if (pid != -1){
+            getOutputFromPwd(fds[READ],path);
+        } else {
+            fprintf(stderr, "Error in crawler, waiting for pwd syscall termination\n");
+            returnCode = 3;
+        }
+    }
+
+    return returnCode;
+}
+
+
 // int main(){
-//     NamesList *list = constructorNamesList();
-//     int *n = malloc(sizeof(int));
-//     crawler("./", list, n);
-//     printNamesList(list);
-//     NodeName *no = list->first;
-//     // while(no!=NULL){
-//     //     printf("node: %s\n", (no->name) );
-//     //     no = no->next;
-//     // }
+//     string *path = (string*)malloc(sizeof(string));
+//     int u = getMyPath(path);
+//     printf("return code: %d\nreturn path: %s\n", u, *path);
+
 
 //     return 0;
 // }
