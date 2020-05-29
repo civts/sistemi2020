@@ -1,6 +1,5 @@
 #include "../utils.c"
 #include "./file_with_stats_data_structure.h"
-
 #ifndef FWSLIST_DATA_STRUCTURE_H
 #define FWSLIST_DATA_STRUCTURE_H
 #include <stdio.h> //print etc

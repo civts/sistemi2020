@@ -12,9 +12,9 @@ const char punctuationChars[] = {
     ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
 };
 
-// Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
+// Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n" AGGIORNATA CON LE FOLDER
 void printFirstInfoLine(analyzerList *aList);
-// Prints a progress bar with the percentage of a/b*100
+// Prints a progress bar with the percentage of a/b*100 [###    ]
 void printPercentage(uint a, uint b);
 // Default print function (no additional argv). Should look ilke this:
 //  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
@@ -25,7 +25,6 @@ void printPercentage(uint a, uint b);
 // 50 % complete
 // TESTED
 void printRecapCompact(analyzerList *aList);
-
 // Print function for the -v flag and possibly -g.
 //
 //---------------------------------------------------------------
@@ -69,46 +68,23 @@ void printSingleFile(fileWithStats *f, bool group);
 // analyzers list + list of paths of the files and a bool to group or not.
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group);
-//int countFilesInFolderList(folderList *root); Non credo di aver capito troppo cosa vuoi. 
-// Funzione magica che conta il numero di file contenuti in una cartella e tutte le sue sottocartelle annidate ( TESTED !)
-int countFilesInFolder(folder *root);
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
+  uint totFolders = 0;
   int totAnalyzers = 0;
   analyzer *currentAnalyzer = aList->firstNode;
-  folderList *currentFoldersList = currentAnalyzer->mainList->firstNode;
   while (currentAnalyzer != NULL) {
-    totFiles += countFilesInFolderList(currentFoldersList->firstNode);
+    totFiles += folderListCountFiles(currentAnalyzer->folders) + currentAnalyzer->files->count;
+    totFolders += currentAnalyzer->folders->count;
     totAnalyzers++;
+    currentAnalyzer = currentAnalyzer->nextNode;
   }
   printf("Analyzed %u files", totFiles);
+  printf(" [in %u folders] ", totFolders);
   if (totAnalyzers > 1) {
     printf(" with %d analyzers", totAnalyzers);
   }
   printf(":\n");
-}
-// ??? 
-// immagino sia una funzione ricorsiva che conta tutti i file contenuti in una cartella e sottocartelle
-// int countFilesInFolderList(folderList *root) {
-//   int result = root->firstNode->fileList->count;
-//   folderList *subFolders = root->firstNode->subfolders;
-//   if (subFolders != NULL) {
-//     result += countFilesInFolderList(subFolders);
-//   }
-//   return result;
-// }
-
-int countFilesInFolder(folder *root) {
-  int result = root->fileList->count;
-  folderList *subFolders = root->subfolders;
-  if (subFolders != NULL) { //controllo non necessario in quanto una cartella ha sempre una lista di sottocartelle, possibilmente vuota
-    folder* nested = subFolders->firstNode;
-    while(nested!=NULL){
-      result += countFilesInFolder(nested);
-      nested = nested->nextNode;
-    }
-  }
-  return result;
 }
 void printPercentage(uint a, uint b) {
   const int barWidth = 30;
@@ -134,7 +110,8 @@ void printRecapCompact(analyzerList *aList) {
   az = AZ = digits = spaces = punctuation = otherChars = totalChars =
       totalCharsRead = 0;
   while (current != NULL) {
-    fileWithStats *cursor = current->mainList->firstNode;
+    fileWithStats *cursor = current->files->firstNode;
+    // Somma la lista di file
     while (cursor != NULL) {
       fileWithStats *fws = cursor;
       short i;
@@ -167,6 +144,11 @@ void printRecapCompact(analyzerList *aList) {
       totalChars += fws->totalCharacters;
       cursor = cursor->nextNode;
     }
+    // somma la lista di cartelle
+    folder *cursorFolder = current->folders->firstNode;
+    while (cursorFolder != NULL) {
+      
+    }
     current = current->nextNode;
   }
   printf("a-z: %u\nA-Z: %u\ndigits: %u\npunctuation: %u\nspace: %u\nother: "
@@ -181,7 +163,7 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
   analyzer *current = aList->firstNode;
   // Print file paths
   while (current != NULL) {
-    fileWithStats *fNode = current->mainList->firstNode;
+    fileWithStats *fNode = current->files->firstNode;
     while (fNode != NULL) {
       printf("%s\n", fNode->path);
       fNode = fNode->nextNode;
@@ -191,7 +173,7 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
   current = aList->firstNode;
   // Print stats of each file
   while (current != NULL) {
-    fileWithStats *fNode = current->mainList->firstNode;
+    fileWithStats *fNode = current->files->firstNode;
     while (fNode != NULL) {
       printSingleFile(fNode, shouldGroup);
       fNode = fNode->nextNode;
@@ -258,7 +240,7 @@ void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
     char *path = paths[i];
     analyzer *analyzer = analyzers->firstNode;
     while (analyzer != NULL && !printed) {
-      fileWithStats *fws = analyzer->mainList->firstNode;
+      fileWithStats *fws = analyzer->files->firstNode;
       while (fws != NULL) {
         if (streq(fws->path, path)) {
           printSingleFile(fws, group);

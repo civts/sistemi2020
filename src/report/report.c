@@ -1,6 +1,6 @@
 #include "../packet_codes.h"
 #include "../utils.c"
-#include "analyzer_list.h"
+//#include "analyzer_list.h"
 #include "file_with_stats_list.h"
 #include "report_print_functions.h"
 #include "report_utils.h"
@@ -177,30 +177,32 @@ int report(int argc, const char *argv[]) {
         printf("\n----------------------------------------\n");
       }
       // Print right recap info based on argv
-
-      if (argc == 1) {
-        printRecapCompact(analyzers);
-      } else if (contains(argc, argv, onlyFlag)) {
-        // Get file paths
-        int firstPathIdx = 2 + streq(argv[1], groupFlag) ? 1 : 0;
-        int pathsLen = argc - firstPathIdx;
-        char *paths[pathsLen];
-        short i;
-        //(I am sure of the format of the data because agv went through
-        // argsAreValid)
-        for (i = 0; i < pathsLen; i++) {
-          paths[i] = argv[i + firstPathIdx];
-        }
-        printSelectedFiles(analyzers, pathsLen, paths,
-                           contains(argc, argv, groupFlag));
-      } else if (contains(argc, argv, verboseFlag)) {
-        printRecapVerbose(analyzers, contains(argc, argv, groupFlag));
-      } else {
-        // Should never get here if args are valid
-        perror("Arguments are not valid, please use --help for reference");
-        retCode = 1;
-        break;
-      }
+      //analyzerListPrint(analyzers);
+      //printFirstInfoLine(analyzers);
+      printRecapCompact(analyzers);
+      // if (argc == 1) {
+      //   printRecapCompact(analyzers);
+      // } else if (contains(argc, argv, onlyFlag)) {
+      //   // Get file paths
+      //   int firstPathIdx = 2 + streq(argv[1], groupFlag) ? 1 : 0;
+      //   int pathsLen = argc - firstPathIdx;
+      //   char *paths[pathsLen];
+      //   short i;
+      //   //(I am sure of the format of the data because agv went through
+      //   // argsAreValid). NO...
+      //   for (i = 0; i < pathsLen; i++) {
+      //     paths[i] = argv[i + firstPathIdx];
+      //   }
+      //   printSelectedFiles(analyzers, pathsLen, paths,
+      //                      contains(argc, argv, groupFlag));
+      // } else if (contains(argc, argv, verboseFlag)) {
+      //   printRecapVerbose(analyzers, contains(argc, argv, groupFlag));
+      // } else {
+      //   // Should never get here if args are valid
+      //   perror("Arguments are not valid, please use --help for reference");
+      //   retCode = 1;
+      //   break;
+      // }
       //debug
       //analyzerListPrint(analyzers);
     }

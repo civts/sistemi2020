@@ -30,26 +30,43 @@ typedef struct folder_t {
 
 // Returns reference to new empty folderList
 folderList *constructorFolderListEmpty();
-
 // dels l and everything within, de-allocating what's needed
 void destructorFolderList(folderList *l);
 // Returns wether the folderList is empty or not
 bool folderListIsEmpty(folderList *l);
 // Appends new node to end of folderList - TESTED✔️
 void folderListAppend(folderList *l, folder *fs);
-
+// searches a folder by it's name. It is not recursive. It will search only in the list
+folder *folderListGetElementByName(folderList *l, char * name);
+// searches for a file, recursevely on all folders and subfolders. Return NULL if not found
+fileWithStats *folderListGetElementByID(folderList *l, uint id);
+// searches for a file recursevely and removes it. Return true if removed from the list. Does nothing if element is not found. Delete if the element must be deleted
+bool folderListRemoveElementByID(folderList *l, uint id,bool delete);
+// adds the new file to the correct folder in the folder list. It does so considering the subtree
+void folderListAddFile(folderList * l, fileWithStats * fs, char * path);
+// function that counts the number of files nested in the folderList
+int folderListCountFiles(folderList*l);
+// prints reccurisively
 void folderListPrint(folderList *l);
 
 // FUNZIONI PER LE CARTELLA
 
 folder *constructorFolder(char *name);
 void destructorFolder(folder *cartella);
+// searches the file with given id recusively. return NULL if none is found
+fileWithStats* folderGetElementByID(folder * root,uint id);
+// removes the file with given id recusively. true if it is removed from the folder. Delete to true if the elemente must be deleted
+bool folderRemoveElementByID(folder * root,uint id,bool delete);
+// estracts the first part of a name
+char *firstFolder(char *path);
 // function that adds a file to the current folder, considering it's path to make the tree
 void folderAddFile(folder *cartella, fileWithStats *newFile,char *path);
+// function that counts the total number of nested files
+int folderCountFiles(folder *root); 
+// function that counts the number or // in a path
+int countFolders(char *path);
 void folderPrint(folder *f);
-// funzione che controlla che i due path siano indentici fino al primo /, ovvero
-// appartengano alla stessa cartella
-bool equalFirstFolder(char *path1, char *path2);
+
 
 // IMPLEMENTAZIONI LISTA
 
@@ -87,7 +104,58 @@ void folderListAppend(folderList *l, folder *fs) {
   l->count++;
 }
 
-// Prints the folderList debug
+folder *folderListGetElementByName(folderList *l, char * name) {
+  folder *current = l->firstNode;
+  while (current != NULL) {
+    if (streq(current->name,name)) {
+      return current;
+    }
+    current = current->nextNode;
+  }
+  return NULL;
+}
+
+fileWithStats *folderListGetElementByID(folderList *l, uint id){
+  fileWithStats * searched = NULL;
+  folder *current = l->firstNode;
+  while (current != NULL && searched==NULL) {
+    searched = folderGetElementByID(current,id);
+    current = current->nextNode;
+  }
+  return searched;
+}
+
+bool folderListRemoveElementByID(folderList *l, uint id,bool delete){
+  bool removed = false;
+  folder *current = l->firstNode;
+  while (current != NULL && !removed) {
+    removed = folderRemoveElementByID(current,id,delete);
+    current = current->nextNode;
+  }
+  return removed;
+}
+
+void folderListAddFile(folderList * l, fileWithStats * fs, char * path){
+  char * firstName = firstFolder(path);
+  folder* match  = folderListGetElementByName(l,firstName);
+  if(match==NULL){
+    match = constructorFolder(firstName);
+    folderListAppend(l,match);
+  }
+  int count = strlen(firstName);
+  free(firstName);
+  folderAddFile(match,fs,path + count + 1);
+}
+
+int folderListCountFiles(folderList*l){
+  int result = 0;
+  folder * current = l->firstNode;
+  while(current!=NULL){
+    result += folderCountFiles(current);
+  }
+  return result;
+}
+
 void folderListPrint(folderList *l) {
   folder *cursor = l->firstNode;
   printf("folderList count: %d\n", l->count);
@@ -117,17 +185,65 @@ void destructorFolder(folder *cartella) {
   free(cartella);
 }
 
-char *ithFolder(char *path, int i) {
+int countFolders(char *path) {
   int j = 0;
-  int cursor = 1;
-  while (j < i) {
-    if (path[cursor] == '/')
-      j++;
-    if (j == i) {
-    }
-    cursor++;
+  if (path[j] == '/')
+    j++;
+  int count = 0;
+  while (path[j] != '\0') {
+    if (path[j] == '/')
+      count++;
+    j++;
+  }
+  return count;
+}
+
+// changes the oldRoot. Appends to the newRoot the oldRoot. returns the newRoot
+folder* folderChageRoot(folder * oldRoot, folder * newRoot){
+
+}
+
+void folderAddFile(folder *cartella, fileWithStats *fs, char *path) {
+  if (countFolders(path) < 1) {
+    fwsListAppend(cartella->fileList, fs);
+  }
+  // altrimenti controllo se appartiene ad una delle sottocartelle
+  else {
+    folderListAddFile(cartella->subfolders,fs,path);
   }
 }
+
+int folderCountFiles(folder *root) {
+  int result = root->fileList->count;
+  folderList *subFolders = root->subfolders;
+  if (subFolders != NULL) { //controllo non necessario in quanto una cartella ha sempre una lista di sottocartelle, possibilmente vuota
+    result += folderListCountFiles(subFolders);
+  }
+  return result;
+}
+
+fileWithStats* folderGetElementByID(folder * root,uint id){
+  fileWithStats * searched = fwsListGetElementByID(root->fileList,id);
+  if(searched==NULL){
+    folderList *subFolders = root->subfolders;
+    if (subFolders != NULL) { //controllo non necessario in quanto una cartella ha sempre una lista di sottocartelle, possibilmente vuota
+      searched = folderListGetElementByID(subFolders,id);
+    }
+  }
+  return searched;
+}
+
+bool folderRemoveElementByID(folder * root,uint id,bool delete){
+  bool removed = fwsListRemoveElementByID(root->fileList,id,delete);
+  if(!removed){
+    folderList *subFolders = root->subfolders;
+    if (subFolders != NULL) { //controllo non necessario in quanto una cartella ha sempre una lista di sottocartelle, possibilmente vuota
+      removed = folderListRemoveElementByID(root->subfolders,id,delete);
+    }
+  }
+  return removed;
+}
+
 // estrae il primo nome di cartella
 char *firstFolder(char *path) {
   int j = 0;
@@ -152,124 +268,6 @@ char *firstFolder(char *path) {
 
   return name;
 }
-int countLettersFirstFolder(char *path) {
-  int j = 0;
-  if (path[j] == '/')
-    j++;
-  while (path[j] != '\0' && path[j] != '/') {
-    j++;
-  }
-  return j;
-}
-int countFolders(char *path) {
-  int j = 0;
-  if (path[j] == '/')
-    j++;
-  int count = 0;
-  while (path[j] != '\0') {
-    if (path[j] == '/')
-      count++;
-    j++;
-  }
-  return count;
-}
-char *lastFolder(char *path) {
-  int last = countFolders(path);
-  return ithFolder(path, last - 1);
-}
-
-bool equalFirstFolder(char *path1, char *path2) {
-  int i = 0;
-  int j = 0;
-  if (path1[i] == '/')
-    i++;
-  if (path2[j] == '/')
-    j++;
-  int a = i + 1;
-  int b = j + 1;
-  while (path1[a] != '/')
-    a++;
-  while (path2[b] != '/')
-    b++;
-  bool equals = true;
-  while (i < a && j < b) {
-    if (path1[i] != path2[j])
-      equals = false;
-    i++;
-    j++;
-  }
-  return equals;
-}
-
-void folderAddFile(folder *cartella, fileWithStats *newFile, char *path) {
-  // controllo  se appartiene direttamente alla cartella corrente se sì aggiungo
-  // qui? no potenzialmente ho anche cartelle da costruire!
-  // prendo il nome della prima cartella
-  // printf("cartella : %s\n",cartella->name);
-  // printf("path rimanente : %s\n",path);
-  // se si tratta di un file da aggiungere qui
-  if (countFolders(path) < 1) {
-    fwsListAppend(cartella->fileList, newFile);
-  }
-  // altrimenti controllo se appartiene ad una delle sottocartelle
-  else {
-    char *primaCartella = firstFolder(path);
-    folder *nested =
-        folderListGetElementByName(cartella->subfolders, primaCartella);
-    if (nested == NULL) {
-      // aggiungo una cartella alla lista
-      nested = constructorFolder(primaCartella);
-      folderListAppend(cartella->subfolders, nested);
-    }
-    // cancello solo il nome, che è già stato copiato
-    free(primaCartella);
-    folderAddFile(nested, newFile, path + countLettersFirstFolder(path));
-  }
-  //free(prim
-}
-
-int countFilesInFolder(folder *root) {
-  int result = root->fileList->count;
-  folderList *subFolders = root->subfolders;
-  if (subFolders != NULL) { //controllo non necessario in quanto una cartella ha sempre una lista di sottocartelle, possibilmente vuota
-    folder* nested = subFolders->firstNode;
-    while(nested!=NULL){
-      result += countFilesInFolder(nested);
-      nested = nested->nextNode;
-    }
-  }
-  return result;
-}
-// recursion
-fileWithStats* folderGetElementByID(folder * root,uint id){
-  fileWithStats * searched = fwsListGetElementByID(root->fileList,id);
-  if(searched==NULL){
-    folderList *subFolders = root->subfolders;
-    if (subFolders != NULL) { //controllo non necessario in quanto una cartella ha sempre una lista di sottocartelle, possibilmente vuota
-      folder* nested = subFolders->firstNode;
-        while(nested!=NULL && searched==NULL){
-          searched = folderGetElementByID(nested,id);
-          nested = nested->nextNode;
-      }
-    }
-  }
-  return searched;
-}
-// recursion
-bool folderRemoveElementByID(folder * root,uint id){
-  bool removed = fwsListRemoveElementByID(root->fileList,id,true);
-  if(!removed){
-    folderList *subFolders = root->subfolders;
-    if (subFolders != NULL) { //controllo non necessario in quanto una cartella ha sempre una lista di sottocartelle, possibilmente vuota
-      folder* nested = subFolders->firstNode;
-        while(nested!=NULL && !removed){
-          removed = folderRemoveElementByID(nested,id);
-          nested = nested->nextNode;
-      }
-    }
-  }
-  return removed;
-}
 void folderPrint(folder *f) {
   char *name;
   printf("folder name: %s\n", f->name);
@@ -278,50 +276,59 @@ void folderPrint(folder *f) {
 }
 #endif
 
-// main di prova per testarefolder
-int main(int c, char *argv[]) {
-  // folderList * folderLista =  constructorFolderListEmpty();
-  // folderList * folderListaAnnidata =  constructorFolderListEmpty();
-  // folderListAppend(folderListaAnnidata,constructorFolder("cibo"));
-  // folderListAppend(folderLista, constructorFolder("ciao"));
-  // folderListAppend(folderLista,constructorFolder("patate"));
-  // folderLista->firstNode->nextNode->sottocartelle = folderListaAnnidata;
+// // main di prova per testarefolder
+// int main(int c, char *argv[]) {
+//   // folderList * folderLista =  constructorFolderListEmpty();
+//   // folderList * folderListaAnnidata =  constructorFolderListEmpty();
+//   // folderListAppend(folderListaAnnidata,constructorFolder("cibo"));
+//   // folderListAppend(folderLista, constructorFolder("ciao"));
+//   // folderListAppend(folderLista,constructorFolder("patate"));
+//   // folderLista->firstNode->nextNode->sottocartelle = folderListaAnnidata;
 
-  folder *cartellaTest = constructorFolder("");
-  fileWithStats *a = constructorFWS("/root/a.txt", 1, 0, NULL, true);
-  fileWithStats *f = constructorFWS("/root/f.txt", 1, 0, NULL, true);
-  fileWithStats *b = constructorFWS("/root/patate/b.txt", 4, 0, NULL, true);
-  fileWithStats *e = constructorFWS("/root/patate/c.txt", 1, 0, NULL, true);
-  fileWithStats *d = constructorFWS("/root/d.txt", 1, 0, NULL, true);
-  folderAddFile(cartellaTest, a, a->path);
-  folderAddFile(cartellaTest, f, f->path);
-  folderAddFile(cartellaTest, b, b->path);
-  folderAddFile(cartellaTest, e, e->path);
-  folderAddFile(cartellaTest, d, d->path);
-  folderPrint(cartellaTest);
-  int tot = countFilesInFolder(cartellaTest);
-  printf("%d",tot);
-  printf("\n\n2");
-  fwsPrint(folderGetElementByID(cartellaTest,4));
-  printf("\n\n");
-  printf("\n\n");
-  folderRemoveElementByID(cartellaTest,4);
-  folderPrint(cartellaTest);
+//   folder *cartellaTest = constructorFolder("");
+//   fileWithStats *a = constructorFWS("/root/a.txt", 1, 0, NULL, true);
+//   fileWithStats *f = constructorFWS("/root/f.txt", 1, 0, NULL, true);
+//   fileWithStats *d = constructorFWS("/root/d.txt", 1, 0, NULL, true);
+//   fileWithStats *b = constructorFWS("/root/patate/b.txt", 4, 0, NULL, true);
+//   fileWithStats *e = constructorFWS("/root/patate/c.txt", 1, 0, NULL, true);
   
-  // printf("count %d",countFolders("/b.txt"));
-  // char * txt = "/root/patate/b.txt";
-  // printf("count %d\n",countLettersFirstFolder(txt));
-  // printf("count %s\n",txt+countLettersFirstFolder(txt));
-  // char * p = "banana/casa/a.txt";
-  // char * a = ithFolder(p,1);
-  // printf("cartella : %s\n",a);
-  // printf("cartella : %s\n",lastFolder(p));
-  // char * b = "/a/a.txt";
-  // bool res = equalFirstFolder(p,b);
-  // printf("i due sono uguali ? %s",res==1?"true":"false");
-  // printf("count %d",countFolders(b));
-  // char * first = firstFolder(p);
-  // printf("fisrtFOleder %s\n",first);
+//   folderAddFile(cartellaTest, a, a->path);
+//   folderAddFile(cartellaTest, f, f->path);
+//   folderAddFile(cartellaTest, b, b->path);
+//   folderAddFile(cartellaTest, e, e->path);
+//   folderAddFile(cartellaTest, d, d->path);
+//   folderPrint(cartellaTest);
+//   int tot = countFilesInFolder(cartellaTest);
+//   printf("%d",tot);
+//   printf("\n\n");
+//   fileWithStats *patate = folderGetElementByID(cartellaTest,4);
+//   if(patate!=NULL){
+//     fwsPrint(patate);
+//   }
+//   // printf("\n\n");
+//   // printf("\n\n");
+//   folderRemoveElementByID(cartellaTest,4,true);
 
-  return 0;
-}
+//   patate = folderGetElementByID(cartellaTest,4);
+//   if(patate!=NULL){
+//     fwsPrint(patate);
+//   }
+//   folderPrint(cartellaTest);
+  
+//   // printf("count %d",countFolders("/b.txt"));
+//   // char * txt = "/root/patate/b.txt";
+//   // printf("count %d\n",countLettersFirstFolder(txt));
+//   // printf("count %s\n",txt+countLettersFirstFolder(txt));
+//   // char * p = "banana/casa/a.txt";
+//   // char * a = ithFolder(p,1);
+//   // printf("cartella : %s\n",a);
+//   // printf("cartella : %s\n",lastFolder(p));
+//   // char * b = "/a/a.txt";
+//   // bool res = equalFirstFolder(p,b);
+//   // printf("i due sono uguali ? %s",res==1?"true":"false");
+//   // printf("count %d",countFolders(b));
+//   // char * first = firstFolder(p);
+//   // printf("fisrtFOleder %s\n",first);
+
+//   return 0;
+// }

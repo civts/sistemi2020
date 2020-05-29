@@ -1,7 +1,6 @@
 #include "../utils.c"
 #include "./analyzer_data_structure.h"
-#include "./file_with_stats_list.h"
-
+//#include "./file_with_stats_list.h"
 #ifndef ANALYZER_LIST_H
 #define ANALZYER_LIST_H
 #include <stdio.h> //print etc
@@ -143,7 +142,7 @@ analyzer *analyzerListGetElementByPid(analyzerList *l, uint pid) {
 }
 
 bool analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
-  bool deleted = false
+  bool deleted = false;
   if (DEBUGGING)
     printf("Getting element with pid %u for deletion\n", pid);
   analyzer *targetNode = analyzerListGetElementByPid(l, pid);
