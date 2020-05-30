@@ -268,12 +268,54 @@ char *firstFolder(char *path) {
 
   return name;
 }
+
 void folderPrint(folder *f) {
   char *name;
   printf("folder name: %s\n", f->name);
   fwsListPrint(f->fileList);
   folderListPrint(f->subfolders);
 }
+
+// Returns the stats for this folder and its subfolders
+charGroupStats statsForFolder(folder *f) {
+  charGroupStats result;
+  result.az = result.AZ = result.digits = result.punctuation = result.spaces =
+      result.otherChars = result.totalChars = result.totalCharsRead = 0;
+  fileWithStats *fileCursor = f->fileList->firstNode;
+  // foreach subfolder get the stats and add to result
+  while (fileCursor != NULL) {
+    charGroupStats fileStats = statsForFile(fileCursor);
+
+    result.az += fileStats.az;
+    result.AZ += fileStats.AZ;
+    result.digits += fileStats.digits;
+    result.punctuation += fileStats.punctuation;
+    result.spaces += fileStats.spaces;
+    result.otherChars += fileStats.otherChars;
+    result.totalCharsRead += fileStats.totalCharsRead;
+    result.totalChars += fileStats.totalChars;
+    
+    fileCursor = fileCursor->nextNode;
+  }
+  folder *subfolder = f->subfolders->firstNode;
+  // foreach subfolder get the stats and add to result
+  while (subfolder != NULL) {
+    charGroupStats subfStats = statsForFolder(subfolder);
+
+    result.az += subfStats.az;
+    result.AZ += subfStats.AZ;
+    result.digits += subfStats.digits;
+    result.punctuation += subfStats.punctuation;
+    result.spaces += subfStats.spaces;
+    result.otherChars += subfStats.otherChars;
+    result.totalCharsRead += subfStats.totalCharsRead;
+    result.totalChars += subfStats.totalChars;
+
+    subfolder = subfolder->nextNode;
+  }
+  return result;
+}
+
 #endif
 
 // // main di prova per testarefolder

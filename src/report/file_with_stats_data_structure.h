@@ -124,4 +124,35 @@ void fwsPrint(fileWithStats *fs) {
   */
   printf("fws from folder: %u\n", fs->fromFolder);
 }
+
+// Returns the grouped stats for this file (used in print functions)
+charGroupStats statsForFile(fileWithStats *fws) {
+  charGroupStats result;
+  result.az = result.AZ = result.digits = result.punctuation = result.spaces =
+      result.otherChars = result.totalChars = result.totalCharsRead = 0;
+  short i;
+  uint *oc = fws->occorrenze;
+  for (i = 'a'; i <= 'z'; i++) {
+    result.az += oc[i];
+  }
+  for (i = 'A'; i <= 'Z'; i++) {
+    result.AZ += oc[i];
+  }
+  for (i = '0'; i <= '9'; i++) {
+    result.digits += oc[i];
+  }
+  for (i = 0; i < 6; i++) {
+    result.spaces += oc[spaceChars[i]];
+  }
+  for (i = 0; i < 14; i++) {
+    result.punctuation += oc[punctuationChars[i]];
+  }
+  result.totalCharsRead += fws->readCharacters;
+  result.totalChars += fws->totalCharacters;
+  result.otherChars +=
+      result.totalCharsRead - (result.az + result.AZ + result.digits +
+                               result.spaces + result.punctuation);
+  return result;
+}
+
 #endif

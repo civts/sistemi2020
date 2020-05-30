@@ -82,4 +82,11 @@ char *trimStringToLength(char *src, int maxLen) {
   return trimmedPath;
 }
 
+// Struct for keeping how many char of each group are present in a given
+// file/folder, the total number of chars and how many we have read
+typedef struct {
+  int az, AZ, digits, punctuation, spaces, otherChars;
+  long totalCharsRead, totalChars;
+} charGroupStats;
+
 #endif

@@ -12,7 +12,8 @@ const char punctuationChars[] = {
     ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
 };
 
-// Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n" AGGIORNATA CON LE FOLDER
+// Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
+// AGGIORNATA CON LE FOLDER
 void printFirstInfoLine(analyzerList *aList);
 // Prints a progress bar with the percentage of a/b*100 [###    ]
 void printPercentage(uint a, uint b);
@@ -68,13 +69,15 @@ void printSingleFile(fileWithStats *f, bool group);
 // analyzers list + list of paths of the files and a bool to group or not.
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group);
+
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
   uint totFolders = 0;
   int totAnalyzers = 0;
   analyzer *currentAnalyzer = aList->firstNode;
   while (currentAnalyzer != NULL) {
-    totFiles += folderListCountFiles(currentAnalyzer->folders) + currentAnalyzer->files->count;
+    totFiles += folderListCountFiles(currentAnalyzer->folders) +
+                currentAnalyzer->files->count;
     totFolders += currentAnalyzer->folders->count;
     totAnalyzers++;
     currentAnalyzer = currentAnalyzer->nextNode;
@@ -105,8 +108,7 @@ void printPercentage(uint a, uint b) {
 void printRecapCompact(analyzerList *aList) {
   printFirstInfoLine(aList);
   analyzer *current = aList->firstNode;
-  uint az, AZ, digits, spaces, punctuation, otherChars;
-  long totalCharsRead, totalChars;
+  long az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead, totalChars;
   az = AZ = digits = spaces = punctuation = otherChars = totalChars =
       totalCharsRead = 0;
   while (current != NULL) {
@@ -114,40 +116,30 @@ void printRecapCompact(analyzerList *aList) {
     // Somma la lista di file
     while (cursor != NULL) {
       fileWithStats *fws = cursor;
-      short i;
-      uint *oc = fws->occorrenze;
-      uint thisaz, thisAZ, thisDigits, thisSpaces, thisPunct;
-      thisaz = thisAZ = thisDigits = thisSpaces = thisPunct = 0;
-      for (i = 'a'; i <= 'z'; i++) {
-        thisaz += oc[i];
-      }
-      az += thisaz;
-      for (i = 'A'; i <= 'Z'; i++) {
-        thisAZ += oc[i];
-      }
-      AZ += thisAZ;
-      for (i = '0'; i <= '9'; i++) {
-        thisDigits += oc[i];
-      }
-      digits += thisDigits;
-      for (i = 0; i < 6; i++) {
-        thisSpaces += oc[spaceChars[i]];
-      }
-      spaces += thisSpaces;
-      for (i = 0; i < 14; i++) {
-        thisPunct += oc[punctuationChars[i]];
-      }
-      punctuation += thisPunct;
-      otherChars += fws->readCharacters - thisaz - thisAZ - thisDigits -
-                    thisPunct - thisSpaces;
-      totalCharsRead += fws->readCharacters;
-      totalChars += fws->totalCharacters;
+      charGroupStats fileStats= statsForFile(fws);
+      az += fileStats.az;
+      AZ += fileStats.AZ;
+      digits += fileStats.digits;
+      punctuation += fileStats.punctuation;
+      spaces += fileStats.spaces;
+      otherChars += fileStats.otherChars;
+      totalCharsRead += fileStats.totalCharsRead;
+      totalChars += fileStats.totalChars;
       cursor = cursor->nextNode;
     }
     // somma la lista di cartelle
     folder *cursorFolder = current->folders->firstNode;
     while (cursorFolder != NULL) {
-      
+      charGroupStats folderStats= statsForFolder(cursorFolder);
+      az += folderStats.az;
+      AZ += folderStats.AZ;
+      digits += folderStats.digits;
+      punctuation += folderStats.punctuation;
+      spaces += folderStats.spaces;
+      otherChars += folderStats.otherChars;
+      totalCharsRead += folderStats.totalCharsRead;
+      totalChars += folderStats.totalChars;
+      cursorFolder=cursorFolder->nextNode;
     }
     current = current->nextNode;
   }

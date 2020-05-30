@@ -36,8 +36,9 @@ typedef struct analyzer_t {
   // The analyzer of this node
   // Analyzer process pid
   uint pid;
-  // List of the files with stats relative to this analyzer
+  // List of the files that were analyzed individually
   fwsList *files;
+  // Contains data about the files analyzed because they were part of a folder the user specified
   folderList *folders;
   // lista di file parziali
   fwsList *incompleteList;
