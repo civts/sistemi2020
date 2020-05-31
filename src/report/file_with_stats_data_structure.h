@@ -44,6 +44,7 @@ typedef struct fwsNode_t {
 // Creates a fileWithStats and returns pointer to it - TESTED
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
                               uint occorrenze[ASCII_LENGTH], uint fromFolder);
+                          
 // Destructor for fileWithStats
 void destructorFWS(fileWithStats *fs);
 // Adds new stats to this fileWithStats
@@ -78,7 +79,7 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
     printf("Creating a new FWS instance @%p for file w/ path %s\n", fs, path);
   return fs;
 }
-
+          
 void destructorFWS(fileWithStats *fs) {
   if (DEBUGGING)
     printf("Deleting FWS instance @%p of file w/ path %s\n", fs, fs->path);
@@ -110,12 +111,14 @@ void fwsUpdateFilePath(fileWithStats *fs, char *path) {
 };
 // Prints the fileWithStats, just fore testing for now - TESTED
 void fwsPrint(fileWithStats *fs) {
+  printf("fws adr: %p\n", fs);
   printf("fws path: %s\n", fs->path);
   printf("fws id: %u\n", fs->id);
   printf("fws totalCharacters: %u\n", fs->totalCharacters);
   // lo tolgo solo per debug più veloce
   printf("fws readCharacters: %u\n", fs->readCharacters);
-
+  printf("fws prev: %p\n", fs->previousNode);
+  printf("fws next: %p\n", fs->nextNode);
   /*
   int i;
   for(i=0;i<256;i++){

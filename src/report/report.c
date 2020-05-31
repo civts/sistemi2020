@@ -1,8 +1,8 @@
 #include "../packet_codes.h"
 #include "../utils.c"
-//#include "analyzer_list.h"
+#include "analyzer_list.h"
 #include "file_with_stats_list.h"
-#include "report_print_functions.h"
+//#include "report_print_functions.h"
 #include "report_utils.h"
 
 #include <fcntl.h>
@@ -40,8 +40,8 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
-    bool isFromFolder = dati[INT_SIZE * 2];
-    char *path = dati + 2 * INT_SIZE + 1;
+    uint isFromFolder = fromBytesToInt(dati + 2*INT_SIZE);
+    char *path = dati + 3* INT_SIZE;
     //funzione che aggiungo il file all'analyzer corretto, nel caso crea un analyzer se mancante
     analyzerListAddNewFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL, isFromFolder));
   } else {
@@ -57,8 +57,8 @@ void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
-    bool isFromFolder = dati[INT_SIZE * 2];
-    char *path = dati + 2 * INT_SIZE + 1;
+    uint isFromFolder = fromBytesToInt(dati + 2*INT_SIZE);
+    char *path = dati + 3* INT_SIZE;
     //funzione che aggiungo il file all'analyzer corretto, nel caso crea un analyzer se mancante
     analyzerListAddIncompleteFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL, isFromFolder));
   } else {
@@ -177,9 +177,9 @@ int report(int argc, const char *argv[]) {
         printf("\n----------------------------------------\n");
       }
       // Print right recap info based on argv
-      //analyzerListPrint(analyzers);
+      analyzerListPrint(analyzers);
       //printFirstInfoLine(analyzers);
-      printRecapCompact(analyzers);
+      //printRecapCompact(analyzers);
       // if (argc == 1) {
       //   printRecapCompact(analyzers);
       // } else if (contains(argc, argv, onlyFlag)) {

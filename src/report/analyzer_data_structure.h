@@ -38,8 +38,6 @@ typedef struct analyzer_t {
   uint pid;
   // List of the files that were analyzed individually
   fwsList *files;
-  // Contains data about the files analyzed because they were part of a folder the user specified
-  folderList *folders;
   // lista di file parziali
   fwsList *incompleteList;
 
@@ -76,7 +74,6 @@ analyzer *constructorAnalyzer(uint pid) {
   analyzer *a = (analyzer *)malloc(sizeof(analyzer));
   a->pid = pid;
   a->files = constructorFwsListEmpty();
-  a->folders = constructorFolderListEmpty();
   a->incompleteList = constructorFwsListEmpty();
   a->previousNode = NULL;
   a->nextNode = NULL;
@@ -93,7 +90,6 @@ void destructorAnalyzer(analyzer *a) {
     printf("Deleting Analyzer instance @%p for Analyzer with pid %u\n", a,
            a->pid);
   destructorFwsList(a->files);
-  destructorFolderList(a->folders);
   destructorFwsList(a->incompleteList);
   free(a);
 }
@@ -101,21 +97,8 @@ void destructorAnalyzer(analyzer *a) {
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs) {
   //controllo non sia già presente
   fileWithStats *isInFiles = fwsListGetElementByID(a->files, fs->id);
-  fileWithStats *isInFolders = folderListGetElementByID(a->folders,fs->id);
-  if (isInFiles == NULL && isInFolders==NULL) {
-    if(fs->fromFolder != 0){
-      char * root = rootFolder(fs->path,fs->fromFolder); 
-      folder *dest = folderListGetElementByName(a->folders,root);
-      if(dest==NULL){
-        dest = constructorFolder(root);
-        folderListAppend(a->folders,dest);
-      }
-      folderListPrint(a->folders);
-      folderAddFile(dest,fs,fs->path+strlen(root));
-      free(root);
-    }else{
-      fwsListAppend(a->files,fs);
-    }
+  if (isInFiles == NULL) {
+    fwsListInsertOrder(a->files,fs);
   } else {
     destructorFWS(fs);
   }
@@ -146,17 +129,13 @@ void analyzerUpdateFilePath(analyzer *a, uint idFile, char *path) {
 
 void analyzerDeleteFile(analyzer *a, uint idFile) {
   //remove from mainlist
-  bool removed = folderListRemoveElementByID(a->folders, idFile,true);
-  if(!removed)
-    removed = fwsListRemoveElementByID(a->files,idFile,true);
+  bool removed = fwsListRemoveElementByID(a->files,idFile,true);
 }
 
 void analyzerUpdateFileData(analyzer *a, uint idFile,
                                 uint totChars, uint readChars,
                                 uint occurrences[INT_SIZE]) {
   fileWithStats * searched = fwsListGetElementByID(a->files,idFile);
-  if(searched==NULL)
-    searched = folderListGetElementByID(a->folders,idFile);
   if(searched!=NULL){
     fwsUpdateFileData(searched,totChars,readChars,occurrences);
   }
@@ -166,8 +145,6 @@ void analyzerPrint(analyzer *a) {
   printf("analyzer pid: %u\n", a->pid);
   printf("analyzer filesList:\n");
   fwsListPrint(a->files);
-  printf("analyzer folderList:\n");
-  folderListPrint(a->folders);
   printf("analyzer incompleteList:\n");
   fwsListPrint(a->incompleteList);  
 }
