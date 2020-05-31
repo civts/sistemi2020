@@ -103,11 +103,17 @@ void analyzerAddNewFile(analyzer *a, fileWithStats *fs) {
   fileWithStats *isInFiles = fwsListGetElementByID(a->files, fs->id);
   fileWithStats *isInFolders = folderListGetElementByID(a->folders,fs->id);
   if (isInFiles == NULL && isInFolders==NULL) {
-    if(fs->fromFolder){
-      printf("ADDES TO FOLDER\n");
-      folderListAddFile(a->folders, fs,fs->path);
+    if(fs->fromFolder != 0){
+      char * root = rootFolder(fs->path,fs->fromFolder); 
+      folder *dest = folderListGetElementByName(a->folders,root);
+      if(dest==NULL){
+        dest = constructorFolder(root);
+        folderListAppend(a->folders,dest);
+      }
+      folderListPrint(a->folders);
+      folderAddFile(dest,fs,fs->path+strlen(root));
+      free(root);
     }else{
-      printf("ADDES TO FILES\n");
       fwsListAppend(a->files,fs);
     }
   } else {
@@ -132,31 +138,27 @@ void analyzerUpdateFilePath(analyzer *a, uint idFile, char *path) {
   fileWithStats *updatedNode = fwsListGetElementByID(a->incompleteList, idFile);
   // remove from incompleteList
   fwsListRemoveElementByID(a->incompleteList, idFile, false);
-  // add to mainList
+  // add to files/folders
   if (updatedNode != NULL){
-    if(updatedNode->fromFolder)
-      folderListAddFile(a->folders, updatedNode,updatedNode->path);
-    else
-      fwsListAppend(a->files,updatedNode);
+    analyzerAddNewFile(a,updatedNode);
   }
 }
 
 void analyzerDeleteFile(analyzer *a, uint idFile) {
   //remove from mainlist
-  folderListRemoveElementByID(a->folders, idFile,false);
-  fwsListRemoveElementByID(a->files,idFile,true);
+  bool removed = folderListRemoveElementByID(a->folders, idFile,true);
+  if(!removed)
+    removed = fwsListRemoveElementByID(a->files,idFile,true);
 }
 
 void analyzerUpdateFileData(analyzer *a, uint idFile,
                                 uint totChars, uint readChars,
                                 uint occurrences[INT_SIZE]) {
   fileWithStats * searched = fwsListGetElementByID(a->files,idFile);
+  if(searched==NULL)
+    searched = folderListGetElementByID(a->folders,idFile);
   if(searched!=NULL){
-    fwsListRemoveElementByID(a->files,idFile,true);
-  }
-  searched = folderListGetElementByID(a->folders,idFile);
-  if(searched!=NULL){
-    folderListRemoveElementByID(a->folders,idFile,false);
+    fwsUpdateFileData(searched,totChars,readChars,occurrences);
   }
 }
 // stampa debug

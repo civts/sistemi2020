@@ -35,15 +35,15 @@ typedef struct fwsNode_t {
   // array where in position i we count how many chars w/ ASCII code i are in
   // the file
   uint occorrenze[ASCII_LENGTH];
-  // if this file was analyzed because in a folder (for display purposes)
-  bool fromFolder;
+  // if this file was analyzed because in a folder (for display purposes). 0 if not from folder, otherwise is the length of the path that belongs to the folder
+  uint fromFolder;
   struct fwsNode_t *nextNode;
   struct fwsNode_t *previousNode;
 } fileWithStats;
 
 // Creates a fileWithStats and returns pointer to it - TESTED
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
-                              uint occorrenze[ASCII_LENGTH], bool fromFolder);
+                              uint occorrenze[ASCII_LENGTH], uint fromFolder);
 // Destructor for fileWithStats
 void destructorFWS(fileWithStats *fs);
 // Adds new stats to this fileWithStats
@@ -53,7 +53,7 @@ void fwsUpdateFileData(fileWithStats *fs, uint totChars, uint totCharsToAdd,
 void fwsUpdateFilePath(fileWithStats *fs, char *path);
 
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
-                              uint occorrenze[ASCII_LENGTH], bool fromFolder) {
+                              uint occorrenze[ASCII_LENGTH], uint fromFolder) {
   fileWithStats *fs = (fileWithStats *)malloc(sizeof(fileWithStats));
   fs->path = (char *)malloc(strlen(path));
   fs->id = id;
@@ -127,6 +127,10 @@ void fwsPrint(fileWithStats *fs) {
 
 // Returns the grouped stats for this file (used in print functions)
 charGroupStats statsForFile(fileWithStats *fws) {
+  const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
+  const char punctuationChars[] = {
+    ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
+  };
   charGroupStats result;
   result.az = result.AZ = result.digits = result.punctuation = result.spaces =
       result.otherChars = result.totalChars = result.totalCharsRead = 0;

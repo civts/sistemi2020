@@ -12,6 +12,13 @@
 typedef char *string;
 
 int main(int argc, char **argv) {
+
+  printf("Write the PID\n");
+  uint *pid = malloc(sizeof(uint));
+  scanf("%u",pid);
+  printf("Write the FILEID\n");
+  uint *idFile = malloc(sizeof(uint));
+    
   int fd;
 
   // FIFO file path
@@ -35,10 +42,8 @@ int main(int argc, char **argv) {
   write(fd,header,INT_SIZE+1);
 
   byte dati[INT_SIZE * (ASCII_LENGTH+6)];
-  uint pid = 55;
-  fromIntToBytes(pid,dati);
-  uint idFile = 533;
-  fromIntToBytes(idFile,dati+INT_SIZE);
+  fromIntToBytes(*pid,dati);
+  fromIntToBytes(*idFile,dati+INT_SIZE);
   uint m = 0;
   fromIntToBytes(m,dati+2*INT_SIZE);
   uint i = 0;

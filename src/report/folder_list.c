@@ -74,6 +74,7 @@ folderList *constructorFolderListEmpty() {
   folderList *l = (folderList *)malloc(sizeof(folderList));
   l->count = 0;
   l->firstNode = NULL;
+  return l;
 }
 
 
@@ -175,6 +176,7 @@ folder *constructorFolder(char *name) {
   strcpy(res->name, name);
   res->nextNode = NULL;
   res->previousNode = NULL;
+  return res;
 }
 
 void destructorFolder(folder *cartella) {
@@ -269,6 +271,17 @@ char *firstFolder(char *path) {
   return name;
 }
 
+//estrae la cartella radice
+char *rootFolder(char* path, int length){
+  char * root = malloc(sizeof(char)*length+1);
+  int i = 0;
+  for(i=0;i<length;i++){
+    root[i]=path[i];
+  }
+  root[length]='\0';
+  return root;
+}
+
 void folderPrint(folder *f) {
   char *name;
   printf("folder name: %s\n", f->name);
@@ -320,57 +333,83 @@ charGroupStats statsForFolder(folder *f) {
 
 // // main di prova per testarefolder
 // int main(int c, char *argv[]) {
-//   // folderList * folderLista =  constructorFolderListEmpty();
-//   // folderList * folderListaAnnidata =  constructorFolderListEmpty();
-//   // folderListAppend(folderListaAnnidata,constructorFolder("cibo"));
-//   // folderListAppend(folderLista, constructorFolder("ciao"));
-//   // folderListAppend(folderLista,constructorFolder("patate"));
-//   // folderLista->firstNode->nextNode->sottocartelle = folderListaAnnidata;
+// //   // folderList * folderLista =  constructorFolderListEmpty();
+// //   // folderList * folderListaAnnidata =  constructorFolderListEmpty();
+// //   // folderListAppend(folderListaAnnidata,constructorFolder("cibo"));
+// //   // folderListAppend(folderLista, constructorFolder("ciao"));
+// //   // folderListAppend(folderLista,constructorFolder("patate"));
+// //   // folderLista->firstNode->nextNode->sottocartelle = folderListaAnnidata;
 
-//   folder *cartellaTest = constructorFolder("");
-//   fileWithStats *a = constructorFWS("/root/a.txt", 1, 0, NULL, true);
-//   fileWithStats *f = constructorFWS("/root/f.txt", 1, 0, NULL, true);
-//   fileWithStats *d = constructorFWS("/root/d.txt", 1, 0, NULL, true);
-//   fileWithStats *b = constructorFWS("/root/patate/b.txt", 4, 0, NULL, true);
-//   fileWithStats *e = constructorFWS("/root/patate/c.txt", 1, 0, NULL, true);
+//   // folder *cartellaTest = constructorFolder("/a/");
+//   // fileWithStats *a = constructorFWS("/a/b/a.txt", 1, 0, NULL, 3);
+// //   fileWithStats *f = constructorFWS("/root/f.txt", 1, 0, NULL, true);
+// //   fileWithStats *d = constructorFWS("/root/d.txt", 1, 0, NULL, true);
+// //   fileWithStats *b = constructorFWS("/root/patate/b.txt", 4, 0, NULL, true);
+// //   fileWithStats *e = constructorFWS("/root/patate/c.txt", 1, 0, NULL, true);
   
-//   folderAddFile(cartellaTest, a, a->path);
-//   folderAddFile(cartellaTest, f, f->path);
-//   folderAddFile(cartellaTest, b, b->path);
-//   folderAddFile(cartellaTest, e, e->path);
-//   folderAddFile(cartellaTest, d, d->path);
-//   folderPrint(cartellaTest);
-//   int tot = countFilesInFolder(cartellaTest);
-//   printf("%d",tot);
-//   printf("\n\n");
-//   fileWithStats *patate = folderGetElementByID(cartellaTest,4);
-//   if(patate!=NULL){
-//     fwsPrint(patate);
-//   }
-//   // printf("\n\n");
-//   // printf("\n\n");
-//   folderRemoveElementByID(cartellaTest,4,true);
+//   // folderAddFile(cartellaTest, a, a->path+3);
+// //   folderAddFile(cartellaTest, f, f->path);
+// //   folderAddFile(cartellaTest, b, b->path);
+// //   folderAddFile(cartellaTest, e, e->path);
+// //   folderAddFile(cartellaTest, d, d->path);
+//   // folderPrint(cartellaTest);
+// //   int tot = countFilesInFolder(cartellaTest);
+// //   printf("%d",tot);
+// //   printf("\n\n");
+// //   fileWithStats *patate = folderGetElementByID(cartellaTest,4);
+// //   if(patate!=NULL){
+// //     fwsPrint(patate);
+// //   }
+// //   // printf("\n\n");
+// //   // printf("\n\n");
+// //   folderRemoveElementByID(cartellaTest,4,true);
 
-//   patate = folderGetElementByID(cartellaTest,4);
-//   if(patate!=NULL){
-//     fwsPrint(patate);
-//   }
-//   folderPrint(cartellaTest);
+// //   patate = folderGetElementByID(cartellaTest,4);
+// //   if(patate!=NULL){
+// //     fwsPrint(patate);
+// //   }
+// //   folderPrint(cartellaTest);
   
-//   // printf("count %d",countFolders("/b.txt"));
-//   // char * txt = "/root/patate/b.txt";
-//   // printf("count %d\n",countLettersFirstFolder(txt));
-//   // printf("count %s\n",txt+countLettersFirstFolder(txt));
-//   // char * p = "banana/casa/a.txt";
-//   // char * a = ithFolder(p,1);
-//   // printf("cartella : %s\n",a);
-//   // printf("cartella : %s\n",lastFolder(p));
-//   // char * b = "/a/a.txt";
-//   // bool res = equalFirstFolder(p,b);
-//   // printf("i due sono uguali ? %s",res==1?"true":"false");
-//   // printf("count %d",countFolders(b));
-//   // char * first = firstFolder(p);
-//   // printf("fisrtFOleder %s\n",first);
+// //   // printf("count %d",countFolders("/b.txt"));
+// //   // char * txt = "/root/patate/b.txt";
+// //   // printf("count %d\n",countLettersFirstFolder(txt));
+// //   // printf("count %s\n",txt+countLettersFirstFolder(txt));
+// //   // char * p = "banana/casa/a.txt";
+// //   // char * a = ithFolder(p,1);
+// //   // printf("cartella : %s\n",a);
+// //   // printf("cartella : %s\n",lastFolder(p));
+// //   // char * b = "/a/a.txt";
+// //   // bool res = equalFirstFolder(p,b);
+// //   // printf("i due sono uguali ? %s",res==1?"true":"false");
+// //   // printf("count %d",countFolders(b));
+// //   // char * first = firstFolder(p);
+// //   // printf("fisrtFOleder %s\n",first);
+  
+//   fileWithStats *a = constructorFWS("/a/a.txt", 1, 0, NULL, 3);
+
+//   //controllo non sia già presente
+//   fileWithStats *isInFiles = fwsListGetElementByID(a->files, fs->id);
+//   fileWithStats *isInFolders = folderListGetElementByID(a->folders,fs->id);
+//   if (isInFiles == NULL && isInFolders==NULL) {
+//     if(fs->fromFolder != 0){
+//       printf("ADDES TO FOLDER\n");
+//       printf("PATH LENGTH %d : \n",fs->fromFolder);
+//       char * root = rootFolder(fs->path,fs->fromFolder); 
+//       printf("root : %s\n",root);
+//       folder *dest = folderListGetElementByName(a->folders,root);
+//       if(dest==NULL)
+//         folderListAppend(a->folders,constructorFolder(root));
+//       printf("I DID SOMETHING\n");
+//       folderListPrint(a->folders);
+//       folderAddFile(dest,fs,fs->path+strlen(root));
+//       free(root);
+//     }else{
+//       printf("ADDES TO FILES\n");
+//       fwsListAppend(a->files,fs);
+//     }
+//   } else {
+//     destructorFWS(fs);
+//   }
 
 //   return 0;
 // }

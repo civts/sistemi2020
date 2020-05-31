@@ -89,6 +89,7 @@ analyzerList *constructorAnalyzerListEmpty() {
   analyzerList *l = (analyzerList *)malloc(sizeof(analyzerList));
   l->count = 0;
   l->firstNode = NULL;
+  return l;
 }
 
 analyzerList *constructoranalyzerListOne(analyzer *a) {

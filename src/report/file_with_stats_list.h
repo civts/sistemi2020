@@ -76,6 +76,7 @@ fwsList *constructorFwsListEmpty() {
   fwsList *l = (fwsList *)malloc(sizeof(fwsList));
   l->count = 0;
   l->firstNode = NULL;
+  return l;
 }
 
 fwsList *constructorFwsListOne(fileWithStats *fs) {
