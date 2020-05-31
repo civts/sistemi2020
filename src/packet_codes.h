@@ -41,6 +41,7 @@ INT_SIZE dimensione in byte sezione dati
 ------body------
 INT_SIZE pid dell'A
 INT_SIZE id file
+INT_SIZE folderLength
 string path
 */
 #define A_NEW_FILE_COMPLETE 2
