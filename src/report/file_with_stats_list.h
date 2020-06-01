@@ -317,12 +317,24 @@ bool comparePaths(char* path1, char* path2){
   }
   return result;
 }
-
+// if path1 is contained in path2
+bool pathIsContained(char* path1, char* path2){
+  bool result = true;
+  int i=0;
+  if(strlen(path1)>strlen(path2)) result=false;
+  while(path1[i]!='\0' && result){
+    if(path1[i]!=path2[i]){
+      result=false;
+    }
+    i++;
+  }
+  return result;
+}
 fwsList* fwsListGetFolder(fwsList * l, char* path){
   fileWithStats *cursor = l->firstNode;
   fwsList * folder = constructorFwsListEmpty();
   while (cursor->nextNode != NULL){
-    if(comparePaths(path,cursor->path))
+    if(pathIsContained(path,cursor->path))
       fwsListAppend(folder,constructorFWS(cursor->path,cursor->id,cursor->totalCharacters,cursor->occorrenze,cursor->fromFolder));
     cursor = cursor->nextNode;
   }
