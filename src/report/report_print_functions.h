@@ -17,6 +17,14 @@ const char punctuationChars[] = {
 void printFirstInfoLine(analyzerList *aList);
 // Prints a progress bar with the percentage of a/b*100 [###    ]
 void printPercentage(uint a, uint b);
+//another print function to look like this
+// analizzati 4 file                            
+//                                                           group1 | group2 | group3 | group4 | group5 | letti | totale | barra di caricamento o percentuale
+// a.txt                                                         12        21       232      122      23     444      500          12%
+// b.txt                                                         12        21       232      122      23     444      500          12%                
+// src/home/d.txt                                                12        21       232      122      23     444      500          12%            
+// src/home/e.txt                                                12        21       232      122      23     444      500          12%
+void printRecap(analyzerList * aList);
 // Default print function (no additional argv). Should look ilke this:
 //  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
 //  a-z: 2109
@@ -103,7 +111,39 @@ void printPercentage(uint a, uint b) {
   }
   printf("] %.2f%% complete\n", percentage * 100);
 }
-
+void printRecap(analyzerList * aList){
+  printFirstInfoLine(aList);
+  printf("                                                  |  a-z   |  A-Z   | digits | punct. | spaces | others |  read  | total  |   %   |\n"); //127 caratteri
+  analyzer *a = aList->firstNode;
+  while(a!=NULL){
+    fileWithStats * cursor = a->files->firstNode;
+    while(cursor!=NULL){
+      char * path = cursor->path;
+      while(strlen(path)>0){
+        printf("%-50.50s",path);
+        if(strlen(path)>50){
+          path+=50;
+          printf("\n");
+        }else{
+          path+=strlen(path);
+        }
+      }
+      uint az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead,totalChars;
+      charGroupStats fileStats = statsForFile(cursor);
+      az = fileStats.az;
+      AZ = fileStats.AZ;
+      digits = fileStats.digits;
+      punctuation = fileStats.punctuation;
+      spaces = fileStats.spaces;
+      otherChars = fileStats.otherChars;
+      totalCharsRead = fileStats.totalCharsRead;
+      totalChars = fileStats.totalChars;
+      cursor = cursor->nextNode;
+      printf("%u,%u,%u,%u,%u,%u,%u\n",az, AZ, digits, punctuation, spaces, otherChars, totalCharsRead,totalChars);
+    }
+    a = a->nextNode;
+  }
+}
 void printRecapCompact(analyzerList *aList) {
   printFirstInfoLine(aList);
   analyzer *current = aList->firstNode;
