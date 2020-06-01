@@ -69,6 +69,10 @@ void printSingleFile(fileWithStats *f, bool group);
 // analyzers list + list of paths of the files and a bool to group or not.
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group);
+// Prints all the files in a given folder.
+// If the user has analyzed the folder with more than one analyzer all the
+// analysis are printed sequentially
+void printFolder(analyzerList *analyzers, char *folderPath, bool group);
 
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
@@ -231,4 +235,43 @@ void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
   }
 }
 
+void printFolder(analyzerList *analyzers, char *folderPath, bool group) {
+  analyzer *a = analyzers->firstNode;
+  bool foundFolder = false;
+  while (a != NULL) {
+    fileWithStats *f = a->files->firstNode;
+    int i;
+    bool foundInThisAnalyzer = false;
+    for (i = 0; i < a->files->count; i++) {
+      if (f == NULL)
+        break; // Does not happen, but if it happens…
+      if (strlen(folderPath) >= strlen(f->path))
+        continue;
+      int j;
+      bool isInTheFolder = true;
+      // check if file is in desired folder
+      for (j = 0; j < strlen(folderPath); j++) {
+        if (f->path[j] != folderPath[j]) {
+          isInTheFolder = false;
+          break;
+        }
+      }
+      if (isInTheFolder) {
+        foundFolder = true;
+        if (!foundInThisAnalyzer) {
+          foundInThisAnalyzer = true;
+          printf("Files in the folder %s from the analyzer with pid %d:\n",
+                 trimStringToLength(folderPath, 30), a->pid);
+        }
+        printSingleFile(f, group);
+      }
+      f = f->nextNode;
+    }
+    a = a->nextNode;
+  }
+  if (!foundFolder) {
+    printf("Requested folder was not found in any known analysis. Please check "
+           "the input for typos\n");
+  }
+};
 #endif
