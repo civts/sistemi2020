@@ -132,6 +132,7 @@ int main(int argc, const char *argv[]){
         clear();
         // LA STAMPA DEVE ESSERE DIVERSA A SECONDA DEI FLAG GLOBALI
         printRecapCompact(analyzers);
+        //NON ELIMINARE QUESTE DUE STAMPE BUF E FFLUSH, SONO FONDAMENTALI PER IL CORRETTO FUNZIONAMENTO
         printf("> %s", buf);
         fflush(stdout);
         sleep(1);   
