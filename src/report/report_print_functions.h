@@ -76,10 +76,7 @@ void printFirstInfoLine(analyzerList *aList) {
   int totAnalyzers = 0;
   analyzer *currentAnalyzer = aList->firstNode;
   while (currentAnalyzer != NULL) {
-    totFiles += folderListCountFiles(currentAnalyzer->folders) +
-                currentAnalyzer->files->count;
-    totFolders += currentAnalyzer->folders->count;
-    totAnalyzers++;
+    totFiles += currentAnalyzer->files->count;
     currentAnalyzer = currentAnalyzer->nextNode;
   }
   printf("Analyzed %u files", totFiles);
@@ -108,39 +105,22 @@ void printPercentage(uint a, uint b) {
 void printRecapCompact(analyzerList *aList) {
   printFirstInfoLine(aList);
   analyzer *current = aList->firstNode;
-  long az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead, totalChars;
+  long az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead,
+      totalChars;
   az = AZ = digits = spaces = punctuation = otherChars = totalChars =
       totalCharsRead = 0;
   while (current != NULL) {
     fileWithStats *cursor = current->files->firstNode;
-    // Somma la lista di file
-    while (cursor != NULL) {
-      fileWithStats *fws = cursor;
-      charGroupStats fileStats= statsForFile(fws);
-      az += fileStats.az;
-      AZ += fileStats.AZ;
-      digits += fileStats.digits;
-      punctuation += fileStats.punctuation;
-      spaces += fileStats.spaces;
-      otherChars += fileStats.otherChars;
-      totalCharsRead += fileStats.totalCharsRead;
-      totalChars += fileStats.totalChars;
-      cursor = cursor->nextNode;
-    }
-    // somma la lista di cartelle
-    folder *cursorFolder = current->folders->firstNode;
-    while (cursorFolder != NULL) {
-      charGroupStats folderStats= statsForFolder(cursorFolder);
-      az += folderStats.az;
-      AZ += folderStats.AZ;
-      digits += folderStats.digits;
-      punctuation += folderStats.punctuation;
-      spaces += folderStats.spaces;
-      otherChars += folderStats.otherChars;
-      totalCharsRead += folderStats.totalCharsRead;
-      totalChars += folderStats.totalChars;
-      cursorFolder=cursorFolder->nextNode;
-    }
+    charGroupStats fileStats = statsForFile(cursor);
+    az += fileStats.az;
+    AZ += fileStats.AZ;
+    digits += fileStats.digits;
+    punctuation += fileStats.punctuation;
+    spaces += fileStats.spaces;
+    otherChars += fileStats.otherChars;
+    totalCharsRead += fileStats.totalCharsRead;
+    totalChars += fileStats.totalChars;
+    cursor = cursor->nextNode;
     current = current->nextNode;
   }
   printf("a-z: %u\nA-Z: %u\ndigits: %u\npunctuation: %u\nspace: %u\nother: "
@@ -244,8 +224,8 @@ void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
     }
     if (!printed) {
       char *msg = "File with path ";
-      strcat(msg, trimStringToLength(path, 80));
-      strcat(msg, "was not found\n");
+      msg = strcat(msg, trimStringToLength(path, 80));
+      msg = strcat(msg, "was not found\n");
       perror(msg);
     }
   }
