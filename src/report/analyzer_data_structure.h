@@ -1,6 +1,6 @@
 #include "../utils.c"
 #include "./file_with_stats_list.h"
-#include "./names_list.h"
+
 //#include "int_list.h" per semplificare i debugging per adesso non uso una
 //intList
 #include <stdio.h>  //print etc
