@@ -81,7 +81,12 @@ void analyzerListUpdateFileData(analyzerList *l, uint pid, uint idFile,
 // delete a file with given id of pid, If there are no matches, the packet is
 // discarded
 void analyzerListDeleteFile(analyzerList *l, uint pid, uint idFile);
-
+// delete all files that are contained in that folder. Does nothing if folder does not exists
+void analyzerListDeleteFolder(analyzerList *l,uint pid, char* path);
+// stores the path in a buffer
+void analyzerListIncompleteFolderDelete(analyzerList *l,uint pid, char* path);
+// append the first part and the second path, then it proceed for removal
+void analyzerListCompletionFolderDelete(analyzerList *l,uint pid, char* path);
 // funzione di stampa per il debug
 void analyzerListPrint(analyzerList *l);
 
@@ -254,7 +259,30 @@ void analyzerListDeleteFile(analyzerList *l, uint pid, uint idFile) {
     // perror("analyzer non esistente\n");
   }
 }
-
+void analyzerListDeleteFolder(analyzerList *l,uint pid, char* path){
+  analyzer *a = analyzerListGetElementByPid(l, pid);
+  if (a != NULL) {
+    analyzerDeleteFolder(a, path);
+  } else {
+    // perror("analyzer non esistente\n");
+  }
+}
+void analyzerListIncompleteFolderDelete(analyzerList *l,uint pid, char* path){
+  analyzer *a = analyzerListGetElementByPid(l, pid);
+  if (a != NULL) {
+    analyzerIncompleteFolderDelete(a, path);
+  } else {
+    // perror("analyzer non esistente\n");
+  }
+}
+void analyzerListCompletionFolderDelete(analyzerList *l,uint pid, char* path){
+  analyzer *a = analyzerListGetElementByPid(l, pid);
+  if (a != NULL) {
+    analyzerCompletionFolderDelete(a, path);
+  } else {
+    // perror("analyzer non esistente\n");
+  }
+}
 void analyzerListPrint(analyzerList *l) {
   analyzer *cursor = l->firstNode;
   while (cursor != NULL) {

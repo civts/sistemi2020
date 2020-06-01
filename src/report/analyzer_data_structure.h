@@ -1,6 +1,6 @@
 #include "../utils.c"
 #include "./file_with_stats_list.h"
-#include "./folder_list.c"
+#include "./names_list.h"
 //#include "int_list.h" per semplificare i debugging per adesso non uso una
 //intList
 #include <stdio.h>  //print etc
@@ -40,7 +40,7 @@ typedef struct analyzer_t {
   fwsList *files;
   // lista di file parziali
   fwsList *incompleteList;
-
+  char * incompletePathToDelete;
   struct analyzer_t *nextNode;
   struct analyzer_t *previousNode;
 } analyzer;
@@ -66,6 +66,12 @@ void analyzerDeleteFile(analyzer *a, uint idFile);
 void analyzerUpdateFileData(analyzer *a, uint idFile,
                                 uint totChars, uint readChars,
                                 uint occurrences[INT_SIZE]);
+//deletes all wifles contained within a folder from analyzer with that path
+void analyzerDeleteFolder(analyzer *a, char * path);
+// stores the partial path into incompletePathToDelete;
+void analyzerIncompleteFolderDelete(analyzer *a, char * path);
+// appends the partial path and proceed for deletion
+void analyzerCompletionFolderDelete(analyzer *a, char * path);
 // stampa debug
 void analyzerPrint(analyzer *a);
 
@@ -75,6 +81,7 @@ analyzer *constructorAnalyzer(uint pid) {
   a->pid = pid;
   a->files = constructorFwsListEmpty();
   a->incompleteList = constructorFwsListEmpty();
+  a->incompletePathToDelete = NULL;
   a->previousNode = NULL;
   a->nextNode = NULL;
   if (DEBUGGING)
@@ -91,6 +98,8 @@ void destructorAnalyzer(analyzer *a) {
            a->pid);
   destructorFwsList(a->files);
   destructorFwsList(a->incompleteList);
+  if(a->incompletePathToDelete!=NULL)
+    free (a->incompletePathToDelete);
   free(a);
 }
 
@@ -139,6 +148,25 @@ void analyzerUpdateFileData(analyzer *a, uint idFile,
   if(searched!=NULL){
     fwsUpdateFileData(searched,totChars,readChars,occurrences);
   }
+}
+
+void analyzerDeleteFolder(analyzer *a, char * path){
+  fwsListDeleteFolder(a->files,path);
+}
+
+void analyzerIncompleteFolderDelete(analyzer *a, char * path){
+  a->incompletePathToDelete = malloc(sizeof(char)*strlen(path)+1);
+  strcpy(a->incompletePathToDelete,path);
+}
+void analyzerCompletionFolderDelete(analyzer *a, char * path){
+  char *oldPath = a->incompletePathToDelete;
+  char *completePath = (char *)malloc(strlen(oldPath) + strlen(path) + 1);
+  strcpy(completePath, oldPath);
+  strcat(completePath, path);
+  analyzerDeleteFolder(a,completePath);
+  free(oldPath);
+  free(completePath);
+  a->incompletePathToDelete = NULL;
 }
 // stampa debug
 void analyzerPrint(analyzer *a) {

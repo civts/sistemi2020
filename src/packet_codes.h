@@ -41,7 +41,6 @@ INT_SIZE dimensione in byte sezione dati
 ------body------
 INT_SIZE pid dell'A
 INT_SIZE id file
-INT_SIZE folderLength
 string path
 */
 #define A_NEW_FILE_COMPLETE 2
@@ -59,7 +58,19 @@ INT_SIZE pid dell'A
 INT_SIZE id file
 */
 #define A_DELETE_FILE_CODE 5
-
+/*Packet to DELETE (w/ complete path)
+------ header -----
+1 byte packet code (6)
+INT_SIZE dimensione in byte sezione dati
+------body------
+INT_SIZE pid dell'A
+string path
+*/
+#define A_DELETE_FOLDER 6
+// As A_NEW_FILE_COMPLETE but contains only first half of the path
+#define A_DELETE_FOLDER_INCOMPLETE_PART1 7
+// As A_NEW_FILE_COMPLETE but contains only second half of the path
+#define A_DELETE_FOLDER_INCOMPLETE_PART2 8
 #ifndef bool
 typedef unsigned char bool;
 #define false 0

@@ -1,7 +1,7 @@
 #include "../packet_codes.h"
 #include "../utils.c"
 //#include "./file_with_stats_list.h"
-#include "./analyzer_list.h"
+//#include "./analyzer_list.h"
 #include "./report_utils.h"
 #include <fcntl.h>
 #ifndef REPORT_PRINT_FUNCTIONS_H
@@ -76,7 +76,6 @@ void printFolder(analyzerList *analyzers, char *folderPath, bool group);
 
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
-  uint totFolders = 0;
   int totAnalyzers = 0;
   analyzer *currentAnalyzer = aList->firstNode;
   while (currentAnalyzer != NULL) {
@@ -84,7 +83,6 @@ void printFirstInfoLine(analyzerList *aList) {
     currentAnalyzer = currentAnalyzer->nextNode;
   }
   printf("Analyzed %u files", totFiles);
-  printf(" [in %u folders] ", totFolders);
   if (totAnalyzers > 1) {
     printf(" with %d analyzers", totAnalyzers);
   }
@@ -207,71 +205,94 @@ void printSingleFile(fileWithStats *f, bool group) {
   printPercentage(totalCharsRead, totalChars);
 }
 
+// void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
+//                         bool group) {
+//   int i;
+//   // for each path I search it across the analyzers and print it if found
+//   for (i = 0; i < pathsLen; i++) {
+//     bool printed = false;
+//     char *path = paths[i];
+//     analyzer *analyzer = analyzers->firstNode;
+//     while (analyzer != NULL && !printed) {
+//       fileWithStats *fws = analyzer->files->firstNode;
+//       while (fws != NULL) {
+//         if (streq(fws->path, path)) {
+//           printSingleFile(fws, group);
+//           printed = true;
+//         }
+//         fws = fws->nextNode;
+//       }
+//       analyzer = analyzer->nextNode;
+//     }
+//     if (!printed) {
+//       char *msg = "File with path ";
+//       msg = strcat(msg, trimStringToLength(path, 80));
+//       msg = strcat(msg, "was not found\n");
+//       perror(msg);
+//     }
+//   }
+// }
+
+// dovremmo speficare il pid a mio avviso
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group) {
-  int i;
-  // for each path I search it across the analyzers and print it if found
-  for (i = 0; i < pathsLen; i++) {
-    bool printed = false;
-    char *path = paths[i];
-    analyzer *analyzer = analyzers->firstNode;
-    while (analyzer != NULL && !printed) {
-      fileWithStats *fws = analyzer->files->firstNode;
-      while (fws != NULL) {
-        if (streq(fws->path, path)) {
-          printSingleFile(fws, group);
-          printed = true;
-        }
-        fws = fws->nextNode;
+  analyzer * a = analyzers->firstNode;
+  while(a!=NULL){
+    int i=0;
+    for(i=0;i<pathsLen;i++){
+      fileWithStats *item = fwsListGetElementByPath(a->files,paths[i]);
+      if(item!=NULL){
+         printSingleFile(item, group);
       }
-      analyzer = analyzer->nextNode;
-    }
-    if (!printed) {
-      char *msg = "File with path ";
-      msg = strcat(msg, trimStringToLength(path, 80));
-      msg = strcat(msg, "was not found\n");
-      perror(msg);
-    }
-  }
-}
-
-void printFolder(analyzerList *analyzers, char *folderPath, bool group) {
-  analyzer *a = analyzers->firstNode;
-  bool foundFolder = false;
-  while (a != NULL) {
-    fileWithStats *f = a->files->firstNode;
-    int i;
-    bool foundInThisAnalyzer = false;
-    for (i = 0; i < a->files->count; i++) {
-      if (f == NULL)
-        break; // Does not happen, but if it happens…
-      if (strlen(folderPath) >= strlen(f->path))
-        continue;
-      int j;
-      bool isInTheFolder = true;
-      // check if file is in desired folder
-      for (j = 0; j < strlen(folderPath); j++) {
-        if (f->path[j] != folderPath[j]) {
-          isInTheFolder = false;
-          break;
-        }
-      }
-      if (isInTheFolder) {
-        foundFolder = true;
-        if (!foundInThisAnalyzer) {
-          foundInThisAnalyzer = true;
-          printf("Files in the folder %s from the analyzer with pid %d:\n",
-                 trimStringToLength(folderPath, 30), a->pid);
-        }
-        printSingleFile(f, group);
-      }
-      f = f->nextNode;
     }
     a = a->nextNode;
   }
-  if (!foundFolder) {
-    printf("Requested folder was not found in any known analysis. Please check "
-           "the input for typos\n");
+}
+void printFolder(analyzerList *analyzers, char *folderPath, bool group){
+  analyzer * a = analyzers->firstNode;
+  while(a!=NULL){
+    fwsList * folder = fwsListGetFolder(a->files,folderPath);
+    // adesso dentro folder puoi farci quello che vuoi. Per adesso è ancora una copia. Nel caso 
+    a = a->nextNode;
   }
-};
+}
+// void printFolder(analyzerList *analyzers, char *folderPath, bool group) {
+//   analyzer *a = analyzers->firstNode;
+//   bool foundFolder = false;
+//   while (a != NULL) {
+//     fileWithStats *f = a->files->firstNode;
+//     int i;
+//     bool foundInThisAnalyzer = false;
+//     for (i = 0; i < a->files->count; i++) {
+//       if (f == NULL)
+//         break; // Does not happen, but if it happens…
+//       if (strlen(folderPath) >= strlen(f->path))
+//         continue;
+//       int j;
+//       bool isInTheFolder = true;
+//       // check if file is in desired folder
+//       for (j = 0; j < strlen(folderPath); j++) {
+//         if (f->path[j] != folderPath[j]) {
+//           isInTheFolder = false;
+//           break;
+//         }
+//       }
+//       if (isInTheFolder) {
+//         foundFolder = true;
+//         if (!foundInThisAnalyzer) {
+//           foundInThisAnalyzer = true;
+//           printf("Files in the folder %s from the analyzer with pid %d:\n",
+//                  trimStringToLength(folderPath, 30), a->pid);
+//         }
+//         printSingleFile(f, group);
+//       }
+//       f = f->nextNode;
+//     }
+//     a = a->nextNode;
+//   }
+//   if (!foundFolder) {
+//     printf("Requested folder was not found in any known analysis. Please check "
+//            "the input for typos\n");
+//   }
+// };
 #endif

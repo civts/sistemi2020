@@ -75,8 +75,13 @@ bool fwsListRemoveElementByID(fwsList *fwsList, uint id, bool delete);
 bool fwsListRemoveElementByPath(fwsList *fwsList, char *path, bool delete);
 // function that retunrs true if path1 is alphabetically before path2, if not false. 
 bool comparePaths(char* path1,char*path2);
+// if path1 is contained in path2. IE if path 2 is a file within path1
+bool pathIsContained(char* path1, char* path2);
+//deletes all elements in a folder
+void fwsListDeleteFolder(fwsList * l, char* path);
 // returns a list of items( copy) ) that have that belong to that folder
 fwsList* fwsListGetFolder(fwsList * l, char* path);
+
 void fwsListPrint(fwsList *l);
 
 fwsList *constructorFwsListEmpty() {
@@ -330,12 +335,22 @@ bool pathIsContained(char* path1, char* path2){
   }
   return result;
 }
+
+void fwsListDeleteFolder(fwsList * l, char* path){
+  fileWithStats *cursor = l->firstNode;
+  while (cursor->nextNode != NULL){
+    if(pathIsContained(path,cursor->path))
+      fwsListRemoveElementByPath(l,cursor->path,true);
+    cursor = cursor->nextNode;
+  }
+}
+
 fwsList* fwsListGetFolder(fwsList * l, char* path){
   fileWithStats *cursor = l->firstNode;
   fwsList * folder = constructorFwsListEmpty();
   while (cursor->nextNode != NULL){
     if(pathIsContained(path,cursor->path))
-      fwsListAppend(folder,constructorFWS(cursor->path,cursor->id,cursor->totalCharacters,cursor->occorrenze,cursor->fromFolder));
+      fwsListAppend(folder,constructorFWS(cursor->path,cursor->id,cursor->totalCharacters,cursor->occorrenze));
     cursor = cursor->nextNode;
   }
   return folder;

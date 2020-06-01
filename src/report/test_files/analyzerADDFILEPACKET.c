@@ -22,9 +22,6 @@ int main(int argc, char **argv) {
   printf("Write the PATH\n");
   char *path = malloc(1024);
   scanf("%s",path);
-  printf("Write the FolderLength, 0 if not from folder\n");
-  uint *fromFolder = malloc(sizeof(uint));
-  scanf("%u",fromFolder); 
   
   int fd;
   // FIFO file path
@@ -37,7 +34,7 @@ int main(int argc, char **argv) {
 
   byte header[INT_SIZE+1] = {'\0','\0','\0','\0','\0'};
   header[0] = A_NEW_FILE_COMPLETE;
-  fromIntToBytes(INT_SIZE*3+strlen(path)+1,header+1);
+  fromIntToBytes(INT_SIZE*2+strlen(path)+1,header+1);
   printf("CODE: %u\n",*(header));
   printf("DataSize: %u\n",(uint)fromBytesToInt(header+1));
   write(fd,header,INT_SIZE+1);
@@ -45,13 +42,11 @@ int main(int argc, char **argv) {
   byte dati[INT_SIZE*3+strlen(path)+1];
   fromIntToBytes(*pid,dati);
   fromIntToBytes(*idFile,dati+INT_SIZE);
-  fromIntToBytes(*fromFolder,dati+2*INT_SIZE);
-  strcpy(dati+3*INT_SIZE,path);
+  strcpy(dati+2*INT_SIZE,path);
   printf("pid: %u\n",(uint)fromBytesToInt(dati));
   printf("idFile: %u\n",(uint)fromBytesToInt(dati+INT_SIZE));
-  printf("fromFolder: %u\n",*(dati+2*INT_SIZE));
-  printf("path: %s\n",dati+(3*INT_SIZE));
-  write(fd,dati,INT_SIZE*3+strlen(path)+1);
+  printf("path: %s\n",dati+(2*INT_SIZE));
+  write(fd,dati,INT_SIZE*2+strlen(path)+1);
   close(fd);
   return 0;
 }

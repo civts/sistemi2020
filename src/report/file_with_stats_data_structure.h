@@ -35,15 +35,13 @@ typedef struct fwsNode_t {
   // array where in position i we count how many chars w/ ASCII code i are in
   // the file
   uint occorrenze[ASCII_LENGTH];
-  // if this file was analyzed because in a folder (for display purposes). 0 if not from folder, otherwise is the length of the path that belongs to the folder
-  uint fromFolder;
   struct fwsNode_t *nextNode;
   struct fwsNode_t *previousNode;
 } fileWithStats;
 
 // Creates a fileWithStats and returns pointer to it - TESTED
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
-                              uint occorrenze[ASCII_LENGTH], uint fromFolder);
+                              uint occorrenze[ASCII_LENGTH]);
                           
 // Destructor for fileWithStats
 void destructorFWS(fileWithStats *fs);
@@ -54,7 +52,7 @@ void fwsUpdateFileData(fileWithStats *fs, uint totChars, uint totCharsToAdd,
 void fwsUpdateFilePath(fileWithStats *fs, char *path);
 
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
-                              uint occorrenze[ASCII_LENGTH], uint fromFolder) {
+                              uint occorrenze[ASCII_LENGTH]) {
   fileWithStats *fs = (fileWithStats *)malloc(sizeof(fileWithStats));
   fs->path = (char *)malloc(strlen(path));
   fs->id = id;
@@ -72,7 +70,6 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
       fs->occorrenze[i] = 0;
     }
   }
-  fs->fromFolder = fromFolder;
   fs->previousNode = NULL;
   fs->nextNode = NULL;
   if (DEBUGGING)
@@ -125,7 +122,6 @@ void fwsPrint(fileWithStats *fs) {
     printf("fws char:'%c' number:%u\n",i,fs->occorrenze[i]);
   }
   */
-  printf("fws from folder: %u\n", fs->fromFolder);
 }
 
 // Returns the grouped stats for this file (used in print functions)
