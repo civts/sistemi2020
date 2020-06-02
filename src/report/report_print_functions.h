@@ -16,15 +16,24 @@ const char punctuationChars[] = {
 // AGGIORNATA CON LE FOLDER
 void printFirstInfoLine(analyzerList *aList);
 // Prints a progress bar with the percentage of a/b*100 [###    ]
-void printPercentage(uint a, uint b);
-//another print function to look like this
-// analizzati 4 file                            
-//                                                           group1 | group2 | group3 | group4 | group5 | letti | totale | barra di caricamento o percentuale
-// a.txt                                                         12        21       232      122      23     444      500          12%
-// b.txt                                                         12        21       232      122      23     444      500          12%                
-// src/home/d.txt                                                12        21       232      122      23     444      500          12%            
-// src/home/e.txt                                                12        21       232      122      23     444      500          12%
-void printRecap(analyzerList * aList);
+void printPercentage(uint done, uint total, int barWidth);
+// another print function to look like this
+// analizzati 4 file
+//                                                           group1 | group2 |
+//                                                           group3 | group4 |
+//                                                           group5 | letti |
+//                                                           totale | barra di
+//                                                           caricamento o
+//                                                           percentuale
+// a.txt                                                         12        21
+// 232      122      23     444      500          12%
+// b.txt                                                         12        21
+// 232      122      23     444      500          12%
+// src/home/d.txt                                                12        21
+// 232      122      23     444      500          12%
+// src/home/e.txt                                                12        21
+// 232      122      23     444      500          12%
+void printRecap(analyzerList *aList);
 // Default print function (no additional argv). Should look ilke this:
 //  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
 //  a-z: 2109
@@ -96,9 +105,8 @@ void printFirstInfoLine(analyzerList *aList) {
   }
   printf(":\n");
 }
-void printPercentage(uint a, uint b) {
-  const int barWidth = 30;
-  float percentage = b == 0 ? 0 : a / (float)b;
+void printPercentage(uint done, uint total, int barWidth) {
+  float percentage = total == 0 ? 0 : done / (float)total;
   printf("\n[");
   int i, pos = barWidth * percentage;
   for (i = 0; i < barWidth; i++) {
@@ -111,24 +119,28 @@ void printPercentage(uint a, uint b) {
   }
   printf("] %.2f%% complete\n", percentage * 100);
 }
-void printRecap(analyzerList * aList){
+void printRecap(analyzerList *aList) {
   printFirstInfoLine(aList);
-  printf("                                                  |  a-z   |  A-Z   | digits | punct. | spaces | others |  read  | total  |   %   |\n"); //127 caratteri
+  printf(
+      "                                                  |  a-z   |  A-Z   | "
+      "digits | punct. | spaces | others |  read  | total  |   %   |\n"); // 127
+  // caratteri
   analyzer *a = aList->firstNode;
-  while(a!=NULL){
-    fileWithStats * cursor = a->files->firstNode;
-    while(cursor!=NULL){
-      char * path = cursor->path;
-      while(strlen(path)>0){
-        printf("%-50.50s",path);
-        if(strlen(path)>50){
-          path+=50;
+  while (a != NULL) {
+    fileWithStats *cursor = a->files->firstNode;
+    while (cursor != NULL) {
+      char *path = cursor->path;
+      while (strlen(path) > 0) {
+        printf("%-50.50s", path);
+        if (strlen(path) > 50) {
+          path += 50;
           printf("\n");
-        }else{
-          path+=strlen(path);
+        } else {
+          path += strlen(path);
         }
       }
-      uint az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead,totalChars;
+      uint az, AZ, digits, spaces, punctuation, otherChars, totalCharsRead,
+          totalChars;
       charGroupStats fileStats = statsForFile(cursor);
       az = fileStats.az;
       AZ = fileStats.AZ;
@@ -139,7 +151,8 @@ void printRecap(analyzerList * aList){
       totalCharsRead = fileStats.totalCharsRead;
       totalChars = fileStats.totalChars;
       cursor = cursor->nextNode;
-      printf("%u,%u,%u,%u,%u,%u,%u\n",az, AZ, digits, punctuation, spaces, otherChars, totalCharsRead,totalChars);
+      printf("%u,%u,%u,%u,%u,%u,%u\n", az, AZ, digits, punctuation, spaces,
+             otherChars, totalCharsRead, totalChars);
     }
     a = a->nextNode;
   }
@@ -169,7 +182,7 @@ void printRecapCompact(analyzerList *aList) {
          "%u\n\nTotal characters read: %u over %u\n",
          az, AZ, digits, punctuation, spaces, otherChars, totalCharsRead,
          totalChars);
-  printPercentage(totalCharsRead, totalChars);
+  printPercentage(totalCharsRead, totalChars, 30);
 }
 
 void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
@@ -242,7 +255,7 @@ void printSingleFile(fileWithStats *f, bool group) {
   }
   printf("others: %d\n", otherChars);
   printf("\nTotal characters read: %u over %u\n", totalCharsRead, totalChars);
-  printPercentage(totalCharsRead, totalChars);
+  printPercentage(totalCharsRead, totalChars, 30);
 }
 
 // void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
@@ -276,23 +289,24 @@ void printSingleFile(fileWithStats *f, bool group) {
 // dovremmo speficare il pid a mio avviso
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group) {
-  analyzer * a = analyzers->firstNode;
-  while(a!=NULL){
-    int i=0;
-    for(i=0;i<pathsLen;i++){
-      fileWithStats *item = fwsListGetElementByPath(a->files,paths[i]);
-      if(item!=NULL){
-         printSingleFile(item, group);
+  analyzer *a = analyzers->firstNode;
+  while (a != NULL) {
+    int i = 0;
+    for (i = 0; i < pathsLen; i++) {
+      fileWithStats *item = fwsListGetElementByPath(a->files, paths[i]);
+      if (item != NULL) {
+        printSingleFile(item, group);
       }
     }
     a = a->nextNode;
   }
 }
-void printFolder(analyzerList *analyzers, char *folderPath, bool group){
-  analyzer * a = analyzers->firstNode;
-  while(a!=NULL){
-    fwsList * folder = fwsListGetFolder(a->files,folderPath);
-    // adesso dentro folder puoi farci quello che vuoi. Per adesso è ancora una copia. Nel caso 
+void printFolder(analyzerList *analyzers, char *folderPath, bool group) {
+  analyzer *a = analyzers->firstNode;
+  while (a != NULL) {
+    fwsList *folder = fwsListGetFolder(a->files, folderPath);
+    // adesso dentro folder puoi farci quello che vuoi. Per adesso è ancora una
+    // copia. Nel caso
     a = a->nextNode;
   }
 }
@@ -331,8 +345,94 @@ void printFolder(analyzerList *analyzers, char *folderPath, bool group){
 //     a = a->nextNode;
 //   }
 //   if (!foundFolder) {
-//     printf("Requested folder was not found in any known analysis. Please check "
+//     printf("Requested folder was not found in any known analysis. Please
+//     check "
 //            "the input for typos\n");
 //   }
 // };
+
+void printProgressBar(uint done, uint total, int barWidth) {
+  float percentage = total == 0 ? 0 : done / (float)total;
+  int i, pos = (barWidth - 3) * percentage;
+  for (i = 0; i < barWidth - 3; i++) {
+    if (i < pos)
+      printf("=");
+    else if (i == pos && percentage != 0) {
+      printf(">");
+    } else
+      printf(" ");
+  }
+  printf("%-3d\n", (int)(percentage * 100));
+}
+
+void printRecapTabela(analyzerList *aList, bool shouldGroup) {
+  analyzer *a = aList->firstNode;
+  const int totWidth = 120;
+  const int groupWidth = 6;
+  const int barWidth = 15;
+  while (a != NULL) {        // forEach analyzer
+    char msg[totWidth + 1];  // table header text
+    char leftOver[totWidth]; // se devo finire la print nella riga succ
+    leftOver[0] = '\0';
+    int i;
+    if (aList->count > 1) {
+      sprintf(msg, "\nAnalizzati %d files nell'analyzer con pid %d",
+              a->files->count, a->pid);
+    } else {
+      sprintf(msg, "Analizzati %d files", a->files->count);
+    }
+    int firstColWidth = totWidth - (8 * groupWidth + barWidth + 1);
+    int msgLen = strlen(msg);
+    if (msgLen > firstColWidth) {
+      strcpy(leftOver, msg + firstColWidth - 1);
+    }
+    for (i = msgLen; i < firstColWidth; i++) {
+      msg[i] = ' ';
+    }
+    // la lunghezza di ogni pezzo dev'essere groupWidth-1:
+    // strlen("|az  ") = 6 = groupWidth
+    // si termini con |
+    const char *beforeBar = "|az   |AZ   |num  |puntg|spazi|altri|letti|total|";
+    sprintf(msg + firstColWidth, beforeBar);
+    const char *barTxt = "progress bar";
+    int positionNow = firstColWidth + strlen(beforeBar);
+    for (i = 0; i < (barWidth - strlen(barTxt)) / 2; i++) {
+      msg[positionNow + i] = ' ';
+      positionNow++;
+    }
+    sprintf(msg + positionNow, barTxt);
+    positionNow += strlen(barTxt);
+    for (i = 0; i < (barWidth - strlen(barTxt)) / 2; i++) {
+      msg[positionNow + i] = ' ';
+      positionNow++;
+    }
+    msg[positionNow] = '\0';
+    printf("%s\n", msg);
+    if (strlen(leftOver) > 0) {
+      printf("%s\n", leftOver);
+    }
+
+    fileWithStats *f = a->files->firstNode;
+    for (i = 0; i < a->files->count; i++) {
+      if (f == NULL)
+        break;
+      charGroupStats stats = statsForFile(f);
+      char line[totWidth];
+      char *trimmedPath = trimStringToLength(f->path, firstColWidth);
+      strcpy(line, trimmedPath);
+      int j;
+      for (j = 0; j < firstColWidth - strlen(trimmedPath); j++) {
+        line[strlen(trimmedPath) + j] = ' ';
+      }
+      sprintf(line + firstColWidth, "|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
+              stats.az, stats.AZ, stats.digits, stats.punctuation, stats.spaces,
+              stats.otherChars, stats.totalCharsRead, stats.totalChars);
+      printf(line);
+      printProgressBar(f->readCharacters, f->totalCharacters, barWidth);
+      f = f->nextNode;
+    }
+    a = a->nextNode;
+  }
+}
+
 #endif
