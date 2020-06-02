@@ -29,6 +29,8 @@ int getOutputFromLSRec(int readDescriptor, NamesList *fileList){
     char currentFolder[MAX_SIZE_OF_FOLDER_NAME];
     int out;
 
+    int sizeFolderName = 0, sizeFileName = 0;
+
     while(fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead) != NULL){
         string stringRead = strtok(buffer, "\n");
         // check if the string ends with ":"
@@ -47,11 +49,13 @@ int getOutputFromLSRec(int readDescriptor, NamesList *fileList){
             // if it ends with '/' it's a folder, then we'll inspect it later 
             if(!isDirectory(stringRead, '/', &out) && out == 0){
                 // that's a file
-                string completeName = (string) malloc(strlen(stringRead) + strlen(currentFolder) + 1);
-
+                string completeName = (string) malloc(strlen(stringRead) + strlen(currentFolder));
+                // DEBUG
+                // printf("File name: %s\n", completeName);
                 if (completeName != NULL){
                     addFolderToFileName(completeName, currentFolder, stringRead);
-
+                    // DEBUG
+                    // printf("With folder: %s\n", completeName);
                     NodeName *newNode = constructorNodeName(completeName);
                     appendToNamesList(fileList, newNode);
 
@@ -155,11 +159,17 @@ int getMyPath(string *path){
 }
 
 
-// int main(){
-//     string *path = (string*)malloc(sizeof(string));
-//     int u = getMyPath(path);
-//     printf("return code: %d\nreturn path: %s\n", u, *path);
+int main(){
+
+    string folder = "./";
+    NamesList *list = constructorNamesList();
+    int filesFound;
+
+    crawler(folder, list, &filesFound);
+
+    printf("Found %d files:\n", filesFound);
+    printNamesList(list);
 
 
-//     return 0;
-// }
+    return 0;
+}
