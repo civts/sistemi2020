@@ -57,11 +57,11 @@ bool contains(int poolLength, const char *pool[], const char *option) {
 }
 
 // Ensures the given string is long at most maxLen. If it is longer the middle
-// part is cut out and three dots are inserted instead. Please use maxLen >= 6
-// (else it returns src). TESTED✔️
-char *trimStringToLength(char *src, int maxLen) {
+// part is cut out and three dots are inserted instead.
+// MODIFIES the original string
+// Please use maxLen >= 6 (else it returns src). TESTED✔️
+void trimStringToLength(char *src, int maxLen) {
   int pathLen = strlen(src);
-  char *trimmedPath;
   if (pathLen > maxLen && maxLen >= 6) {
     char tp[maxLen + 1];
     int i, split = maxLen / 2 - 3;
@@ -75,11 +75,8 @@ char *trimStringToLength(char *src, int maxLen) {
       tp[i] = src[pathLen - (maxLen - i)];
     }
     tp[maxLen] = '\0';
-    trimmedPath = tp;
-  } else {
-    trimmedPath = src;
+    strcpy(src, tp);
   }
-  return trimmedPath;
 }
 
 // Struct for keeping how many char of each group are present in a given

@@ -210,7 +210,10 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
 }
 
 void printSingleFile(fileWithStats *f, bool group) {
-  printf("---------------%s---------------\n", trimStringToLength(f->path, 70));
+  char pathCopy[strlen(f->path)];
+  strcpy(pathCopy, f->path);
+  trimStringToLength(pathCopy, 70);
+  printf("---------------%s---------------\n", pathCopy);
   short i;
   uint *oc = f->occorrenze;
   uint thisaz, thisAZ, thisDigits, thisSpaces, thisPunct, otherChars;
@@ -279,7 +282,10 @@ void printSingleFile(fileWithStats *f, bool group) {
 //     }
 //     if (!printed) {
 //       char *msg = "File with path ";
-//       msg = strcat(msg, trimStringToLength(path, 80));
+//       char nPath [strlen(path)];
+//       strcpy(nPath,path);
+//       trimStringToLength(nPath, 80);
+//       msg = strcat(msg, nPath);
 //       msg = strcat(msg, "was not found\n");
 //       perror(msg);
 //     }
@@ -418,7 +424,9 @@ void printRecapTabela(analyzerList *aList, bool shouldGroup) {
         break;
       charGroupStats stats = statsForFile(f);
       char line[totWidth];
-      char *trimmedPath = trimStringToLength(f->path, firstColWidth);
+      char trimmedPath[strlen(f->path)];
+      strcpy(trimmedPath, f->path);
+      trimStringToLength(trimmedPath, firstColWidth);
       strcpy(line, trimmedPath);
       int j;
       for (j = 0; j < firstColWidth - strlen(trimmedPath); j++) {
