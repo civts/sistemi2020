@@ -1,19 +1,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include "utils.c"
 #include "crawler.c"
 #include "packets.h"
 // #include "controller.c"
 
-#define READ 0
-#define WRITE 1
-
 /**
  * TODO: Insert possibility to remove an entire folder? (un casin)
  * NOTE: processExit() è dichiarata come funzione (invece che essere scritta all'interno del codice
  *       perché dovrà essere richiamata anche alla ricezione di SIGKILL)
- * TODO: Impostare tutti i vari controlli sui comandi in ingresso in modalità dinamica
  * TODO: Decidere cosa fare mentre l'analisi statica si sta completando (una mezza soluzione è
  *       già implementata, dai un'occhiata)
  */
@@ -68,7 +65,6 @@ int getFilePathsFromArgv(string argv[], NamesList *fileList, int numPaths){
 int main(int argc, char *argv[]){
     int returnCode = 0;
     filePaths = constructorNamesList();
-    getMyPath(&myPath);
 
     if (argc <= 1){
         fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
@@ -92,7 +88,6 @@ int modeSwitcher(char mode, int argc, char *argv[]){
     int returnCode = 0;
 
     switch (mode){
-
         case 'h':
             helpMode();
             break;
@@ -155,46 +150,77 @@ void interactiveMode(){
 
     const char analyzeString[] = "analyze";
     const char exitString[] = "exit";
-    const char showString[] = "show";
 
     printf("Interactive mode\n");
 
     char command[MINIQ_MAX_BUFFER_SIZE];
+    char fileNameBuffer[MINIQ_MAX_BUFFER_SIZE];
 
     printf("> ");
     scanf("%s", command);
     while (strcmp(command, exitString) != 0){
         if (strcmp(command, analyzeString) == 0){
             // start analyzing process (if parameters are good)
-            if(checkParameters()){
+            if (checkParameters()){
                 printf("Start analysis\n");
                 sendStartAnalysisPacket(cInstance->pipeAC);
             }
 
-        } else if (strcmp(command, showString) == 0){
-            printNamesList(filePaths); // Print-show file list
-
         } else if (command[0] == '+'){
             // Managment of addition of file or folder
-            // int *j = malloc(sizeof(int));
-            int j;
-            int oldNumberOfFiles = filePaths->counter;
-            if(isDirectory(command + 1, '/', &j)){
-                crawler(command + 1, filePaths, &j);
-                sendAllFiles();
-                printf("Added folder %s\n", command + 1);
-            } else if (isValidFile(command + 1)) {
-                appendNameToNamesList(filePaths, command + 1);
-                sendAllFiles();
-                printf("Added file %s\n", command + 1);
+            if (command + 1 != NULL){
+                realpath(command + 1, fileNameBuffer);
             } else {
+                fileNameBuffer[0] = '\0';
+            }
+            
+            int numOfFilesInFolder; // used in case it's a folder
+            int pathType = inspectPath(fileNameBuffer);
+
+            if (pathType == 0){
+                // it's an existing file
+                appendNameToNamesList(filePaths, fileNameBuffer);
+                sendAllFiles();
+                printf("Added file %s\n", fileNameBuffer);
+            } else if (pathType == 1){
+                // it's an existing folder
+                crawler(fileNameBuffer, filePaths, &numOfFilesInFolder);
+                sendAllFiles();
+                printf("Added folder %s\n", fileNameBuffer);
+            } else {
+                // invalid file/folder
                 fprintf(stderr, "File/folder inserted doesn't exist!\n");
             }
 
         } else if (command[0] == '-'){
             // Management of removal of file or folder
-            printf("Remove file %s\n", command + 1); 
-            removeFileByNamePacket(cInstance->pipeAC, command + 1);
+            if (command + 1 != NULL){
+                realpath(command + 1, fileNameBuffer);
+            } else {
+                fileNameBuffer[0] = '\0';
+            }
+
+            int numOfFilesInFolder; // used in case it's a folder
+            int pathType = inspectPath(fileNameBuffer);
+
+            if (pathType == 0){
+                // it's an existing file
+                if (removeFileByNamePacket(cInstance->pipeAC, fileNameBuffer) != -1){
+                    printf("Remove file %s\n", fileNameBuffer);
+                } else {
+                    fprintf(stderr, "?Error trying to remove %s\n", fileNameBuffer);
+                }                
+            } else if (pathType == 1){
+                // it's an existing folder
+                // crawler(fileNameBuffer, filePaths, &numOfFilesInFolder);
+                // sendAllFiles();
+                printf("Not implemented yet\n");
+                // printf("Removed folder %s\n", fileNameBuffer);
+            } else {
+                // invalid file/folder
+                fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");
+            }
+
         // TODO per Sam: ATTENZIONE: stai supponendo che command sia di almeno tre caratteri!
         // rischiamo un out of bound! (sia per n che per m)
         } else if (command[0] == 'n'){
@@ -214,9 +240,10 @@ void interactiveMode(){
         } else {
             // Command not supported
             fprintf(stderr, "This command is not supported.\n");
-
         }
-        printf("\n> ");
+
+        // wait for next command
+        printf("> ");
         scanf("%s", command);
     }
     // Management of exit command
@@ -329,7 +356,7 @@ int processExit(){
 }
 
 // TODO: this function should wait a packet from the Controller
-// Function that animates the waiting for static analisys to end.
+// Function that animates the waiting for static analysis to end.
 void waitAnalisysEnd(){
     int numberOfPoints = 10;
     int i;

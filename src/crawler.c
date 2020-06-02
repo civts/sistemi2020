@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+// #include <limits.h>
 #include "utils.c"
 #include "datastructures/namesList.c"
 
@@ -62,6 +64,23 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
     return returnCode;
 }
 
+// Given a path to a file/folder it returns:
+// -1 : if it does not exist
+//  0 : if it is a file and it exists
+//  1 : if it is is a folder and it exists
+int inspectPath(const char *path){
+    struct stat path_stat;
+    int returnCode = -1;
+    if (path != NULL && stat(path, &path_stat) == 0){
+        if (S_ISREG(path_stat.st_mode)){
+            returnCode = 0;
+        } else if (S_ISDIR(path_stat.st_mode)){
+            returnCode = 1;
+        }
+    }
+    return returnCode;
+}
+
 // int main(){
 //     string folder = "./";
 //     NamesList *list = constructorNamesList();
@@ -72,5 +91,12 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
 //     printf("Found %d files:\n", filesFound);
 //     printNamesList(list);
 
+//     char buffer[SIZE_OF_BUFFER_TO_READ_PIPE];
+
+//     string file = NULL;
+//     realpath(file, buffer);
+//     printf("isRegularFile: %d\n", inspectPath(file));
+//     printf("realpath %s\n", buffer);
+    
 //     return 0;
 // }
