@@ -6,6 +6,8 @@
 #define INT_SIZE 4
 #define true 1
 #define false 0
+#define READ 0
+#define WRITE 1
 #define MINIQ_MAX_BUFFER_SIZE 4096
 #define NUM_OCCURENCES 256 // used in miniQ
 

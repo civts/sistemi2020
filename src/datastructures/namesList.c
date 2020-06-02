@@ -8,7 +8,7 @@
 #include "../utils.c"
 
 typedef struct NodeName {
-    string       name;
+    string name;
     struct NodeName *next;
     struct NodeName *prev;
 } NodeName;
@@ -22,12 +22,11 @@ typedef struct {
 void printNodeName(NodeName*);
 
 NodeName *constructorNodeName(string fileName){
-    NodeName *node = (NodeName *)malloc(sizeof(NodeName));
-    node->name = (string)malloc(sizeof(fileName));
+    NodeName *node = (NodeName*) malloc(sizeof(NodeName));
+    node->name = (string) malloc(strlen(fileName) + 1);
     strcpy(node->name, fileName);
     node->next = node->prev = NULL;
-    // printf("constructed node %s\n", node->name);
-    // printNodeName(node);
+
     return node;
 }
 
@@ -44,9 +43,9 @@ void deleteNodeName(NodeName *node){
  * Returns a pointer to an empty list of NodeName (fileName) elements
  */
 NamesList *constructorNamesList(){
-    NamesList *list = (NamesList *)malloc(sizeof(NamesList));
-    list->first = NULL;
-    list->last = NULL;
+    NamesList *list = (NamesList*) malloc(sizeof(NamesList));
+    list->first   = NULL;
+    list->last    = NULL;
     list->counter = 0;
 
     return list;
@@ -54,7 +53,7 @@ NamesList *constructorNamesList(){
 
 void printNamesList(NamesList *list){
     if(list->counter == 0){
-        printf("miniQlist is empty!\n");
+        printf("namesList is empty!\n");
     } else {
         struct NodeName *element = list->first; 
         int i;

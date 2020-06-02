@@ -1,73 +1,26 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/wait.h>
 #include "utils.c"
 #include "datastructures/namesList.c"
 
-#define READ 0
-#define WRITE 1
-#define SIZE_OF_BUFFER_TO_READ_PIPE 4096
 // maximum file name length: 255
 // maximum file path length: 4096 (is the file name included?)
-#define MAX_SIZE_OF_FOLDER_NAME 4096
+#define SIZE_OF_BUFFER_TO_READ_PIPE 4096
 
-
-void addFolderToFileName(string out, string folder, string fileName){
-    strcpy(out, folder);
-    strcat(out, fileName);
-}
-
-
-int getOutputFromLSRec(int readDescriptor, NamesList *fileList){
+int parseFileListFromFind(int readDescriptor, NamesList *fileList){
     FILE *pipeToRead = fdopen(readDescriptor, "r");
     int numOfFileNamesProcessed = 0;
-    
     char buffer[SIZE_OF_BUFFER_TO_READ_PIPE];
-    char currentFolder[MAX_SIZE_OF_FOLDER_NAME];
-    int out;
-
-    int sizeFolderName = 0, sizeFileName = 0;
+    string filePath;
 
     while(fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead) != NULL){
-        string stringRead = strtok(buffer, "\n");
-        // check if the string ends with ":"
-        if (isDirectory(stringRead, ':', &out) && out==0){
-            // we found a new folder
-            if(stringRead[strlen(stringRead) - 2] != '/'){
-                // we must add / in place of :
-                stringRead[strlen(stringRead) - 1] = '/';
-            } else {
-                // if the folder is ./ we must not add /, but only delete :
-                stringRead[strlen(stringRead) - 1] = '\0';
-            }
-            strcpy(currentFolder, stringRead);  
-        
-        } else {
-            // if it ends with '/' it's a folder, then we'll inspect it later 
-            if(!isDirectory(stringRead, '/', &out) && out == 0){
-                // that's a file
-                string completeName = (string) malloc(strlen(stringRead) + strlen(currentFolder));
-                // DEBUG
-                // printf("File name: %s\n", completeName);
-                if (completeName != NULL){
-                    addFolderToFileName(completeName, currentFolder, stringRead);
-                    // DEBUG
-                    // printf("With folder: %s\n", completeName);
-                    NodeName *newNode = constructorNodeName(completeName);
-                    appendToNamesList(fileList, newNode);
-
-                    numOfFileNamesProcessed++;
-                }
-            }
-        }
+        filePath = strtok(buffer, "\n");
+        appendNameToNamesList(fileList, filePath);
+        numOfFileNamesProcessed++;
     }
 
     return numOfFileNamesProcessed;
 }
-
 
 // Get all the file path inside a folder
 // Error codes:
@@ -76,7 +29,7 @@ int getOutputFromLSRec(int readDescriptor, NamesList *fileList){
 int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
     int returnCode = 0;
     *outNumFilesFound = -1; // in case of error;
-    string lsArgs[] = {"ls", folder, "-p", "-R", NULL};
+    string lsArgs[] = {"find", folder, "-type", "f", NULL};
     int fds[2];
     pipe(fds);
 
@@ -88,7 +41,7 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
         // child
         close(fds[READ]);
         dup2(fds[WRITE], 1); // substitute stdout with fds[WRITE] for ls
-        execvp("ls", lsArgs);
+        execvp("find", lsArgs);
         fprintf(stderr, "Error: it is not possibile to inspect folder: %s\n", folder);
         returnCode = 2; // should never be here if exec works fine
     } else {
@@ -99,7 +52,7 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
         int out; // return code from ls
         pid_t pid = waitpid(f, &out, 0);
         if (pid != -1){
-            *outNumFilesFound = getOutputFromLSRec(fds[READ], fileList);
+            *outNumFilesFound = parseFileListFromFind(fds[READ], fileList);
         } else {
             fprintf(stderr, "Error waiting for ls syscall termination\n");
             returnCode = 3;
@@ -108,7 +61,6 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
 
     return returnCode;
 }
-
 
 void getOutputFromPwd(int readDescriptor, string *path){
     FILE *pipeToRead = fdopen(readDescriptor, "r");
