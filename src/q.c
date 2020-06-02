@@ -20,10 +20,13 @@ int  processQRemoveFilePacket(byte[], int);
 int  processQDeathPacket();
 int  processQNewValueForM(byte[], qInstance*);
 int  processQFileResults(byte[], int, qInstance*);
+void sig_handler_Q();
 
 miniQlist *miniQs = NULL;
 
 void q(qInstance *instanceOfMySelf){
+    signal(SIGINT, sig_handler_Q);
+    signal(SIGKILL, sig_handler_Q);
     miniQs = constructorMiniQlist();
 
     waitForMessagesInQ(instanceOfMySelf);
@@ -181,4 +184,10 @@ int processQFileResults(byte packetData[], int packetDataSize, qInstance *instan
     removeMiniQByFileId(miniQs, 0);
 
     return returnCode;
+}
+
+void sig_handler_Q(){
+    printf("\nQ killed with signal\n");
+    processQDeathPacket();
+    exit(0);
 }

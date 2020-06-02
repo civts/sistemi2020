@@ -5,6 +5,7 @@
 #include <math.h>     // for ceil()
 #include <fcntl.h>    // for file descriptors
 #include <string.h>   // for strlen()
+#include <signal.h>   // for signals
 #include "packets.h"
 #include "utils.c"
 #include "datastructures/miniQlist.c"
@@ -17,10 +18,14 @@ byte* encodePacketForReport(string, bool, int, ull[NUM_OCCURENCES], int*);
 int   getOccurences(string, long, long, ull[NUM_OCCURENCES]);
 long  getFileLength(string fileName);
 void  printOccurencesTemp(string, ull[NUM_OCCURENCES]);
+void sig_handler_miniQ();
+
 
 // principal core of a miniQ: it's goal is to detect the char occurences
 // for a single file of his parent Qij process
 void miniQ(string fileName, bool isInsideFolder, miniQinfo *instanceOfMySelf){
+    signal(SIGINT, sig_handler_miniQ);
+    signal(SIGKILL, sig_handler_miniQ);
     if (instanceOfMySelf->index >= instanceOfMySelf->currM){
         // should never come here
         fprintf(stderr, "Error, index of miniQ bigger than its M value\n");
@@ -189,4 +194,10 @@ long getFileLength(string fileName){
     }
     
     return fileLength;
+}
+
+void sig_handler_miniQ(){
+    printf("\nMiniQ killed with signal\n");
+
+    exit(0);
 }

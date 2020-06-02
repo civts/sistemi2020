@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 #include "packets.h"
 #include "utils.c"
 #include "q.c"
@@ -23,6 +24,7 @@ int  processPRemoveFilePacket(byte[], int);
 int  processPDeathPacket();
 int  processPNewValueForM(byte[], pInstance*);
 int  processPFileResults(byte[], int, pInstance*);
+void sig_handler_P();
 
 qInstance *qInstances = NULL; // Q processes associated to this P
 int currM;
@@ -39,6 +41,9 @@ int p(pInstance *instanceOfMySelf, int _currM){
             generateNewQInstance(qInstances + i, i, _currM);
         }
     }
+
+    signal(SIGINT, sig_handler_P);
+    signal(SIGKILL, sig_handler_P);
 
     currM = _currM;
     waitForMessagesInP(instanceOfMySelf);
@@ -303,4 +308,11 @@ int processPNewValueForM(byte packetData[], pInstance *instanceOfMySelf){
     // }
 
     // waitForMessagesInPFromController(newPids, pipeFromC, newPipesToQ, newPipesFromQ, new_m);
+}
+
+
+void sig_handler_P(){
+    printf("\nP killed with signal\n");
+    processPDeathPacket();
+    exit(0);
 }
