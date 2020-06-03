@@ -64,6 +64,10 @@ void analyzerListRemoveLast(analyzerList *l);
 // adds a new file to the analyzer with given pid. Creates a new analyer if none
 // is found.
 void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs);
+
+// removes any file with given pid from the list of files in current analysis, and places them into a "blacklist"
+void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile);
+
 // adds a new incomplete file to the analyzer with given pid. Creates a new
 // analyer if none is found.
 void analyzerListAddIncompleteFile(analyzerList *l, uint pid,
@@ -213,7 +217,16 @@ void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs) {
   // function that adds the file to the mainList
   analyzerAddNewFile(a, fs);
 }
-
+void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile){
+  analyzer *a = analyzerListGetElementByPid(l, pid);
+  // if no analyzer with given pid is found
+  if (a == NULL) {
+    a = constructorAnalyzer(pid);
+    analyzerListAppend(l, a);
+  }
+  // function that adds the file to the mainList
+  analyzerErrorFile(a, pid);
+}
 void analyzerListAddIncompleteFile(analyzerList *l, uint pid,
                                    fileWithStats *fs) {
   analyzer *a = analyzerListGetElementByPid(l, pid);

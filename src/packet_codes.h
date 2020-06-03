@@ -20,7 +20,7 @@ INT_SIZE D: dimensione file
 INT_SIZE numCaratteriLettiInQuestaPorzione (?confermate se vi serve?)
 INT_SIZE[256] dati
 */
-#define Q_NEW_DATA_CODE 0
+#define Q_NEW_DATA_CODE 6
 
 /*Packet for signalling an error in processing a given file
 ------ header -----
@@ -30,7 +30,7 @@ INT_SIZE dimensione sezione dati
 INT_SIZE pid analyzer
 INT_SIZE file id su cui ho avuto il problema
 */
-#define Q_FILE_ERROR_CODE 1
+#define Q_FILE_ERROR_CODE 11
 
 //----------------------------------CODES FOR-----------------------------------
 //--------------------------------PACKETS FROM A--------------------------------
@@ -43,11 +43,11 @@ INT_SIZE pid dell'A
 INT_SIZE id file
 string path
 */
-#define A_NEW_FILE_COMPLETE 2
+#define A_NEW_FILE_COMPLETE 8
 // As A_NEW_FILE_COMPLETE but contains only first half of the path
-#define A_NEW_FILE_INCOMPLETE_PART1 3
+#define A_NEW_FILE_INCOMPLETE_PART1 9
 // As A_NEW_FILE_COMPLETE but contains only second half of the path
-#define A_NEW_FILE_INCOMPLETE_PART2 4
+#define A_NEW_FILE_INCOMPLETE_PART2 10
 /*Packet for when we need to delete a file
 pipeA nel caso di eliminazione file:
 ------ header -----
@@ -57,7 +57,7 @@ INT_SIZE dimensione in byte sezione dati
 INT_SIZE pid dell'A
 INT_SIZE id file
 */
-#define A_DELETE_FILE_CODE 5
+#define A_DELETE_FILE_CODE 7
 /*Packet to DELETE (w/ complete path)
 ------ header -----
 1 byte packet code (6)
@@ -66,11 +66,11 @@ INT_SIZE dimensione in byte sezione dati
 INT_SIZE pid dell'A
 string path
 */
-#define A_DELETE_FOLDER 6
+#define A_DELETE_FOLDER 12
 // As A_NEW_FILE_COMPLETE but contains only first half of the path
-#define A_DELETE_FOLDER_INCOMPLETE_PART1 7
+#define A_DELETE_FOLDER_INCOMPLETE_PART1 13
 // As A_NEW_FILE_COMPLETE but contains only second half of the path
-#define A_DELETE_FOLDER_INCOMPLETE_PART2 8
+#define A_DELETE_FOLDER_INCOMPLETE_PART2 14
 #ifndef bool
 typedef unsigned char bool;
 #define false 0

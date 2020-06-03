@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 
 typedef char *string;
@@ -18,7 +19,7 @@ int main(int argc, char **argv) {
   scanf("%u",pid);
   printf("Write the FILEID\n");
   uint *idFile = malloc(sizeof(uint));
-    
+  scanf("%u",idFile);  
   int fd;
 
   // FIFO file path

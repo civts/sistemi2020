@@ -3,10 +3,14 @@
 #include "analyzer_list.h"
 #include "file_with_stats_list.h"
 #include "report_print_functions.h"
-#include "report_utils.h"
+// #include "report_utils.h"
 
 #include <fcntl.h>
-
+#ifndef bool
+typedef unsigned char bool;
+#define false 0
+#define true 1
+#endif
 
 // Path to the named pipe
 const char *PATH_TO_PIPE = "./myfifo";
@@ -16,6 +20,8 @@ const int BATCH_SIZE = 128;
 
 // analyzer (eventually creating the fws if needed)
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers);
+// callback for error packets
+void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers);
 // Callback for A_NEW_FILE_INCOMPLETE_PART1 packets.
 //(1st half of a file path)
 void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers);
@@ -54,6 +60,19 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   free(dati);
 }
 
+void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers) {
+  int dimDati = fromBytesToInt(header + 1);
+  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  int rdDati = read(pipe, dati, dimDati);
+  if (rdDati == dimDati) {
+    uint pid = fromBytesToInt(dati);
+    uint idFile = fromBytesToInt(dati + INT_SIZE);
+    analyzerListErrorFile(analyzers,pid,idFile);
+  } else {
+    perror("file con errore perso");
+  }
+  free(dati);
+}
 void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
@@ -188,3 +207,101 @@ void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
   }
   free(dati);
 }
+// // This is the function that implements report buisiness logic
+// int report(int argc, const char *argv[]) {
+//   int retCode = 0;
+//   // This is where the state is stored: it contains the references to the
+//   // "objects" representing the files and their stats.
+//   analyzerList *analyzers = constructorAnalyzerListEmpty();
+//   int pipe = open(PATH_TO_PIPE, O_RDONLY);
+//   if (pipe == -1) {
+//     retCode = 1;
+//     perror("No pipe");
+//   }
+//   while (pipe != -1) {
+//     // Reading new packet and taking appropriate action
+//     byte header[INT_SIZE + 1];
+//     int rdHeader = read(pipe, header, INT_SIZE + 1);
+//     if (rdHeader == INT_SIZE + 1) {
+//       if (DEBUGGING)
+//         printf("Got new packet with code %d\n", header[0]);
+//       switch (header[0]) {
+//       case Q_NEW_DATA_CODE:
+//         gotNewDataPacket(pipe, header, analyzers);
+//         break;
+//       case Q_FILE_ERROR_CODE:
+//         // TODO (What do we do on error? print to the user and forget about it?)
+//         gotFileErrorPacket(pipe, header, analyzers);
+//         break;
+//       case A_NEW_FILE_COMPLETE:
+//         gotAddFilePacket(pipe, header, analyzers);
+//         break;
+//       case A_NEW_FILE_INCOMPLETE_PART1:
+//         got1stPathPartPacket(pipe, header, analyzers);
+//         break;
+//       case A_NEW_FILE_INCOMPLETE_PART2:
+//         got2ndPathPartPacket(pipe, header, analyzers);
+//         break;
+//       case A_DELETE_FILE_CODE:
+//         gotDeleteFilePacket(pipe, header, analyzers);
+//         break;
+//       case A_DELETE_FOLDER:
+//         gotDeleteFolderPacket(pipe, header, analyzers);
+//         break;
+//       case A_DELETE_FOLDER_INCOMPLETE_PART1:
+//         got1stPathPartDeleteFolderPacket(pipe, header, analyzers);
+//         break;
+//       case A_DELETE_FOLDER_INCOMPLETE_PART2:
+//         got2ndPathPartDeleteFolderPacket(pipe, header, analyzers);
+//         break;
+//       }
+//       if (system("clear")) {
+//         printf("\n----------------------------------------\n");
+//       }
+//       // Print right recap info based on argv
+//       analyzerListPrint(analyzers);
+//       //printFirstInfoLine(analyzers);
+//       //printRecapCompact(analyzers);
+//       if (argc == 1) {
+//         printRecapCompact(analyzers);
+//       } else if (contains(argc, argv, onlyFlag)) {
+//         // Get file paths
+//         int firstPathIdx = 2 + streq(argv[1], groupFlag) ? 1 : 0;
+//         int pathsLen = argc - firstPathIdx;
+//         char *paths[pathsLen];
+//         short i;
+//         //(I am sure of the format of the data because agv went through
+//         // argsAreValid). NO...
+//         for (i = 0; i < pathsLen; i++) {
+//           paths[i] = argv[i + firstPathIdx];
+//         }
+//         printSelectedFiles(analyzers, pathsLen, paths,
+//                            contains(argc, argv, groupFlag));
+//       } else if (contains(argc, argv, verboseFlag)) {
+//         printRecapVerbose(analyzers, contains(argc, argv, groupFlag));
+//       } else {
+//         // Should never get here if args are valid
+//         perror("Arguments are not valid, please use --help for reference");
+//         retCode = 1;
+//         break;
+//       }
+//       //debug
+//       //analyzerListPrint(analyzers);
+//     }
+//   }
+//   return retCode;
+// }
+
+// // int main(int argc, const char *argv[]) {
+// //   int retCode = 0;
+// //   if (contains(argc, argv, helpFlag)) {
+// //     printf("this is the help text"); // TODO
+// //   } else {
+// //     if (argsAreValid(argc, argv)) {
+// //       retCode = report(argc, argv);
+// //     }
+// //     // Will never have an else since when args are not valid the program
+// //     // terminates (argsAreValid calls exit w/ appropriate error code).
+// //   }
+// //   return retCode;
+// // }

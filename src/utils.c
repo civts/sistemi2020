@@ -1,11 +1,16 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #define INT_SIZE 4
 // How many characters we are considering
 #define ASCII_LENGTH 256
+#define NUM_OCCURENCES 256
+
 #ifndef bool
 typedef unsigned char bool;
+typedef unsigned long long ull;
 #define false 0
 #define true 1
 #endif
@@ -82,8 +87,76 @@ void trimStringToLength(char *src, int maxLen) {
 // Struct for keeping how many char of each group are present in a given
 // file/folder, the total number of chars and how many we have read
 typedef struct {
-  int az, AZ, digits, punctuation, spaces, otherChars;
-  long totalCharsRead, totalChars;
+  uint az, AZ, digits, punctuation, spaces, otherChars;
+  uint totalCharsRead, totalChars;
 } charGroupStats;
 
+// // FUNZIONE CHE GESTISCE IL PARSING
+// //DOCUMENTAZIONE
+// // argc parametri del main
+// // argv parametri del main
+// // possibleFlags lista di char* contenente i valori ammissibili come argomenti. DEVONO NECESSARIAMENTE INIZIARE CON "-"
+// // flagsWithArguments vettore di booleani, settare a true la posizione in cui il corrispondente flag richiede un altro parametro
+// // numberPossibleFlags lunghezza della lista dei possibili parametri
+// // settedFlags vettore di booleani, sono settati a true è presente l'argomento della corrispondente posizione. E' possibile inizializzarli a valori diversi da false per far finta che un argomento sia sempre implicito
+// // arguments lista dove in posizione i si trova l'altro parametro inserito dall'utente per l'argomento i. Dovete fare la free!. Nel caso di argomenti multipli "-i ciao patate" l'argomento viene concatenato con lo spazio. Dunque "ciao patate"
+// // invalid è la stringa di testo da mostrare in caso vi siano argomenti invalidi
+// // printOnFailure specifica se mostare la  stringa di testo invalid se un argomento è invalido
+// // return true se gli argomenti sono tutti validi, false altrimenti. Se gli argomenti sono invalidi, tutti i flag sono messi a false e i parametri degli argomenti sono disallocati
+
+int checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char ** arguments, char* invalid,bool printOnFailure){
+    bool validity = true;
+    int j=0;
+    int i=1;
+    while (i<argc ){
+        bool valid =false;
+        for(j=0;j<numberPossibleFlags && i<argc ;j++){
+            if(streq(argv[i],possibleFlags[j])){
+                if(flagsWithArguments[j]){
+                    bool serving = true;
+                    i++;
+                    while(i<argc && serving ){
+                        if(argv[i][0]!='-'){
+                            if(arguments[j]==NULL){
+                                arguments[j] = malloc(strlen(argv[i]+1));
+                                strcpy(arguments[j],argv[i]);
+                                settedFlags[j]=true;
+                                valid = true;
+                            }else{
+                                char* tmp = malloc(strlen(arguments[j])+strlen(argv[i])+2);
+                                strcpy(tmp,arguments[j]);
+                                strcat(tmp," ");
+                                strcat(tmp,argv[i]);
+                                free(arguments[j]);
+                                arguments[j]=tmp;
+                            }
+                            i++;
+                        }else{
+                            serving=false;
+                            i--;
+                        }
+                    }
+                }else{
+                    settedFlags[j]=true;
+                    valid=true;
+                }
+            }
+        }
+        if(!valid){
+            validity = false;
+        }
+        i++;
+    }   
+    if(printOnFailure && !validity)
+        printf("%s",invalid);
+    if(!validity){
+        for(j=0;j<numberPossibleFlags;j++){
+            settedFlags[j]=false;
+            if(arguments[j]!=NULL){
+                free(arguments[j]);
+            }
+        }
+    }
+    return validity;
+}
 #endif

@@ -40,7 +40,10 @@ typedef struct analyzer_t {
   fwsList *files;
   // lista di file parziali
   fwsList *incompleteList;
+  //buffer of paths for folder deletion
   char * incompletePathToDelete;
+  // files with errors
+  fwsList *errors;
   struct analyzer_t *nextNode;
   struct analyzer_t *previousNode;
 } analyzer;
@@ -54,6 +57,8 @@ void destructorAnalyzer(analyzer *a);
 
 // function that adds new file to the mainList. If already present, it is ignored. It automatically manages the tree
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs);
+//function that blacklist a file
+void analyzerErrorFile(analyzer *a,uint id);
 // function that adds new file to the incompleteList. If already present, it is ignored
 void analyzerAddIncompleteFile(analyzer *a, fileWithStats *fs);
 // updatas the path of the file with id and places it into mainList from
@@ -82,6 +87,7 @@ analyzer *constructorAnalyzer(uint pid) {
   a->files = constructorFwsListEmpty();
   a->incompleteList = constructorFwsListEmpty();
   a->incompletePathToDelete = NULL;
+  a->errors = constructorFwsListEmpty();
   a->previousNode = NULL;
   a->nextNode = NULL;
   if (DEBUGGING)
@@ -100,23 +106,40 @@ void destructorAnalyzer(analyzer *a) {
   destructorFwsList(a->incompleteList);
   if(a->incompletePathToDelete!=NULL)
     free (a->incompletePathToDelete);
+  destructorFwsList(a->errors);
   free(a);
 }
 
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs) {
+  if(DEBUGGING) {printf("ADD file calle for %s\n", fs->path);
+  fwsPrint(fs);}
   //controllo non sia già presente
   fileWithStats *isInFiles = fwsListGetElementByID(a->files, fs->id);
-  if (isInFiles == NULL) {
-    fwsListInsertOrder(a->files,fs);
+  fileWithStats *isInErrors = fwsListGetElementByID(a->errors, fs->id);
+  
+  if (isInFiles == NULL && isInErrors==NULL) {
+    printf("IM INSERTINT !\n");
+    fwsListAppend(a->files,fs);
   } else {
     destructorFWS(fs);
   }
 }
-
+void analyzerErrorFile(analyzer *a,uint id){
+  // controllo non sia già  presente
+  fileWithStats *isInFiles = fwsListGetElementByID(a->errors,id);
+  if (isInFiles == NULL) {
+    isInFiles = fwsListGetElementByID(a->files,id);
+    if(isInFiles != NULL){
+      fwsListRemoveElementByID(a->files,id,false);
+      fwsListInsertOrder(a->errors,isInFiles);
+    }
+  } 
+}
 void analyzerAddIncompleteFile(analyzer *a, fileWithStats *fs) {
   //controllo non sia già presente
   fileWithStats *n = fwsListGetElementByID(a->incompleteList, fs->id);
-  if (n == NULL) {
+  fileWithStats *isInErrors = fwsListGetElementByID(a->errors, fs->id);
+  if (n == NULL && isInErrors==NULL) {
     fwsListAppend(a->incompleteList, fs);
   } else {
     destructorFWS(fs);
@@ -139,6 +162,8 @@ void analyzerUpdateFilePath(analyzer *a, uint idFile, char *path) {
 void analyzerDeleteFile(analyzer *a, uint idFile) {
   //remove from mainlist
   bool removed = fwsListRemoveElementByID(a->files,idFile,true);
+  if(!removed)
+    removed = fwsListRemoveElementByID(a->errors,idFile,true);
 }
 
 void analyzerUpdateFileData(analyzer *a, uint idFile,
