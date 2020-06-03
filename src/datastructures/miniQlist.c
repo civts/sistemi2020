@@ -11,24 +11,38 @@
 
 typedef struct{
   pid_t pid;
-  int fileId;
-  int pipeToQ[2];
-  int currM;
-  int index;
+  int   fileId;
+  int   pipeToQ[2];
+  int   currM;
+  int   index;
 } miniQinfo;
 
 typedef struct NodeMiniQ {
-    miniQinfo *data;
+    miniQinfo        *data;
     struct NodeMiniQ *next;
     struct NodeMiniQ *prev;
 } NodeMiniQ;
 
 typedef struct {
+    int counter;
     struct NodeMiniQ *first;
     struct NodeMiniQ *last;
-    int counter;
 } miniQlist;
 
+miniQinfo*  constructorMiniQinfo(pid_t, int, int[2], int, int);
+void        printMiniQinfo(miniQinfo*);
+void        deleteMiniQinfo(miniQinfo*);
+NodeMiniQ*  constructorNodeMiniQ(miniQinfo*);
+void        printNodeMiniQ(NodeMiniQ*);
+void        deleteNodeMiniQ(NodeMiniQ*);
+miniQlist*  constructorMiniQlist();
+void        printMiniQlist(miniQlist*);
+void        deleteMiniQlist(miniQlist*);
+void        appendMiniQ(miniQlist*, struct NodeMiniQ*);
+NodeMiniQ*  getNodeMiniQByPid(miniQlist*, pid_t);
+NodeMiniQ*  getNodeMiniQByFileId(miniQlist*, int);
+void        removeMiniQByPid(miniQlist*, pid_t);
+pid_t       removeMiniQByFileId(miniQlist*, int);
 
 /**
  * Returns a pointer to a new instance of miniQinfo
@@ -46,7 +60,7 @@ miniQinfo* constructorMiniQinfo(pid_t thisPid, int fileIdAssigned, int pipe[2], 
 }
 
 void printMiniQinfo(miniQinfo *miniQ){
-    printf("miniQ has pid: %3d, fileId: %5d,\n", miniQ->pid, miniQ->fileId);
+    printf("miniQ has pid: %5d, fileId: %5d,\n", miniQ->pid, miniQ->fileId);
     printf("current M: %3d, pipe[0,1]: %3d,%3d, index=%3d\n", miniQ->currM, miniQ->pipeToQ[0], miniQ->pipeToQ[1], miniQ->index);
     printf("====================\n");
 }
@@ -117,7 +131,7 @@ void deleteMiniQlist(miniQlist *list){
 }
 
 /**
- * Append a Node to the list 
+ * Append a NodeMiniQ to the list 
  */
 void appendMiniQ(miniQlist *list, struct NodeMiniQ *newNode){
     newNode->prev = list->last;
@@ -133,7 +147,7 @@ void appendMiniQ(miniQlist *list, struct NodeMiniQ *newNode){
 }
 
 /**
- * Returns the Node given the pid of miniQ
+ * Returns the NodeMiniQ given the pid of miniQ
  * returns NULL if there's no miniQinfo with that pid
  */
 NodeMiniQ* getNodeMiniQByPid(miniQlist *list, pid_t pid){ 
@@ -151,7 +165,7 @@ NodeMiniQ* getNodeMiniQByPid(miniQlist *list, pid_t pid){
 }
 
 /**
- * Returns the Node given the id of the file assigned
+ * Returns the NodeMiniQ given the id of the file assigned
  * returns NULL if there's no miniQinfo with that fileId
  */
 NodeMiniQ* getNodeMiniQByFileId(miniQlist *list, int fileId){
@@ -198,7 +212,7 @@ void removeMiniQByPid(miniQlist *list, pid_t pid){
 }
 
 /**
- * Removes a Node given the fileId of the miniQinfo it countains
+ * Removes a Node given the fileId of the miniQinfo it contains
  * it returns the pid of the miniQinfo deleted or -1 if there
  * was not a miniQinfo eith that fileId assigned
  */
