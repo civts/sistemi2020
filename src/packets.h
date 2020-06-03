@@ -196,7 +196,9 @@ int sendStartAnalysisPacket(int fd[]){
     return returnCode;
 }
 
-int sendOccurencesPacket(int fd[], int pidAnalyzer, int idFile, int m, int index,
+// -------------------------------- PACKETS TO REPORT --------------------------------------
+
+int sendOccurencesPacketToReport(int fd[], int pidAnalyzer, int idFile, int m, int index,
                          ull totalFileSize, ull numCharsReadInThisSection, int occurences[NUM_OCCURENCES]){
     int returnCode = 0, offset = 0, i;
     byte packet[1 + 263 * INT_SIZE];
@@ -250,8 +252,11 @@ int removeFileByIdPacket(int fd[], pid_t pidAnalyzer, int fileId){
     return returnCode;
 }
 
+// Used to send a new file name to report in three cases:
+// - unique packet if data can fit
+// - packet pt1 and packet pt2 if file path can't fit in a single packet
 int _internal_newFileNameToReportPacket(int packetType, int fd[], pid_t pidAnalyzer,
-                byte isInsideFolder, int fileId, string filePath, int filePathLength){
+                int fileId, string filePath, int filePathLength){
     int returnCode = 0, offset = 0;
     int packetSize = 2 + 3*INT_SIZE + filePathLength;
     byte packet[packetSize];
@@ -264,10 +269,10 @@ int _internal_newFileNameToReportPacket(int packetType, int fd[], pid_t pidAnaly
     // data section
     fromIntToBytes(pidAnalyzer, packet + offset);
     offset += INT_SIZE;
-    packet[offset++] = isInsideFolder;
     fromIntToBytes(fileId, packet + offset);
     offset += INT_SIZE;
     memcpy(packet + offset, filePath, filePathLength);
+    packet[packetSize - 1] = '\0';
 
     if (write(fd[WRITE], packet, packetSize) != packetSize){
         returnCode = 1;
@@ -277,16 +282,21 @@ int _internal_newFileNameToReportPacket(int packetType, int fd[], pid_t pidAnaly
     return returnCode;
 }
 
-int newFileNameToReportPacket(int fd[], pid_t pidAnalyzer, byte isInsideFolder, int fileId, string filePath){
+int newFileNameToReportPacket(int fd[], pid_t pidAnalyzer, int fileId, string filePath){
     int returnCode = 0;
     int filePathLength = strlen(filePath);
     int freeSpaceInFirstPacket = 4096 - 2 - 3*INT_SIZE - filePathLength;
 
-    if (freeSpaceInFirstPacket > 0){
-        returnCode = _internal_newFileNameToReportPacket(8, fd, pidAnalyzer, isInsideFolder, fileId, filePath, filePathLength);
+    if (freeSpaceInFirstPacket >= 0){
+        returnCode = _internal_newFileNameToReportPacket(8, fd, pidAnalyzer, fileId, filePath, filePathLength);
     } else {
-        returnCode =  _internal_newFileNameToReportPacket(9, fd, pidAnalyzer, isInsideFolder, fileId, filePath, filePathLength-freeSpaceInFirstPacket);
-        returnCode += _internal_newFileNameToReportPacket(10, fd, pidAnalyzer, isInsideFolder, fileId, filePath+filePathLength-freeSpaceInFirstPacket, -freeSpaceInFirstPacket);
+        int lenFirstPartOfPath = 4096 - 2 - 3*INT_SIZE;
+        returnCode =  _internal_newFileNameToReportPacket(9,  fd, pidAnalyzer, fileId, filePath, lenFirstPartOfPath);
+
+        // send the second packet only if we were able to send the first one
+        if (returnCode == 0){
+            returnCode = _internal_newFileNameToReportPacket(10, fd, pidAnalyzer, fileId, filePath + lenFirstPartOfPath, filePathLength - lenFirstPartOfPath);
+        }
     }
 
     return returnCode;
@@ -303,10 +313,12 @@ int reportErrorOnFilePacket(int fd[], pid_t pidAnalyzer, int fileId){
 
     if (write(fd[WRITE], packet, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
         returnCode = 1;
-        fprintf(stderr, "Error with fd sending the remove file packet\n");
+        fprintf(stderr, "Error with fd sending the report error file packet\n");
     }
 
     return returnCode;
 }
+
+
 
 #endif
