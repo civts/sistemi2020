@@ -19,7 +19,19 @@ typedef struct {
     int counter;
 } NamesList;
 
-void printNodeName(NodeName*);
+
+NodeName*  constructorNodeName(string);
+void       printNodeName(NodeName*);
+void       deleteNodeName(NodeName*);
+NamesList* constructorNamesList();
+void       printNamesList(NamesList*);
+void       deleteNamesList(NamesList*);
+void       appendToNamesList(NamesList*, struct NodeName*);
+void       appendNameToNamesList(NamesList*, string);
+NodeName*  getNodeNameByName(NamesList*, string);
+int        removeNodeNameByName(NamesList*, string);
+void       emptyNameList(NamesList*);
+
 
 NodeName *constructorNodeName(string fileName){
     NodeName *node = (NodeName*) malloc(sizeof(NodeName));
@@ -96,9 +108,18 @@ void appendToNamesList(NamesList *list, struct NodeName *newNode){
     list->counter++;
 }
 
+/**
+ * Checks if it exists already in the list a node with that name, if it doesen't creates a new
+ * NodeName with that name and appends it to the list. 
+ */
 void appendNameToNamesList(NamesList *list, string name){
-    NodeName *newNode = constructorNodeName(name);
-    appendToNamesList(list, newNode);
+    NodeName *tmp = getNodeNameByName(list, name);
+    if(tmp == NULL){
+        NodeName *newNode = constructorNodeName(name);
+        appendToNamesList(list, newNode);
+    } else {
+        printf("File gia' presente nella lista!\n");
+    }
 }
 
 /**
@@ -164,6 +185,7 @@ void emptyNameList(NamesList *list){
 
 //     NamesList *list = constructorNamesList();
 //     appendToNamesList(list, node1);
+//     appendNameToNamesList(list, "Marciello");
 //     appendToNamesList(list, node2);
 
 //     printNamesList(list);
