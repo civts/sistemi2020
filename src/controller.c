@@ -46,6 +46,7 @@ void controller(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->isAnalysing = false;
     instanceOfMySelf->fileNameList = constructorNamesList();
     instanceOfMySelf->removedFileNames = constructorNamesList();
+    instanceOfMySelf->fileList = constructorFileNameList();
     openPipeToRecord(instanceOfMySelf); 
     waitForMessagesInController(instanceOfMySelf);
 }
@@ -98,7 +99,7 @@ void waitForMessagesInCFromP(controllerInstance *instanceOfMySelf){
             byte packetData[dataSectionSize];
 
             numBytesRead  = read(instanceOfMySelf->pInstances[i]->pipePC, packetData, dataSectionSize);
-            processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
+            processMessageInControllerFromP(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
         }
     }
 }
@@ -247,6 +248,8 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInsta
     } else {
         // TODO: dobbiamo darlo ai P che hanno gestito meno file
         //       oppure seguiamo l'aritmetica dell'orologio??
+
+        // sendNewFilePacketWithID()
     }
 
     return returnCode;
@@ -339,27 +342,53 @@ int processCNewValueForN(byte packetData[], controllerInstance *instanceOfMySelf
  * TODO: check all the mechanics
  */
 int processCStartAnalysis(controllerInstance *instanceOfMySelf){
-    int returnCode = 0;
+    int returnCode = 0, i;
     instanceOfMySelf->isAnalysing = true;
 
     shapeTree(instanceOfMySelf->currN, instanceOfMySelf->currM, instanceOfMySelf);
 
-    // TODO:
-    // 1) insert the files inside instanceOfMySelf->fileNameList inside the file list
-    // 2) remove the files inside instanceOfMySelf->removedFileNames from the file list
-    // 3) vai di aritmetica dell'orologio sulla lista di file:
-    // int i;
-    // for (i = 0; i < numOfFile i++){
-    //     newFileNameToReportPacket(instanceOfMySelf->pInstances[i % instanceOfMySelf->currN]->pipeCP,
-    //                               instanceOfMySelf->pidAnalyzer, false, 0, files[i]->name);
-    //     sendNewFilePacket(files[i]->name, instanceOfMySelf->pInstances[i % instanceOfMySelf->currN]->pipeCP);
-    // }
+    // 1) remove the files inside instanceOfMySelf->removedFileNames from the file list
+    NodeName *deleteFileNamePointer = instanceOfMySelf->removedFileNames->first;
+    for (i = 0; i < instanceOfMySelf->removedFileNames->counter; i++){
+        removeNode(instanceOfMySelf->fileList, deleteFileNamePointer->name);
+        deleteFileNamePointer = deleteFileNamePointer->next;
+    }
+
+    // 2) insert the files inside instanceOfMySelf->fileNameList inside the file list
+    NodeName *newFileNamePointer = instanceOfMySelf->fileNameList->first;
+    for (i = 0; i < instanceOfMySelf->fileNameList->counter; i++){
+        FileState *newFileState = constructorFileState(newFileNamePointer->name, instanceOfMySelf->nextFileID, -1, -1);
+        NodeFileState *newFileStateNode = constructorFileNode(newFileState);
+        appendFileState(instanceOfMySelf->fileList, newFileStateNode);
+
+        instanceOfMySelf->nextFileID++;
+        newFileNamePointer = newFileNamePointer->next;
+    }
+
+    // 3) assign the files in fileList to P
+    NodeFileState *nodeFileState = instanceOfMySelf->fileList->first;
+    for (i = 0; i < instanceOfMySelf->fileList->number_of_nodes; i++){
+        // assign the file to a P process and divide it into M portions
+        nodeFileState->data->numOfRemainingPortionsToRead = instanceOfMySelf->currM;
+        nodeFileState->data->pIndex = i % instanceOfMySelf->currN;
+
+        int successfulSend = sendNewFilePacketWithID(instanceOfMySelf->pInstances[nodeFileState->data->pIndex]->pipeCP,
+                                nodeFileState->data->idFile,
+                                nodeFileState->data->fileName);
+        if (successfulSend != 0){
+            // TODO: since we were not able to send that file, then we should remove it from the fileList
+            // delete file from fileList; decrease i; pay attention to nodeFileState
+        }
+
+        nodeFileState = nodeFileState->next;
+    }
     
     return returnCode;  
 }
 
 // Redirects the occurrences packet to the report
 int processCNewFileOccurrences(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
+    // TODO update file list
     forwardPacket(instanceOfMySelf->pipeToRecord, 6, packetDataSize, packetData);
 }
 

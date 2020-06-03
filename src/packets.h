@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "utils.c"
 #include "datastructures/namesList.c"
+#include "datastructures/fileList.c"
 
 #define READ 0
 #define WRITE 1
@@ -47,6 +48,7 @@ typedef struct{
     pInstance **pInstances; // P processes associated to C
     NamesList *fileNameList;
     NamesList *removedFileNames;
+    FileList  *fileList;
 } controllerInstance;
 
 // forward a packet without looking inside it's content. Useful for new filepath

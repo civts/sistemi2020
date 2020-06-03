@@ -32,7 +32,7 @@ typedef struct FileList {
  */
 FileState *constructorFileState(char *fileName, int fileId, int portions, int indexOfP){
     FileState *newFileState = (FileState *)malloc(sizeof(FileState));
-    newFileState->fileName = (char *)malloc(sizeof(fileName));
+    newFileState->fileName = (char *)malloc(strlen(fileName));
     strcpy(newFileState->fileName, fileName);
     newFileState->idFile = fileId;
     newFileState->numOfRemainingPortionsToRead = portions;
@@ -74,15 +74,15 @@ void printNode(NodeFileState *node){
 void deleteNode(NodeFileState *node){
     deleteFileState(node->data);
     free(node);
-    printf("node destroied\n");
+    printf("node destroyed\n");
 }
 
 
 /**
  * Create a new empty fileList
  */
-FileList *constructorFileNameList(FileList *list){
-    list = (FileList *)malloc(sizeof(FileList));
+FileList *constructorFileNameList(){
+    FileList *list = (FileList *) malloc(sizeof(FileList));
     list->first = NULL;
     list->last = NULL;
     list->number_of_nodes = 0;
@@ -121,7 +121,7 @@ void deleteList(FileList *list){
 /**
  * Append a NodeFileState to the list 
  */
-void *append(FileList *list, struct NodeFileState *newNode){
+void *appendFileState(FileList *list, struct NodeFileState *newNode){
     newNode->prev = list->last;
     newNode->next = NULL;
     if(list->number_of_nodes>0){
@@ -146,7 +146,7 @@ NodeFileState *getNodeByName(FileList *list, char *nodeName){
     struct NodeFileState *node = list->first;
     int i;
     
-    for(i=0; i<list->number_of_nodes; i++) {
+    for (i = 0; i<list->number_of_nodes; i++) {
         
         if(strcmp(nodeName, node->data->fileName) == 0){
             return node;
