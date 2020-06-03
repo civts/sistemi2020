@@ -198,6 +198,5 @@ long getFileLength(string fileName){
 
 void sig_handler_miniQ(){
     printf("\nMiniQ killed with signal\n");
-
     exit(0);
 }

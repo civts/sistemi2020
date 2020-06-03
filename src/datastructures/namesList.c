@@ -176,10 +176,63 @@ void emptyNameList(NamesList *list){
     list = constructorNamesList();
 }
 
+/**
+ * Controlla se la parte iniziale della stringa fileName corrisponde con 
+ * la stringa folderName. Se sì ritrona true.
+ */
+bool isInFolder(string fileName, string folderName){
+    bool ret = false;
+    int folderLen = strlen(folderName);
+    string toCompare = (string)malloc(folderLen+1);
+    memcpy(toCompare, fileName, folderLen);
+    toCompare[folderLen]='\0';
+    
+    string result = strstr(toCompare, folderName);
+    
+    
+    if(result != NULL){
+        ret = true;
+    }
+    return ret;
+}
+
+/**
+ * Prende in input il nome di una cartella e due NamesList, toglie dalla prima tutti i 
+ * nodi che contengono file che si trovano nella cartella e li aggiunge alla seconda.
+ * Il nome della cartella deve essere in percorso assoluto.
+ */
+void deleteFolderNamesList(string folder, NamesList *existentList, NamesList *deletedList){
+    NodeName *tempNode = existentList->first;
+    NodeName *nextNode;
+    while(tempNode != NULL){
+        nextNode = tempNode->next;
+        if(isInFolder(tempNode->name, folder)){
+            // aggiorno nodo precedente
+            if(tempNode->prev!=NULL){
+                tempNode->prev->next = tempNode->next;
+            } else {
+                existentList->first = tempNode->next;
+            }
+            // aggiorno nodo successivo
+            if(tempNode->next != NULL){
+                tempNode->next->prev = tempNode->prev;
+            } else {
+                existentList->last = tempNode->prev;
+            }
+            // aggiorno contatore nodi
+            existentList->counter--;
+            // sposto il nodo nella lista degli eliminati
+            appendToNamesList(deletedList, tempNode);
+        }
+        tempNode = nextNode;
+    }
+}
+
 // int main(){
 
-//     NodeName *node1 = constructorNodeName("Marciello");
-//     NodeName *node2 = constructorNodeName("Giovanni");
+//     NodeName *node1 = constructorNodeName("Marciello.txt");
+//     NodeName *node2 = constructorNodeName("foldera/folder/Giovanni.txt");
+//     NodeName *node3 = constructorNodeName("folder/Juan.txt");
 //     // printNodeName(node1);
 //     // printNodeName(node2);
 
@@ -187,14 +240,21 @@ void emptyNameList(NamesList *list){
 //     appendToNamesList(list, node1);
 //     appendNameToNamesList(list, "Marciello");
 //     appendToNamesList(list, node2);
+//     appendToNamesList(list, node3);
 
 //     printNamesList(list);
-//     removeNodeNameByName(list, "Marciello");
-//     removeNodeNameByName(list, "Marciello");
-//     printNamesList(list);
+//     // removeNodeNameByName(list, "Marciello");
+//     // removeNodeNameByName(list, "Marciello");
 
-//     deleteNamesList(list);
-//     deleteNamesList(list);
+//     // deleteNamesList(list);
+//     // deleteNamesList(list);
+
+//     NamesList *deletedOnes = constructorNamesList();
+//     printf("Delete time\nList:\n");
+//     deleteFolderNamesList("folder/", list, deletedOnes);
+//     printNamesList(list);
+//     printf("Deleted list:\n");
+//     printNamesList(deletedOnes);
 
 //     return 0;
 // }
