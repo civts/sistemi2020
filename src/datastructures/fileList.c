@@ -68,7 +68,7 @@ NodeFileState *constructorFileNode(FileState *newFileState){
 void printNode(NodeFileState *node){
     // printf("NodeFileState: %p\n", node);
     printFileState(node->data);
-    print("==================");
+    printf("==================");
 }
 
 void deleteNode(NodeFileState *node){
