@@ -97,13 +97,18 @@ int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize
             returnCode = processQNewFilePacket(packetData, packetDataSize, instanceOfMySelf);
             break;
         case 1:
-            returnCode = processQRemoveFilePacket(packetData, packetDataSize);
+            // TODO: remove this message after official release
+            printf("Stai tentando di eliminare un file per nome in q.c! Elimina solo per pid!\n");
+            exit(0);
             break;
         case 2:
             returnCode = processQDeathPacket();
             break;
         case 3:
             returnCode = processQNewValueForM(packetData, instanceOfMySelf);
+            break;
+        case 7:
+            returnCode = processQRemoveFilePacket(packetData, packetDataSize);
             break;
         default:
             fprintf(stderr, "Error, Q received from P an unknown packet type %d\n", packetCode);
@@ -156,8 +161,19 @@ int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* inst
 }
 
 int processQRemoveFilePacket(byte packetData[], int packetDataSize){
-    // TODO search in miniQ list for that file and kill it
-    return -1;
+    // TODO: remove debuug printfs
+    int pidAnalyzer  = fromBytesToInt(packetData);
+    int fileId = fromBytesToInt(packetData+1);
+    printf("fileID read from packet: %d\n", fileId);
+    
+    pid_t miniQPid = removeMiniQByFileId(miniQs, fileId);
+    if(miniQPid != -1){
+        printf("Removed miniQ with pid: %d\n", miniQPid);
+        kill(miniQPid, SIGKILL);
+    } else {
+        printf("No miniQ had that fileId\n");
+    }
+    return 0;
 }
 
 int processQDeathPacket(){
@@ -191,3 +207,16 @@ void sig_handler_Q(){
     processQDeathPacket();
     exit(0);
 }
+
+// int main(){
+//     miniQs = constructorMiniQlist();
+//     int aar[2];
+//     miniQinfo *mi = constructorMiniQinfo(175, 3, aar, 3, 2);
+//     NodeMiniQ *m = constructorNodeMiniQ(mi);
+//     appendMiniQ(miniQs, m);
+//     string fileName = "irrelevant string";
+//     int length = strlen(fileName);
+//     processQRemoveFilePacket(fileName, length);
+
+//     return 0;   
+// }
