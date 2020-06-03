@@ -74,6 +74,9 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 // 9:  newFileNameToReportPacket pt1 if file name doesn't fit in one packet
 // 10: newFileNameToReportPacket pt2 if file name doesn't fit in one packet
 // 11: reportErrorOnFilePacket
+// 12: deleteFolderFromReportPacket if file name fits in one packet
+// 13: deleteFolderFromReportPacket pt1 if file name doesn't fit in one packet
+// 14: deleteFolderFromReportPacket pt2 if file name doesn't fit in one packet
 
 /**
  * This function sends the newFilePacket to the file descriptor
@@ -196,6 +199,24 @@ int sendStartAnalysisPacket(int fd[]){
     return returnCode;
 }
 
+// Remove a file (from report or miniQlist) given it's ID
+int removeFileByIdPacket(int fd[], pid_t pidAnalyzer, int fileId){
+    int returnCode = 0;
+    byte packet[1 + 3*INT_SIZE];
+
+    packet[0] = 7;
+    fromIntToBytes(INT_SIZE, packet + 1);
+    fromIntToBytes(pidAnalyzer, packet + 1 + INT_SIZE);
+    fromIntToBytes(fileId, packet + 1 + 2*INT_SIZE);
+
+    if (write(fd[WRITE], packet, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
+        returnCode = 1;
+        fprintf(stderr, "Error with fd sending the remove file packet\n");
+    }
+
+    return returnCode;
+}
+
 // -------------------------------- PACKETS TO REPORT --------------------------------------
 
 int sendOccurencesPacketToReport(int fd[], int pidAnalyzer, int idFile, int m, int index,
@@ -230,23 +251,6 @@ int sendOccurencesPacketToReport(int fd[], int pidAnalyzer, int idFile, int m, i
     if (write(fd[WRITE], packet, 1 + 263 * INT_SIZE) != (1 + 263 * INT_SIZE)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the occurences packet\n");
-    }
-
-    return returnCode;
-}
-
-int removeFileByIdPacket(int fd[], pid_t pidAnalyzer, int fileId){
-    int returnCode = 0;
-    byte packet[1 + 3*INT_SIZE];
-
-    packet[0] = 7;
-    fromIntToBytes(INT_SIZE, packet + 1);
-    fromIntToBytes(pidAnalyzer, packet + 1 + INT_SIZE);
-    fromIntToBytes(fileId, packet + 1 + 2*INT_SIZE);
-
-    if (write(fd[WRITE], packet, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
-        returnCode = 1;
-        fprintf(stderr, "Error with fd sending the remove file packet\n");
     }
 
     return returnCode;
@@ -319,6 +323,51 @@ int reportErrorOnFilePacket(int fd[], pid_t pidAnalyzer, int fileId){
     return returnCode;
 }
 
+// Used to delete a folder from report in three cases:
+// - unique packet if data can fit
+// - packet pt1 and packet pt2 if file path can't fit in a single packet
+int _internal_deleteFolderFromReportPacket(int packetType, int fd[], pid_t pidAnalyzer, string folderPath, int folderPathLength){
+    int returnCode = 0, offset = 0;
+    int packetSize = 2 + 2*INT_SIZE + folderPathLength;
+    byte packet[packetSize];
 
+    // header
+    packet[offset++] = packetType;
+    fromIntToBytes(packetSize - 1 - INT_SIZE, packet + 1);
+    offset += INT_SIZE;
+
+    // data section
+    fromIntToBytes(pidAnalyzer, packet + offset);
+    offset += INT_SIZE;
+    memcpy(packet + offset, folderPath, folderPathLength);
+    packet[packetSize - 1] = '\0';
+
+    if (write(fd[WRITE], packet, packetSize) != packetSize){
+        returnCode = 1;
+        fprintf(stderr, "Error with fd sending delete folder packet\n");
+    }
+
+    return returnCode;
+}
+
+int deleteFolderFromReportPacket(int fd[], pid_t pidAnalyzer, string folderPath){
+    int returnCode = 0;
+    int folderPathLength = strlen(folderPath);
+    int freeSpaceInFirstPacket = 4096 - 2 - 2*INT_SIZE - folderPathLength;
+
+    if (freeSpaceInFirstPacket >= 0){
+        returnCode = _internal_deleteFolderFromReportPacket(12, fd, pidAnalyzer, folderPath, folderPathLength);
+    } else {
+        int lenFirstPartOfPath = 4096 - 2 - 2*INT_SIZE;
+        returnCode =  _internal_deleteFolderFromReportPacket(13,  fd, pidAnalyzer, folderPath, lenFirstPartOfPath);
+
+        // send the second packet only if we were able to send the first one
+        if (returnCode == 0){
+            returnCode = _internal_deleteFolderFromReportPacket(14, fd, pidAnalyzer, folderPath + lenFirstPartOfPath, folderPathLength - lenFirstPartOfPath);
+        }
+    }
+
+    return returnCode;
+}
 
 #endif
