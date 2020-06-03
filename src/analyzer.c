@@ -5,7 +5,7 @@
 #include "utils.c"
 #include "crawler.c"
 #include "packets.h"
-// #include "controller.c"
+#include "controller.c"
 
 /**
  * TODO: Insert possibility to remove an entire folder? (un casin)
@@ -285,6 +285,7 @@ int generateNewControllerInstance(){
     int returnCode = 0;
     // TODO: check for null return from malloc
     cInstance = (controllerInstance*) malloc(sizeof(cInstance));
+    cInstance->pidAnalyzer = getpid();
 
     if (pipe(cInstance->pipeAC) != -1 && pipe(cInstance->pipeCA) != -1){
         // TODO: check for error -1 for fcntl
@@ -303,7 +304,7 @@ int generateNewControllerInstance(){
             close(cInstance->pipeAC[WRITE]);
             close(cInstance->pipeCA[READ]);
             while(true);
-            // controller(cInstance);
+            controller(cInstance);
             exit(0);
         } else {
             // parent
@@ -323,16 +324,16 @@ int generateNewControllerInstance(){
  * Function called when the user adds a folder to the list of files.
  * It iterates trough the new files (last added in filePaths) and
  * sends each of them to the controller.
- * TODO: inert controls on errors
  */
 void sendAllFiles(){
     int numberOFfiles = filePaths->counter;
-
     NodeName *file = filePaths->first;
+
     int i;
-    // this cycle calls sendNewFilePacket for each file packet
-    for(i = 0; i < numberOFfiles; i++){
-        sendNewFilePacket(cInstance->pipeAC, file->name);
+    for (i = 0; i < numberOFfiles; i++){
+        if (sendNewFilePacket(cInstance->pipeAC, file->name) != 0){
+            fprintf(stderr, "Could not send file %s from A to C\n", file->name);
+        }
         file = file->next;
     }
     emptyNameList(filePaths);

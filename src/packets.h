@@ -36,13 +36,15 @@ typedef struct{
 
 typedef struct{
     pid_t pid;
+    pid_t pidAnalyzer;
     int   pipeAC[2];
     int   pipeCA[2];
     int   pipeToRecord;
     int   currN;
     int   currM;
-    // TODO per Fra: Non dovrebbe essere un array o una lista di pInstance?
-    pInstance *pInstances; // P processes associated to C
+    int   nextFileID;
+    bool  isAnalysing;
+    pInstance **pInstances; // P processes associated to C
     NamesList *fileNameList;
     NamesList *removedFileNames;
 } controllerInstance;
@@ -72,9 +74,6 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 // 9:  newFileNameToReportPacket pt1 if file name doesn't fit in one packet
 // 10: newFileNameToReportPacket pt2 if file name doesn't fit in one packet
 // 11: reportErrorOnFilePacket
-// 12: analyzerPathToReportPacket if file name fits in one packet
-// 13: analyzerPathToReportPacket pt1 if file name doesn't fit in one packet
-// 14: analyzerPathToReportPacket pt2 if file name doesn't fit in one packet
 
 /**
  * This function sends the newFilePacket to the file descriptor
@@ -82,7 +81,6 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
  * Error codes:
  * 1 - Error with the fd sending name packet
  */
-// int sendNewFilePacket(int fd[], int pidAnalyzer, int idFile, string fileName){
 int sendNewFilePacket(int fd[], string fileName){
     int returnCode = 0;
     int fileNameLength = strlen(fileName);
@@ -91,7 +89,7 @@ int sendNewFilePacket(int fd[], string fileName){
 
     newFilePacket[0] = 0;
     fromIntToBytes(fileNameLength, newFilePacket + 1);
-    memcpy(newFilePacket + 1 + INT_SIZE, fileName, fileNameLength);
+    memcpy(newFilePacket + 1 + INT_SIZE, fileName, fileNameLength); // no \0 for fileName inside the packet
 
     if (write(fd[WRITE], newFilePacket, packetSize) != (packetSize)){
         returnCode = 1;
@@ -306,51 +304,6 @@ int reportErrorOnFilePacket(int fd[], pid_t pidAnalyzer, int fileId){
     if (write(fd[WRITE], packet, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the remove file packet\n");
-    }
-
-    return returnCode;
-}
-
-// 13: analyzerPathToReportPacket pt1 if file name doesn't fit in one packet
-// 14: analyzerPathToReportPacket pt2 if file name doesn't fit in one packet
-int _internal_analyzerPathToReportPacket(int packetType, int fd[], pid_t pidAnalyzer,
-                string analyzerPath, int analyzerPathLength){
-    int returnCode = 0, offset = 0;
-    // TODO per Fra: Controlla dimenzioni
-    int packetSize = 2 + 2*INT_SIZE + analyzerPathLength;
-    byte packet[packetSize];
-
-    // TODO per Fra: questa è la tua palude, mi sa che conviene riscrivere qua
-    // header
-    packet[offset++] = packetType;
-    fromIntToBytes(packetSize - 1 - INT_SIZE, packet + 1);
-    offset += INT_SIZE;
-
-    // data section
-    fromIntToBytes(pidAnalyzer, packet + offset);
-    offset += INT_SIZE;
-    memcpy(packet + offset, analyzerPath, analyzerPathLength);
-
-    if (write(fd[WRITE], packet, packetSize) != packetSize){
-        returnCode = 1;
-        fprintf(stderr, "Error with fd sending the analyzer path packet\n");
-    }
-
-    return returnCode;
-}
-
-// 12: analyzerPathToReportPacket if file name fits in one packet
-int analyzerPathToReportPacket(int fd[], pid_t pidAnalyzer, string analyzerPath){
-    int returnCode = 0;
-    int analyzerPathLength = strlen(analyzerPath);
-    // TODO per Fra: Controlla dimenzioni
-    int freeSpaceInFirstPacket = 4096 - 2 - 3*INT_SIZE - analyzerPathLength;
-
-    if (freeSpaceInFirstPacket > 0){
-        returnCode = _internal_analyzerPathToReportPacket(12, fd, pidAnalyzer, analyzerPath, analyzerPathLength);
-    } else {
-        returnCode =  _internal_analyzerPathToReportPacket(13, fd, pidAnalyzer, analyzerPath, analyzerPathLength-freeSpaceInFirstPacket);
-        returnCode += _internal_analyzerPathToReportPacket(14, fd, pidAnalyzer, analyzerPath+analyzerPathLength-freeSpaceInFirstPacket, -freeSpaceInFirstPacket);
     }
 
     return returnCode;

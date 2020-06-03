@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h> // pid_t -> in crawler I use pid_t without types.h
+#include <signal.h>
 #include "packets.h"
 #include "utils.c"
 #include "p.c"
@@ -9,7 +10,7 @@
 #define READ 0
 #define WRITE 1
 
-char* RECORD_FIFO = "/tmp/record_controller_fifo";
+string RECORD_FIFO = "/tmp/record_controller_fifo";
 
 /**
  * Arrivato fino ad implementare processCStartAnalysis().
@@ -18,48 +19,46 @@ char* RECORD_FIFO = "/tmp/record_controller_fifo";
  *  es: oldController(...) non riceve più una lista di stringhe come parametro (con i nomi dei file)
  */
 
-/** FUNCTIONS **/
+// Functions
 void controller(controllerInstance*);
 void waitForMessagesInController(controllerInstance*);
 void waitForMessagesInCFromA(controllerInstance*);
 void waitForMessagesInCFromP(controllerInstance*);
-void oldController(int, int, int, controllerInstance*);
 int  shapeTree(int, int, controllerInstance*);
 void notifyNewMToPInstance(pInstance*, int);
 void killInstanceOfP(int, controllerInstance*);
-void sendPathNameToP(string, int, bool, controllerInstance*);
 int  processCNewFilePacket(byte[], int, controllerInstance*);
 int  processCRemoveFilePacket(byte[], int, controllerInstance*);
-int  processCDeathPacket();
+int  processCDeathPacket(controllerInstance*);
 int  processCNewValueForM(byte[], controllerInstance*);
 int  processCNewValueForN(byte[], controllerInstance*);
+int  processCNewFileOccurrences(byte[], int, controllerInstance *);
 int  processMessageInControllerFromAnalyzer(byte, byte*, int, controllerInstance*);
+int  processMessageInControllerFromP(byte, byte*, int, controllerInstance*);
 int  openFifoToRecord(controllerInstance*);
 
-
-/**
- * "Empty" constructor for controller. 
- */
+// Initialization of controller fields
 void controller(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->pInstances = NULL;
     instanceOfMySelf->currM = 0;
     instanceOfMySelf->currN = 0;
+    instanceOfMySelf->nextFileID = 0;
+    instanceOfMySelf->isAnalysing = false;
     instanceOfMySelf->fileNameList = constructorNamesList();
     instanceOfMySelf->removedFileNames = constructorNamesList();
     openPipeToRecord(instanceOfMySelf); 
     waitForMessagesInController(instanceOfMySelf);
 }
 
-/**
- * Function that waits and reads messages from the Analyzer.
- */
+// wait for messages from Analyzer and Ps
 void waitForMessagesInController(controllerInstance *instanceOfMySelf){
-    while(true){
+    while (true){
         waitForMessagesInCFromA(instanceOfMySelf);
         waitForMessagesInCFromP(instanceOfMySelf);
     }
 }
 
+// wait until a whole message from A arrives
 void waitForMessagesInCFromA(controllerInstance *instanceOfMySelf){
     int numBytesRead, dataSectionSize, offset;
     byte packetHeader[1 + INT_SIZE];
@@ -86,46 +85,22 @@ void waitForMessagesInCFromA(controllerInstance *instanceOfMySelf){
     }
 }
 
-/**
- * TODO:  implementare. Decidere come creare e mantenere la lista di P.
- * CHECK: i messaggi che possono arrivare da P sono aotmici? se sì allora niente controlli complicati
- */
+// we surely receive only atomic packets
 void waitForMessagesInCFromP(controllerInstance *instanceOfMySelf){
-    // int numBytesRead, dataSectionSize, offset;
-    // byte packetHeader[1 + INT_SIZE];
+    int numBytesRead, dataSectionSize, offset;
+    byte packetHeader[1 + INT_SIZE];
 
-    // int i;
-    // NodeP *currElement = instanceOfMySelf->pInstances;
-    // for (i = 0; i < miniQs->counter; i++){
-    //     numBytesRead = read(currElement->data->pipeToQ[READ], packetHeader, 1 + INT_SIZE);
-    //     if (numBytesRead == (1 + INT_SIZE)){
-    //         dataSectionSize = fromBytesToInt(packetHeader + 1);
-    //         byte packetData[dataSectionSize];
+    int i;
+    for (i = 0; i < instanceOfMySelf->currN; i++){
+        numBytesRead = read(instanceOfMySelf->pInstances[i]->pipePC, packetHeader, 1 + INT_SIZE);
+        if (numBytesRead == (1 + INT_SIZE)){
+            dataSectionSize = fromBytesToInt(packetHeader + 1);
+            byte packetData[dataSectionSize];
 
-    //         numBytesRead  = read(currElement->data->pipeToQ[READ], packetData, dataSectionSize);
-    //         processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
-    //     }
-    //     currElement = currElement->next;
-    // }
-}
-
-// main worker of the C process
-void oldController(int n, int m, int numFiles, controllerInstance *instanceOfMySelf){
-    shapeTree(n, m, instanceOfMySelf);
-
-    // int i;
-    // for (i = 0; i < numFiles; i++){
-    //     sendPathNameToP(files[i], i % instanceOfMySelf->currN, false, instanceOfMySelf);
-    // }
-
-    // backbone of the correct implementation
-    // while (true){
-    //     getMessagesFromA()
-    //     sendMessagesToA()
-    //     getMessagesFromPs()
-    //     sendMessagesToP()
-    //     sendMessagesToR()
-    // }
+            numBytesRead  = read(instanceOfMySelf->pInstances[i]->pipePC, packetData, dataSectionSize);
+            processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
+        }
+    }
 }
 
 // TODO check for syscall close fails: what to do?
@@ -202,44 +177,16 @@ int shapeTree(int newN, int newM, controllerInstance *instanceOfMySelf){
     return returnCode;
 }
 
-
 void notifyNewMToPInstance(pInstance *instanceOfP, int newM){
     printf("Update m to %d\n", newM);
     sendNewMPacket(instanceOfP->pipeCP, newM);
 }
 
-
 void killInstanceOfP(int pIndex, controllerInstance *instanceOfMySelf){
     // TODO - free resources
     printf("Stacca stacca: %d\n", pIndex);
-    sendDeathPacket(instanceOfMySelf->pInstances[pIndex].pipeCP);
+    sendDeathPacket(instanceOfMySelf->pInstances[pIndex]->pipeCP);
 }
-
-
-void sendPathNameToP(string pathName, int indexOfP, bool isInsideFolder, controllerInstance *instanceOfMySelf){
-    int packetLength = 1 + INT_SIZE + 1 + strlen(pathName); // packet type, data length, isInFolder, pathName
-    byte* packet = (byte*) malloc(packetLength * sizeof(byte));
-    int offset = 0;
-
-    // packet type: new file packet
-    packet[offset] = 0;
-    offset++;
-
-    // data length
-    fromIntToBytes(packetLength - 1 - INT_SIZE, packet + offset);
-    offset += INT_SIZE;
-
-    // isInsideFolder flag
-    packet[offset] = (byte)isInsideFolder;
-    offset++;
-
-    // pathName
-    memcpy(packet + offset, pathName, strlen(pathName));
-
-    write(instanceOfMySelf->pInstances[indexOfP].pipeCP[WRITE], packet, packetLength);
-    free(packet);
-}
-
 
 int processMessageInControllerFromAnalyzer(byte packetCode, byte *packetData, int packetDataSize, controllerInstance *instanceOfMySelf){
     int returnCode;
@@ -251,7 +198,7 @@ int processMessageInControllerFromAnalyzer(byte packetCode, byte *packetData, in
             returnCode = processCRemoveFilePacket(packetData, packetDataSize, instanceOfMySelf);
             break;
         case 2:
-            returnCode = processCDeathPacket();
+            returnCode = processCDeathPacket(instanceOfMySelf);
             break;
         case 3:
             returnCode = processCNewValueForM(packetData, instanceOfMySelf);
@@ -270,18 +217,37 @@ int processMessageInControllerFromAnalyzer(byte packetCode, byte *packetData, in
     return returnCode;
 }
 
+int processMessageInControllerFromP(byte packetCode, byte *packetData, int packetDataSize, controllerInstance *instanceOfMySelf){
+    int returnCode;
+    switch (packetCode){
+        case 6:
+            returnCode = processCNewFileOccurrences(packetData, packetDataSize, instanceOfMySelf);
+            break;
+        default:
+            fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
+            returnCode = 1;
+    }
+
+    return returnCode;
+}
 
 int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     
-    // read file name
-    char buffer[packetDataSize];
+    // get path to the file
+    char buffer[packetDataSize + 1];
     memcpy(buffer, packetData, packetDataSize);
-    buffer[packetDataSize - 1] = '\0';
-    // add file to the list
-    appendNameToNamesList(instanceOfMySelf->fileNameList, buffer);
-    // remove the file from the list of removed files (in case it has been removed first and readded then)
-    removeNodeNameByName(instanceOfMySelf->removedFileNames, buffer);
+    buffer[packetDataSize] = '\0';
+
+    if (!instanceOfMySelf->isAnalysing){
+        // add file to the list
+        appendNameToNamesList(instanceOfMySelf->fileNameList, buffer);
+        // remove the file from the list of removed files (in case it has been removed first and readded then)
+        removeNodeNameByName(instanceOfMySelf->removedFileNames, buffer);
+    } else {
+        // TODO: dobbiamo darlo ai P che hanno gestito meno file
+        //       oppure seguiamo l'aritmetica dell'orologio??
+    }
 
     return returnCode;
 }
@@ -290,36 +256,55 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInsta
 int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     
-    // read file name
-    char buffer[packetDataSize];
+    // get path to the file
+    char buffer[packetDataSize + 1];
     memcpy(buffer, packetData, packetDataSize);
-    buffer[packetDataSize - 1] = '\0';
-    // add the file to the removed files
-    appendNameToNamesList(instanceOfMySelf->removedFileNames, buffer);
-    // TODO: remove from fileList? 
+    buffer[packetDataSize] = '\0';
+    
+    if (!instanceOfMySelf->isAnalysing){
+        // add the file to the removed files
+        appendNameToNamesList(instanceOfMySelf->removedFileNames, buffer);
+        // remove the file from the list of added files
+        removeNodeNameByName(instanceOfMySelf->fileNameList, buffer);
+    } else {
+        // TODO: dobbiamo cercare il P che l'ha processato e dirgli
+        // che quel file non ci serve più
+    }
 
     return returnCode;
 }
 
+int processCDeathPacket(controllerInstance *instanceOfMySelf){
+    int i;
+    for (i = 0; i < instanceOfMySelf->currN; i++){
+        if (sendDeathPacket(instanceOfMySelf->pInstances[i]->pipeCP) != 0){
+            // another mechanism to kill the P if the pipes C->P are down
+            kill(instanceOfMySelf->pInstances[i]->pid, SIGINT);
+        }
+    }
 
-int processCDeathPacket(){
-    // TODO kill Ps
-    // TODO free list of Ps
+    // TODO: delete list of files
+    deleteNamesList(instanceOfMySelf->fileNameList);
+    deleteNamesList(instanceOfMySelf->removedFileNames);
+    free(instanceOfMySelf->pInstances);
+    free(instanceOfMySelf);
+
     printf("Controller is dead\n");
     exit(0);
 }
 
-
-/**
- * Sets new value for M.
- * TODO: implement dynamic change! (with shapetree)
- */
+// Notify all Ps that M value has been changed. Even if they are analyzing
 int processCNewValueForM(byte packetData[], controllerInstance *instanceOfMySelf){
     int returnCode = 0;
-    
+
     uint new_m = fromBytesToInt(packetData);
     instanceOfMySelf->currM = new_m;
 
+    int i;
+    for (i = 0; i < instanceOfMySelf->currN; i++){
+        sendNewMPacket(instanceOfMySelf->pInstances[i]->pipeCP, new_m);
+    }
+    
     return returnCode;
 }
 
@@ -329,10 +314,23 @@ int processCNewValueForM(byte packetData[], controllerInstance *instanceOfMySelf
  */
 int processCNewValueForN(byte packetData[], controllerInstance *instanceOfMySelf){
     int returnCode = 0;
-    
     uint new_n = fromBytesToInt(packetData);
-    instanceOfMySelf->currN = new_n;
+    
+    // TODO: manage dynamic change of N during the analysis
+    if (instanceOfMySelf->isAnalysing){
+        fprintf(stderr, "We currently can't change N during analysis\n");
+        // decide if we should use shape tree or not
+        if (new_n < instanceOfMySelf->currN){
+            // delete all exceeding Ps.
+            // we need to redistribute their load to the remaining Ps
+        } else if (new_n > instanceOfMySelf->currN){
+            // create new Ps
+            // redistribute the existing load or do it only with new files?
+        }
+    }
 
+    instanceOfMySelf->currN = new_n;
+    
     return returnCode;
 }
 
@@ -342,22 +340,34 @@ int processCNewValueForN(byte packetData[], controllerInstance *instanceOfMySelf
  */
 int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     int returnCode = 0;
+    instanceOfMySelf->isAnalysing = true;
 
-    // Start analysis
-    oldController(instanceOfMySelf->currN, instanceOfMySelf->currM,
-                  instanceOfMySelf->fileNameList->counter, instanceOfMySelf);    
+    shapeTree(instanceOfMySelf->currN, instanceOfMySelf->currM, instanceOfMySelf);
 
+    // TODO:
+    // 1) insert the files inside instanceOfMySelf->fileNameList inside the file list
+    // 2) remove the files inside instanceOfMySelf->removedFileNames from the file list
+    // 3) vai di aritmetica dell'orologio sulla lista di file:
+    // int i;
+    // for (i = 0; i < numOfFile i++){
+    //     newFileNameToReportPacket(instanceOfMySelf->pInstances[i % instanceOfMySelf->currN]->pipeCP,
+    //                               instanceOfMySelf->pidAnalyzer, false, 0, files[i]->name);
+    //     sendNewFilePacket(files[i]->name, instanceOfMySelf->pInstances[i % instanceOfMySelf->currN]->pipeCP);
+    // }
+    
     return returnCode;  
 }
 
-/**
- * Creates the named pipe to the report
- */
-int  openFifoToRecord(controllerInstance *instanceOfMySelf){
+// Redirects the occurrences packet to the report
+int processCNewFileOccurrences(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
+    forwardPacket(instanceOfMySelf->pipeToRecord, 6, packetDataSize, packetData);
+}
+
+// Creates the named pipe to the report
+int openFifoToRecord(controllerInstance *instanceOfMySelf){
     mkfifo(RECORD_FIFO, 0666);
     instanceOfMySelf->pipeToRecord = open(RECORD_FIFO, O_WRONLY);
 }
-
 
 // only for debug... wait a certain amount of time
 void wait_a_bit(){
