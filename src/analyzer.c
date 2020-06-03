@@ -2,10 +2,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <termios.h>    //termios, TCSANOW, ECHO, ICANON
 #include "utils.c"
 #include "crawler.c"
 #include "packets.h"
 #include "controller.c"
+
+#define BUFFER_SIZE 4096
+char buf[BUFFER_SIZE], command[BUFFER_SIZE];
+int counter = 0;
 
 /**
  * TODO: Insert possibility to remove an entire folder? (un casin)
@@ -15,11 +20,22 @@
  *       già implementata, dai un'occhiata)
  */
 
+// da spostare in utils?
+int numberPossibleFlags = 4; 
+string possibleFlags[]  = {"-i", "-s", "-h", "-main"};
+bool   flagsWithArgs[]  = {true, true, false, true};
+bool   settedFlags[]    = {false, false, false, false};
+string arguments[4];
+string invalidPhrase    = "Wrong command syntax\n"; 
+
+string statuses[] = {"Still not started", "Analisys is running", "Analisys finished"};
+
+analyzerInstance instanceOfMySelf;
 controllerInstance *cInstance;
 NamesList *filePaths;
 int numOfFiles = 0, n = 0, m = 0;
 
-int  modeSwitcher(char, int, char**);
+int  modeSwitcher(string, int, char**);
 void helpMode();
 void interactiveMode();
 void staticMode(int, int, int, NamesList *);
@@ -31,6 +47,109 @@ void sendAllFiles();
 int  processExit();
 void waitAnalisysEnd();
 
+int checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char ** arguments, char* invalid,bool printOnFailure){
+    bool validity = true;
+    int j=0;
+    int i=1;
+    while (i<argc ){
+        bool valid =false;
+        for(j=0;j<numberPossibleFlags && i<argc ;j++){
+            if(!strcmp(argv[i],possibleFlags[j])){
+                if(flagsWithArguments[j]){
+                    bool serving = true;
+                    i++;
+                    while(i<argc && serving ){
+                        if(argv[i][0]!='-'){
+                            if(arguments[j]==NULL){
+                                arguments[j] = malloc(strlen(argv[i]+1));
+                                strcpy(arguments[j],argv[i]);
+                                settedFlags[j]=true;
+                                valid = true;
+                            }else{
+                                char* tmp = malloc(strlen(arguments[j])+strlen(argv[i])+2);
+                                strcpy(tmp,arguments[j]);
+                                strcat(tmp," ");
+                                strcat(tmp,argv[i]);
+                                free(arguments[j]);
+                                arguments[j]=tmp;
+                            }
+                            i++;
+                        }else{
+                            serving=false;
+                            i--;
+                        }
+                    }
+                }else{
+                    settedFlags[j]=true;
+                    valid=true;
+                }
+            }
+        }
+        if(!valid){
+            validity = false;
+        }
+        i++;
+    }   
+    if(printOnFailure && !validity)
+        printf("%s",invalid);
+    if(!validity){
+        for(j=0;j<numberPossibleFlags;j++){
+            settedFlags[j]=false;
+            if(arguments[j]!=NULL){
+                free(arguments[j]);
+            }
+        }
+    }
+    return validity;
+}
+
+string *getArgumentsList(char *arguments, int *numArgs, string *argumentsList){
+    argumentsList = NULL;
+    *numArgs = 0;
+    if(arguments == NULL){
+        // nothing
+    } else {
+        NamesList *list = constructorNamesList();    
+        int   offset  = 0;
+        char* oldPointer = arguments;
+        char* pointer = strstr(arguments, " ");
+        while(pointer != NULL){
+            *numArgs = *numArgs+1;
+            int argLength = pointer - oldPointer; 
+            string argument = malloc(argLength+1);
+            memcpy(argument, arguments+offset, argLength);
+            argument[argLength] = '\0';
+            oldPointer = pointer;
+            offset = pointer - arguments + 1;
+            appendNameToNamesList(list, argument);
+            pointer = NULL;
+            pointer = strstr(oldPointer+1, " ");
+        }
+        *numArgs = *numArgs+1;
+        int argLength = strlen(arguments) - offset; 
+        string argument = (string)malloc(argLength+1);
+        // printf("Arglength: %d\n", argLength);
+        memcpy(argument, arguments+offset, argLength);
+        argument[argLength] = '\0';
+
+        appendNameToNamesList(list, argument);
+
+        argumentsList = (string *)malloc(*numArgs);
+        int i=0;
+        NodeName *node = list->first;
+        // printf("num args: %d\n", *numArgs);
+        while(node != NULL){
+            argumentsList[i] = (string)malloc(strlen(node->name)+1);
+            strcpy(argumentsList[i], node->name);
+            argumentsList[i][strlen(node->name)] = '\0';
+            // printf("name: %s\n", argumentsList[i]);
+            node = node->next;
+            i++;
+        }
+    }
+    return argumentsList;
+}
+
 // check if the mode is a two char string, with the
 // first char being '-'
 bool isValidMode(string mode){
@@ -41,7 +160,7 @@ bool isValidMode(string mode){
 // it uses the crawler to inspect inner files and folders.
 // It returns the number of scanned files.
 int getFilePathsFromArgv(string argv[], int numPaths){
-    const int padding = 4;      // index inside argv from which filenames occur
+    const int padding = 2;      // index inside argv from which filenames occur
     unsigned long numFiles = 0; // number of files recognized
     int out;
     filePaths = constructorNamesList();
@@ -63,15 +182,45 @@ int getFilePathsFromArgv(string argv[], int numPaths){
 int main(int argc, char *argv[]){
     int returnCode = 0;
     filePaths = constructorNamesList();
+    instanceOfMySelf.completedFiles = 0;
+    instanceOfMySelf.totalFiles = 0;
+    strcpy(instanceOfMySelf.lastCommand, "No commands yet");
+    instanceOfMySelf.statusAnalisys = 0;
 
-    if (argc <= 1){
-        fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
-        returnCode = 1;
-    } else if (isValidMode(argv[1])){
-        modeSwitcher(argv[1][1], argc, argv);
+
+    bool validCall = checkArguments(argc, argv, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
+
+    int command = -1;
+    int i;
+    if(validCall && argc > 1){
+        for(i=0; i<numberPossibleFlags; i++){
+            if(settedFlags[i]){
+                command = i;
+            }
+            // printf("Flag: %s\n", possibleFlags[i]);
+            // if(settedFlags[i] && flagsWithArgs[i]){
+            //     printf("Arguments: %s\n", arguments[i]);
+            // } else {
+            //     printf("No arguments\n");
+            // }
+        } 
+        strcpy(instanceOfMySelf.lastCommand, possibleFlags[command]);
+        strcat(instanceOfMySelf.lastCommand, " "); 
+        strcat(instanceOfMySelf.lastCommand, arguments[command]); 
+        int numArgs;
+        string *argumentList;
+        argumentList = getArgumentsList(arguments[command], &numArgs, argumentList);
+        printf("num args: %d\n", numArgs);
+        for(i=0; i<numArgs; i++){
+            printf("argument #%d: %s\n", i, argumentList[i]);
+        }
+        modeSwitcher(possibleFlags[command], numArgs, argumentList);
     } else {
-        fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
+        printf("Invalid call\n");
         returnCode = 1;
+    }
+    while(1){
+        inputReader();
     }
 
     return returnCode;
@@ -82,37 +231,33 @@ int main(int argc, char *argv[]){
 // 1 - not enough args for static mode
 // 2 - n, m and files are not valid
 // 3 - mode not supported
-int modeSwitcher(char mode, int argc, char *argv[]){
+int modeSwitcher(string mode, int argc, char *argv[]){
     int returnCode = 0;
 
-    switch (mode){
-        case 'h':
+    if(!strcmp(mode, "-h")){
             helpMode();
-            break;
-        case 'i':            
-            interactiveMode();
-            break;
-        case 's':
-            if (argc <= 4){
-                fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
-                returnCode = 1;
+    } else if(!strcmp(mode, "-i")) {
+        interactiveMode();
+    } else if(!strcmp(mode, "-s")){
+        if (argc < 3){
+            fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
+            returnCode = 1;
+        } else {
+            n = atoi(argv[0]);
+            m = atoi(argv[1]);
+
+            // Get file paths with the crawler
+            numOfFiles = getFilePathsFromArgv(argv, argc - 2);
+
+            if (!checkParameters()){
+                returnCode = 2;
             } else {
-                n = atoi(argv[2]);
-                m = atoi(argv[3]);
-
-                // Get file paths with the crawler
-                numOfFiles = getFilePathsFromArgv(argv, argc - 4);
-
-                if (!checkParameters()){
-                    returnCode = 2;
-                } else {
-                    staticMode(n, m, numOfFiles, filePaths);
-                }
+                staticMode(n, m, numOfFiles, filePaths);
             }
-            break;
-        default:
-            fprintf(stderr, "Error: mode not supported\n");
-            returnCode = 3;
+        }
+    } else {
+        fprintf(stderr, "Error: mode not supported\n");
+        returnCode = 3;
     }
 
     return returnCode;
@@ -272,7 +417,7 @@ bool checkParameters(){
         fprintf(stderr, "Error: specify numeric non-zero positive values for n and m\n");
         returnValue = false;
     } else if(filePaths->counter == 0){
-        fprintf(stderr, "Error: specify at least one file/folder\n");
+        fprintf(stderr, "Error: all the files or folders specified are inexistent\n");
         returnValue = false;
     }
 
@@ -384,4 +529,90 @@ void waitAnalisysEnd(){
         }
     }
     printf("\nAnalisys ended\n");
+}
+
+
+void printScreen() {
+    printf("================================================\n");
+    printf("Analisys status: %s\n", statuses[instanceOfMySelf.statusAnalisys]);
+    printf("===================Processing===================\n");
+    printf("Last command: %s\n", instanceOfMySelf.lastCommand);
+    printf("================================================\n");
+    printf("> %s", buf);
+    fflush(stdout);
+}
+
+void clear(){
+    system("clear");
+    // printf("\e[1;1H\e[2J");
+}
+
+void resetBuffer(char buffer[], int size){
+    int i;
+    for (i = 0; i < BUFFER_SIZE; i++){
+        buffer[i] = 0;
+    }
+}
+
+int inputReader(void){
+    int lenBuffer = 0, numReadCharacters = 0;
+    char *endCommandPosition;
+    resetBuffer(buf, BUFFER_SIZE);
+    resetBuffer(command, BUFFER_SIZE);
+
+    static struct termios oldt, newt;
+
+    /*tcgetattr gets the parameters of the current terminal
+    STDIN_FILENO will tell tcgetattr that it should write the settings
+    of stdin to oldt*/
+    tcgetattr( STDIN_FILENO, &oldt);
+    /*now the settings will be copied*/
+    newt = oldt;
+
+    /*ICANON normally takes care that one line at a time will be processed
+    that means it will return if it sees a "\n" or an EOF or an EOL*/
+    newt.c_lflag &= ~(ICANON);
+    newt.c_cc[VMIN] = 0;
+    newt.c_cc[VTIME] = 1;
+
+    /*Those new settings will be set to STDIN
+    TCSANOW tells tcsetattr to change attributes immediately. */
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    /*This is your part:
+    Notice that EOF is also turned off
+    in the non-canonical mode*/
+    while(1){
+        if ((numReadCharacters = read(0, buf + lenBuffer, BUFFER_SIZE - lenBuffer)) > 0){
+            lenBuffer += numReadCharacters;
+            endCommandPosition = strrchr(buf, '\n');
+
+            if (endCommandPosition != NULL){
+                int commandLength = endCommandPosition - buf + 1;
+                memcpy(command, buf, commandLength);
+                command[commandLength - 1] = '\0';
+                resetBuffer(buf, BUFFER_SIZE);
+                lenBuffer = 0;
+
+                
+                // make switch on command
+                if (strcmp(command, "q") == 0){
+                    break;
+                }
+            } else {
+                
+            }
+        }
+        //lettura C->A
+         
+        clear();
+        printScreen();
+        // sleep(1);
+    }                
+
+    // restore the old settings
+    tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
+
+
+    return 0;
 }

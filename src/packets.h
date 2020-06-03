@@ -54,10 +54,10 @@ typedef struct{
 } controllerInstance;
 
 typedef struct{
-    bool finishedAnalysis;
+    int  statusAnalisys;
     int  completedFiles;
     int  totalFiles;
-    string lastCommand[MAX_STRING_SIZE];
+    char lastCommand[MAX_STRING_SIZE];
 } analyzerInstance;
 
 // forward a packet without looking inside it's content. Useful for new filepath
