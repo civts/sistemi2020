@@ -77,6 +77,7 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 // 12: deleteFolderFromReportPacket if file name fits in one packet
 // 13: deleteFolderFromReportPacket pt1 if file name doesn't fit in one packet
 // 14: deleteFolderFromReportPacket pt2 if file name doesn't fit in one packet
+// 15: sendNewFilePacketWithID used in C->P->Q
 
 /**
  * This function sends the newFilePacket to the file descriptor
@@ -87,7 +88,7 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 int sendNewFilePacket(int fd[], string fileName){
     int returnCode = 0;
     int fileNameLength = strlen(fileName);
-    int packetSize = 1 + 2*INT_SIZE + fileNameLength;
+    int packetSize = 1 + INT_SIZE + fileNameLength;
     byte newFilePacket[packetSize];
 
     newFilePacket[0] = 0;
@@ -205,13 +206,37 @@ int removeFileByIdPacket(int fd[], pid_t pidAnalyzer, int fileId){
     byte packet[1 + 3*INT_SIZE];
 
     packet[0] = 7;
-    fromIntToBytes(INT_SIZE, packet + 1);
+    fromIntToBytes(2 * INT_SIZE, packet + 1);
     fromIntToBytes(pidAnalyzer, packet + 1 + INT_SIZE);
     fromIntToBytes(fileId, packet + 1 + 2*INT_SIZE);
 
     if (write(fd[WRITE], packet, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the remove file packet\n");
+    }
+
+    return returnCode;
+}
+
+int sendNewFilePacketWithID(int fd[], int idFile, string fileName){
+    int returnCode = 0, offset = 0;
+    int fileNameLength = strlen(fileName);
+    int packetSize = 1 + 2*INT_SIZE + fileNameLength;
+    byte newFilePacket[packetSize];
+
+    // header
+    newFilePacket[offset++] = 15;
+    fromIntToBytes(packetSize - 1 - INT_SIZE, newFilePacket + offset);
+    offset += INT_SIZE;
+
+    // data section
+    fromIntToBytes(idFile, newFilePacket + offset);
+    offset += INT_SIZE;
+    memcpy(newFilePacket + offset, fileName, fileNameLength); // no \0 for fileName inside the packet
+
+    if (write(fd[WRITE], newFilePacket, packetSize) != (packetSize)){
+        returnCode = 1;
+        fprintf(stderr, "Error with fd sending the new file with ID packet\n");
     }
 
     return returnCode;
