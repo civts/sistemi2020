@@ -104,19 +104,16 @@ void printPercentage(uint done, uint total, int barWidth) {
   printf("] %.2f%% complete\n", percentage * 100);
 }
 
-void printErrors(analyzerList *aList){
-  analyzer *current = aList->firstNode;
-  while (current != NULL) {
-    fileWithStats *fNode = current->errors->firstNode;
-    if(current->errors->count!=0){
-      printf("FILE CON ERRORI!\n");
+void printErrors(analyzer *a){
+    fileWithStats *fNode = a->errors->firstNode;
+    if(a->errors->count!=0){
+      printf("ERRORI IN QUESTI FILE!\n");
       while (fNode != NULL) {
         printf("%s\n", fNode->path);
         fNode = fNode->nextNode;
       }
-      current = current->nextNode;
+
     }
-  }
 }
 // void printRecap(analyzerList *aList) {
 //   printFirstInfoLine(aList);

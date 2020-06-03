@@ -262,7 +262,6 @@ int _internal_newFileNameToReportPacket(int packetType, int fd[], pid_t pidAnaly
     offset += INT_SIZE;
     memcpy(packet + offset, filePath, filePathLength);
     packet[packetSize - 1] = '\0';
-
     if (write(fd[WRITE], packet, packetSize) != packetSize){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the new name file packet\n");
@@ -335,7 +334,7 @@ int _internal_deleteFolderFromReportPacket(int packetType, int fd[], pid_t pidAn
     return returnCode;
 }
 
-int deleteFolderFromReportPacket(int fd[], pid_t pidAnalyzer, string folderPath){
+int deleteFolderFromReportPacket(int fd[], pid_t pidAnalyzer, const string folderPath){
     int returnCode = 0;
     int folderPathLength = strlen(folderPath);
     int freeSpaceInFirstPacket = 4096 - 2 - 2*INT_SIZE - folderPathLength;

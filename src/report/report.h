@@ -1,7 +1,7 @@
 #include "../packet_codes.h"
 #include "../utils.c"
-#include "analyzer_list.h"
-#include "file_with_stats_list.h"
+#include "./data_structures/analyzer_list.h"
+#include "./data_structures/file_with_stats_list.h"
 #include "report_print_functions.h"
 // #include "report_utils.h"
 
@@ -41,8 +41,8 @@ void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
 //(2nd half of a file path)
 void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers);
 
-// This is the function that implements report buisiness logic
-int report(int argc, const char *argv[]);
+// This is the function that implements report buisiness logic. READS 1 PACKET AT THE TIME
+int reportReadOnePacket(int pipe, analyzerList *analyzers);
 
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
@@ -208,53 +208,46 @@ void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
   free(dati);
 }
 // // This is the function that implements report buisiness logic
-// int report(int argc, const char *argv[]) {
-//   int retCode = 0;
-//   // This is where the state is stored: it contains the references to the
-//   // "objects" representing the files and their stats.
-//   analyzerList *analyzers = constructorAnalyzerListEmpty();
-//   int pipe = open(PATH_TO_PIPE, O_RDONLY);
-//   if (pipe == -1) {
-//     retCode = 1;
-//     perror("No pipe");
-//   }
-//   while (pipe != -1) {
-//     // Reading new packet and taking appropriate action
-//     byte header[INT_SIZE + 1];
-//     int rdHeader = read(pipe, header, INT_SIZE + 1);
-//     if (rdHeader == INT_SIZE + 1) {
-//       if (DEBUGGING)
-//         printf("Got new packet with code %d\n", header[0]);
-//       switch (header[0]) {
-//       case Q_NEW_DATA_CODE:
-//         gotNewDataPacket(pipe, header, analyzers);
-//         break;
-//       case Q_FILE_ERROR_CODE:
-//         // TODO (What do we do on error? print to the user and forget about it?)
-//         gotFileErrorPacket(pipe, header, analyzers);
-//         break;
-//       case A_NEW_FILE_COMPLETE:
-//         gotAddFilePacket(pipe, header, analyzers);
-//         break;
-//       case A_NEW_FILE_INCOMPLETE_PART1:
-//         got1stPathPartPacket(pipe, header, analyzers);
-//         break;
-//       case A_NEW_FILE_INCOMPLETE_PART2:
-//         got2ndPathPartPacket(pipe, header, analyzers);
-//         break;
-//       case A_DELETE_FILE_CODE:
-//         gotDeleteFilePacket(pipe, header, analyzers);
-//         break;
-//       case A_DELETE_FOLDER:
-//         gotDeleteFolderPacket(pipe, header, analyzers);
-//         break;
-//       case A_DELETE_FOLDER_INCOMPLETE_PART1:
-//         got1stPathPartDeleteFolderPacket(pipe, header, analyzers);
-//         break;
-//       case A_DELETE_FOLDER_INCOMPLETE_PART2:
-//         got2ndPathPartDeleteFolderPacket(pipe, header, analyzers);
-//         break;
-//       }
+int reportReadOnePacket(int pipe, analyzerList *analyzers) {
+    // Reading new packet and taking appropriate action
+    byte header[INT_SIZE + 1];
+    int rdHeader = read(pipe, header, INT_SIZE + 1);
+    if (rdHeader == INT_SIZE + 1) {
+      if (DEBUGGING)
+        printf("Got new packet with code %d\n", header[0]);
+      switch (header[0]) {
+      case Q_NEW_DATA_CODE:
+        gotNewDataPacket(pipe, header, analyzers);
+        break;
+      case Q_FILE_ERROR_CODE:
+        // TODO (What do we do on error? print to the user and forget about it?)
+        gotErrorFilePacket(pipe, header, analyzers);
+        break;
+      case A_NEW_FILE_COMPLETE:
+        gotAddFilePacket(pipe, header, analyzers);
+        break;
+      case A_NEW_FILE_INCOMPLETE_PART1:
+        got1stPathPartPacket(pipe, header, analyzers);
+        break;
+      case A_NEW_FILE_INCOMPLETE_PART2:
+        got2ndPathPartPacket(pipe, header, analyzers);
+        break;
+      case A_DELETE_FILE_CODE:
+        gotDeleteFilePacket(pipe, header, analyzers);
+        break;
+      case A_DELETE_FOLDER:
+        gotDeleteFolderPacket(pipe, header, analyzers);
+        break;
+      case A_DELETE_FOLDER_INCOMPLETE_PART1:
+        got1stPathPartDeleteFolderPacket(pipe, header, analyzers);
+        break;
+      case A_DELETE_FOLDER_INCOMPLETE_PART2:
+        got2ndPathPartDeleteFolderPacket(pipe, header, analyzers);
+        break;
+      }
+  }
+  return 0;
+}
 //       if (system("clear")) {
 //         printf("\n----------------------------------------\n");
 //       }

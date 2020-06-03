@@ -1,7 +1,7 @@
 #include "../packet_codes.h"
 #include "../utils.c"
-#include "analyzer_list.h"
-#include "file_with_stats_list.h"
+#include "./data_structures/analyzer_list.h"
+#include "./data_structures/file_with_stats_list.h"
 #include "report_print_functions.h"
 // #include "report_utils.h"
 

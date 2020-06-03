@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #define INT_SIZE 4
 // How many characters we are considering
 #define ASCII_LENGTH 256
@@ -17,7 +18,7 @@ typedef unsigned long long ull;
 #define DEBUGGING true
 typedef unsigned int uint;
 typedef unsigned char byte;
-typedef char *string;
+typedef char* string;
 
 uint fromBytesToInt(byte *);
 void fromIntToBytes(uint, byte[]);
@@ -93,8 +94,8 @@ typedef struct {
 
 // // FUNZIONE CHE GESTISCE IL PARSING
 // //DOCUMENTAZIONE
-// // argc parametri del main
-// // argv parametri del main
+// // argc parametri del main. Da chiamare con 1
+// // argv parametri del main. Da chiamare con +1
 // // possibleFlags lista di char* contenente i valori ammissibili come argomenti. DEVONO NECESSARIAMENTE INIZIARE CON "-"
 // // flagsWithArguments vettore di booleani, settare a true la posizione in cui il corrispondente flag richiede un altro parametro
 // // numberPossibleFlags lunghezza della lista dei possibili parametri
@@ -107,7 +108,7 @@ typedef struct {
 int checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char ** arguments, char* invalid,bool printOnFailure){
     bool validity = true;
     int j=0;
-    int i=1;
+    int i=0;
     while (i<argc ){
         bool valid =false;
         for(j=0;j<numberPossibleFlags && i<argc ;j++){
@@ -159,4 +160,23 @@ int checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithAr
     }
     return validity;
 }
+
+// Given a path to a file/folder it returns:
+// -1 : if it does not exist
+//  0 : if it is a file and it exists
+//  1 : if it is is a folder and it exists
+int inspectPath(const char *path){
+    struct stat path_stat;
+    int returnCode = -1;
+    if (path != NULL && stat(path, &path_stat) == 0){
+        if (S_ISREG(path_stat.st_mode)){
+            returnCode = 0;
+        } else if (S_ISDIR(path_stat.st_mode)){
+            returnCode = 1;
+        }
+    }
+    return returnCode;
+}
+
+
 #endif

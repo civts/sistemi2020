@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "./report.h"
+#include <limits.h>
 #define BUFFER_SIZE 4096
 #define DEBUGGING true
 char buf[BUFFER_SIZE], command[BUFFER_SIZE];
@@ -17,6 +18,9 @@ bool help = false;
 // Flag for telling the report to show grouped stats (a-z instead of a,b,c...)
 char groupFlag[] = "-g";
 bool group = true;
+// Flag for telling the report to show extended stats (a,b,c... instead of a-z)
+char extendedFlag[] = "-e";
+bool extended = false;
 // Flag for telling the report to show verbose stats
 char verboseFlag[] = "-v";
 bool verbose = false;
@@ -29,14 +33,14 @@ bool compact =false;
 // Flag for telling the report to force another analysis. Discards all previous data
 char forceReAnalysisFlag[] = "-r";
 bool force = false;
-// Flag for telling the report to give you only the stats for a given file, after that specify le list of arguments "--only /home/a.txt  /home/abac/ "
+// Flag for telling the report to give you only the stats for a given file, after that specify le list of arguments "--only /home/a.txt  /home/abac/ ", ? MAYBE THIS PART if a pid is specified in the same line, it will appied only to an analyzer with that pid
 char onlyFlag[] = "--only";
 bool only = false;
 // Flag for telling the report to quit
 char quitFlag[] = "-q";
 bool quit = false;
 
-void clear(){
+void clearScreen(){
 //   const char *CLEAR_SCREEN_ANSI = "\e[1;1H\e[2J";
 //   write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 12);
     printf("\e[1;1H\e[2J");
@@ -51,36 +55,57 @@ void resetBuffer(char buffer[], int size){
     }
 }
 
+void parseArguments(bool *valid,bool *help, bool * group, bool * extended, bool * verbose, bool * tab, bool * compact, bool * force, bool * only, bool * quit, bool * settedFlags,char ** arguments,char ** resolvedPaths){
+    if(*valid){
+        *help = settedFlags[0]; *group = settedFlags[1]; *extended=settedFlags[2]; *verbose = settedFlags[3]; *tab= settedFlags[4]; *compact=settedFlags[5]; *force=settedFlags[6]; *only=settedFlags[7]; *quit=settedFlags[8];
+    }
+    // invalid combinatons
+    if(*verbose + *compact + *tab + *only >= 2){
+        *valid = false;
+    }
+    if(*group && *extended){
+        *valid = false;
+    }
+    // default group is on
+    if(!*group && !*extended){
+        *group = true;
+    }
+    // default view is tab
+    if(*verbose + *compact + *tab == 0){
+       *tab = true;
+    }
+    int numArgs;
+    string* unresolvedPaths = getArgumentsList(arguments[7],&numArgs,unresolvedPaths);
+    int i=0; int j=0;
+    while(j<numArgs){
+        resolvedPaths[i]=realpath(unresolvedPaths[j],resolvedPaths[i]);
+        if(inspectPath(resolvedPaths[i])!=-1){
+            i++;
+        }else{
+            *valid = false;
+            printf("path %s non valido\n",unresolvedPaths[i]);
+        }
+        j++;
+    }
+}
 int main(int argc, char ** argv){
     int retCode = 0;
-    char * possibleFlags[] = {helpFlag,groupFlag,verboseFlag,tabFlag,compactFlag,forceReAnalysisFlag,onlyFlag,quitFlag};
+    char * possibleFlags[] = {helpFlag,groupFlag,extendedFlag,verboseFlag,tabFlag,compactFlag,forceReAnalysisFlag,onlyFlag,quitFlag};
     // SPECIFICARE LA DIMENSIONE
-    int numberPossibleFlags =  8;
+    int numberPossibleFlags =  9;
     // SPECIFICARE QUALI FLAG ACCETTANO ARGOMENTI, da passare in una stringa "adasda dasdas asdad". Esempio: "--only "patate ecmpa cobp""
-    bool flagsWithArguments[] = {false,false,false,false,false,false,true};
+    bool flagsWithArguments[] = {false,false,false,false,false,false,false,true,false};
     // QUI RITORNO GLI ARGOMENTI PASSATI AL FLAG CHE HA ARGOMENTO
-    char *arguments[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+    char *arguments[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
     //inizializzare i flag coi loro valori di default
-    bool settedFlags[] = {false,false,false,false,false,false,false,false};
+    bool settedFlags[] = {false,false,false,false,false,false,false,false,false};
     char* invalidtext = "argomenti non validi\n";
-    bool valid = checkArguments(argc,argv,possibleFlags,flagsWithArguments,numberPossibleFlags,settedFlags,arguments,invalidtext,false);
-    help = settedFlags[0]; group = settedFlags[1]; verbose = settedFlags[2]; tab= settedFlags[3];compact=settedFlags[4];force=settedFlags[5];only=settedFlags[6];quit=settedFlags[7];
-    
-    
-    if(verbose + compact + tab >= 2){
-        valid = false;
-    }
+    bool valid = checkArguments(argc-1,argv+1,possibleFlags,flagsWithArguments,numberPossibleFlags,settedFlags,arguments,invalidtext,false);
+    char* resolvedPaths[PATH_MAX];
 
-    if(verbose + compact + tab == 0){
-        tab = true;
-    }
-    if(only){
-        if(arguments[6]!=NULL){
-            ///parsing "/home  ../patetae/"->["/home", " ../patetae/"]
-            //realPath per ogni path
-        }
-    } 
     if(valid){
+        parseArguments(&valid,&help,&group,&extended,&verbose,&tab,&compact,&force,&only,&quit,settedFlags,arguments,resolvedPaths);
+
         int lenBuffer = 0, numReadCharacters = 0;
         char *endCommandPosition;
         resetBuffer(buf, BUFFER_SIZE);
@@ -123,11 +148,10 @@ int main(int argc, char ** argv){
                     command[commandLength - 1] = '\0';
                     resetBuffer(buf, BUFFER_SIZE);
                     lenBuffer = 0;
-                    
-                    // make switch on command
-                    if (strcmp(command, "q") == 0){
-                        break;
-                    }
+                    int numCommands;
+                    string* spliced = getArgumentsList(command,&numCommands,spliced);
+                    if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,settedFlags,arguments,invalidtext,false))
+                        parseArguments(&valid,&help,&group,&extended,&verbose,&tab,&compact,&force,&only,&quit,settedFlags,arguments,resolvedPaths);
                 } else {
 
                 }
@@ -136,57 +160,25 @@ int main(int argc, char ** argv){
                 perror("No pipe");
                 pipe = open(PATH_TO_PIPE, O_RDONLY);
             }else{
-                // AGGIUNGERE UN WHILE/FOR PER LEGGERE PIÙ PACCHETTI DI 1 AL SECONDO, TIPO CON UNA SYSCALL PER SAPERE IL TEMPO PASSATO ?
-                // Reading new packet and taking appropriate action
-                byte header[INT_SIZE + 1];
-                int rdHeader = read(pipe, header, INT_SIZE + 1);
-                if (rdHeader == INT_SIZE + 1) {
-                    if (DEBUGGING)
-                        printf("Got new packet with code %d\n", header[0]);
-                    switch (header[0]) {
-                        case Q_NEW_DATA_CODE:
-                            gotNewDataPacket(pipe, header, analyzers);
-                            break;
-                        case Q_FILE_ERROR_CODE:
-                            gotErrorFilePacket(pipe,header,analyzers);
-                            break;
-                        case A_NEW_FILE_COMPLETE:
-                            gotAddFilePacket(pipe, header, analyzers);
-                            break;
-                        case A_NEW_FILE_INCOMPLETE_PART1:
-                            got1stPathPartPacket(pipe, header, analyzers);
-                            break;
-                        case A_NEW_FILE_INCOMPLETE_PART2:
-                            got2ndPathPartPacket(pipe, header, analyzers);
-                            break;
-                        case A_DELETE_FILE_CODE:
-                            gotDeleteFilePacket(pipe, header, analyzers);
-                            break;
-                        case A_DELETE_FOLDER:
-                            gotDeleteFolderPacket(pipe, header, analyzers);
-                            break;
-                        case A_DELETE_FOLDER_INCOMPLETE_PART1:
-                            got1stPathPartDeleteFolderPacket(pipe, header, analyzers);
-                            break;
-                        case A_DELETE_FOLDER_INCOMPLETE_PART2:
-                            got2ndPathPartDeleteFolderPacket(pipe, header, analyzers);
-                            break;
-                    }
-                }
+                //lettura di 1 pacchetto
+                reportReadOnePacket(pipe,analyzers);
             }
-            clear();
+            clearScreen();
             //printErrors(analyzers);
             if(tab)
                 printRecapTabela(analyzers,group);
-            else if(verbose)
+            if(verbose)
                 printRecapVerbose(analyzers,group);
-            else if(compact)
+            if(compact)
                 printRecapCompact(analyzers);
-            else if(help)
+            if(help)
                 printf("AIUTO\n");
-            else if(quit)
-                exit(0);
-            
+            if(quit)
+                exit(1);
+            if(force){
+                destructoraAnalyzerList(analyzers);
+                analyzers = constructorAnalyzerListEmpty();
+            }
             //printRecapTabela(analyzers,group);
 
             //NON ELIMINARE QUESTE DUE STAMPE BUF E FFLUSH, SONO FONDAMENTALI PER IL CORRETTO FUNZIONAMENTO
