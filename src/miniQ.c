@@ -12,9 +12,9 @@
 
 // IMPORTANT: compile this with -lm to make ceil works...
 
-void  miniQ(string, bool, miniQinfo*);
-void  sendOccurencesToReport(string, bool, int, ull[NUM_OCCURENCES]);
-byte* encodePacketForReport(string, bool, int, ull[NUM_OCCURENCES], int*);
+void  miniQ(string, miniQinfo*);
+void  sendOccurencesToReport(string, int, ull[NUM_OCCURENCES]);
+byte* encodePacketForReport(string, int, ull[NUM_OCCURENCES], int*);
 int   getOccurences(string, long, long, ull[NUM_OCCURENCES]);
 long  getFileLength(string fileName);
 void  printOccurencesTemp(string, ull[NUM_OCCURENCES]);
@@ -23,7 +23,7 @@ void sig_handler_miniQ();
 
 // principal core of a miniQ: it's goal is to detect the char occurences
 // for a single file of his parent Qij process
-void miniQ(string fileName, bool isInsideFolder, miniQinfo *instanceOfMySelf){
+void miniQ(string fileName, miniQinfo *instanceOfMySelf){
     signal(SIGINT, sig_handler_miniQ);
     signal(SIGKILL, sig_handler_miniQ);
     if (instanceOfMySelf->index >= instanceOfMySelf->currM){
@@ -41,7 +41,7 @@ void miniQ(string fileName, bool isInsideFolder, miniQinfo *instanceOfMySelf){
             // get character occurences from the file
             ull occurences[256];
             int numCharsInPortion = getBigOccurences(fileName, startPosition, endPosition, occurences);
-            // sendOccurencesToReport(fileName, isInsideFolder, numCharsInPortion, occurences);
+            // sendOccurencesToReport(fileName, numCharsInPortion, occurences);
             printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
         }
     }
@@ -52,7 +52,7 @@ void miniQ(string fileName, bool isInsideFolder, miniQinfo *instanceOfMySelf){
 
 // TODO atm I'm doing output on a normal file, change the it to the nominal pipe according to report.c
 // send char occureces to the report through a nominal pipe
-void sendOccurencesToReport(string fileName, bool isInsideFolder, int numCharInPortion, ull occurences[NUM_OCCURENCES]){
+void sendOccurencesToReport(string fileName, int numCharInPortion, ull occurences[NUM_OCCURENCES]){
     int fd = open("file.txt", O_WRONLY|O_CREAT, 0644);
 
     if (fd == -1){
@@ -61,7 +61,7 @@ void sendOccurencesToReport(string fileName, bool isInsideFolder, int numCharInP
     } else {
         // write encoded stream of bytes to the pipe
         int bufferSize;
-        byte *buffer = encodePacketForReport(fileName, isInsideFolder, numCharInPortion, occurences, &bufferSize);
+        byte *buffer = encodePacketForReport(fileName, numCharInPortion, occurences, &bufferSize);
         write(fd, buffer, bufferSize);
 
         // free resources
@@ -72,9 +72,9 @@ void sendOccurencesToReport(string fileName, bool isInsideFolder, int numCharInP
 
 // Encode an occurences packet to send to the record through the nominal
 // return the number of bytes in the packet
-byte* encodePacketForReport(string fileName, bool isInsideFolder, int numCharInPortion, ull occurences[NUM_OCCURENCES], int* outBufferSize){
+byte* encodePacketForReport(string fileName, int numCharInPortion, ull occurences[NUM_OCCURENCES], int* outBufferSize){
     int lenFileName = strlen(fileName);
-    const int bufferSize = 1 + INT_SIZE + lenFileName + 1 + INT_SIZE + NUM_OCCURENCES*INT_SIZE; // see docs
+    const int bufferSize = 1 + INT_SIZE + lenFileName + INT_SIZE + NUM_OCCURENCES*INT_SIZE; // see docs
 
     byte* outBuffer = (byte*) malloc(sizeof(byte) * bufferSize);
     byte tempInteger[INT_SIZE]; // used for integer to bytes conversion
@@ -93,10 +93,6 @@ byte* encodePacketForReport(string fileName, bool isInsideFolder, int numCharInP
     // filename (without ending \0)
     memcpy(outBuffer + offset, fileName, lenFileName);
     offset += lenFileName;
-
-    // 1 the file is inside a folder, 0 otherwise
-    outBuffer[offset] = isInsideFolder;
-    offset++;
 
     // TODO change to long
     // total number of chars in the current file portion

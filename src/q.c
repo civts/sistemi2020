@@ -16,6 +16,7 @@ void waitForMessagesInQFromMiniQ(qInstance*);
 int  processMessageInQFromP(byte, byte*, int, qInstance*);
 int  processMessageInQFromMiniQ(byte, byte*, int, qInstance*);
 int  processQNewFilePacket(byte[], int, qInstance*);
+int processQNewFilePacketWithID(byte[], int, qInstance*);
 int  processQRemoveFilePacket(byte[], int);
 int  processQDeathPacket();
 int  processQNewValueForM(byte[], qInstance*);
@@ -110,6 +111,9 @@ int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize
         case 7:
             returnCode = processQRemoveFilePacket(packetData, packetDataSize);
             break;
+        case 15:
+            returnCode = processQNewFilePacketWithID(packetData, packetDataSize, instanceOfMySelf);
+            break;
         default:
             fprintf(stderr, "Error, Q received from P an unknown packet type %d\n", packetCode);
             returnCode = 1;
@@ -132,6 +136,7 @@ int processMessageInQFromMiniQ(byte packetCode, byte *packetData, int packetData
     return returnCode;
 }
 
+// Da buttare, meglio non usare (deprecato)
 int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* instanceOfMySelf){
     bool isInsideFolder = packetData[0];
     char pathName[packetDataSize];
@@ -151,7 +156,36 @@ int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* inst
         fprintf(stderr, "Error, creating miniQ\n");
     } else if (f == 0){
         printf("Created miniQ\n");
-        miniQ(pathName, isInsideFolder, newMiniQ);
+        miniQ(pathName, newMiniQ);
+    } else {
+        newMiniQ->pid = f;
+        appendMiniQ(miniQs, constructorNodeMiniQ(newMiniQ));
+    }
+
+    return 0;
+}
+
+int processQNewFilePacketWithID(byte packetData[], int packetDataSize, qInstance* instanceOfMySelf){
+    int fileIndex = fromBytesToInt(packetData + 0);
+    char pathName[packetDataSize - INT_SIZE + 1];
+    // string pathName = (string) malloc((packetDataSize) * sizeof(char));
+    memcpy(pathName, packetData + 1, packetDataSize - INT_SIZE);
+    pathName[packetDataSize - INT_SIZE] = '\0';
+
+    int pipeMiniQQ[2];
+    pipe(pipeMiniQQ);
+    fcntl(pipeMiniQQ[READ], F_SETFL, O_NONBLOCK);
+    miniQinfo *newMiniQ = constructorMiniQinfo(0, fileIndex, pipeMiniQQ, instanceOfMySelf->currM, instanceOfMySelf->index);
+
+    // create miniQ process
+    pid_t f;
+    f = fork();
+    if (f < 0){
+        fprintf(stderr, "Error, creating miniQ\n");
+    } else if (f == 0){
+        printf("Created miniQ\n");
+        miniQ(pathName, newMiniQ);
+        exit(0);
     } else {
         newMiniQ->pid = f;
         appendMiniQ(miniQs, constructorNodeMiniQ(newMiniQ));
@@ -161,7 +195,7 @@ int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* inst
 }
 
 int processQRemoveFilePacket(byte packetData[], int packetDataSize){
-    // TODO: remove debuug printfs
+    // TODO: remove debug printfs
     int pidAnalyzer  = fromBytesToInt(packetData);
     int fileId = fromBytesToInt(packetData+1);
     printf("fileID read from packet: %d\n", fileId);
