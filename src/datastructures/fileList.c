@@ -32,7 +32,7 @@ typedef struct FileList {
  */
 FileState *constructorFileState(char *fileName, int fileId, int portions, int indexOfP){
     FileState *newFileState = (FileState *)malloc(sizeof(FileState));
-    newFileState->fileName = (char *)malloc(strlen(fileName));
+    newFileState->fileName = (char *)malloc(strlen(fileName)+1);
     strcpy(newFileState->fileName, fileName);
     newFileState->idFile = fileId;
     newFileState->numOfRemainingPortionsToRead = portions;

@@ -10,6 +10,7 @@
 
 #define READ 0
 #define WRITE 1
+#define MAX_STRING_SIZE 4096
 
 // TODO: a lot of repeated code in packets 0-1 and 3-4
 
@@ -51,6 +52,13 @@ typedef struct{
     NamesList *removedFileNames;
     FileList  *fileList;
 } controllerInstance;
+
+typedef struct{
+    bool finishedAnalysis;
+    int  completedFiles;
+    int  totalFiles;
+    string lastCommand[MAX_STRING_SIZE];
+} analyzerInstance;
 
 // forward a packet without looking inside it's content. Useful for new filepath
 int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSection){
