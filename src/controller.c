@@ -6,18 +6,12 @@
 #include "utils.c"
 #include "p.c"
 #include "datastructures/namesList.c"
+#include "datastructures/fileList.c"
 
 #define READ 0
 #define WRITE 1
 
-string RECORD_FIFO = "/tmp/record_controller_fifo";
-
-/**
- * Arrivato fino ad implementare processCStartAnalysis().
- * Controllo sulle altre funzioni di ricezione pacchetto.
- * C'è ancora da fare un po' di renaming e sistemazione degli argomenti
- *  es: oldController(...) non riceve più una lista di stringhe come parametro (con i nomi dei file)
- */
+string REPORT_FIFO = "/tmp/record_controller_fifo";
 
 // Functions
 void controller(controllerInstance*);
@@ -388,14 +382,29 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
 
 // Redirects the occurrences packet to the report
 int processCNewFileOccurrences(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
-    // TODO update file list
-    forwardPacket(instanceOfMySelf->pipeToRecord, 6, packetDataSize, packetData);
+    // insert pid analyzer in the occurrences packet to report
+    fromIntToBytes(instanceOfMySelf->pidAnalyzer, packetData + 1 + INT_SIZE);
+    int idFile = fromBytesToInt(packetData + 1 + 2 * INT_SIZE);
+
+    // update status in file list
+    if (decrementRemainingPortionsById(instanceOfMySelf->fileList, idFile) != -1){
+        forwardPacket(instanceOfMySelf->pipeToRecord, 6, packetDataSize, packetData);
+    }
+
+    // check if we have analyzed everything
+    if (isAnalisiFinita(instanceOfMySelf->fileList)){
+        instanceOfMySelf->isAnalysing = false;
+
+        // TODO: notify the used we have finished to analyze
+    }
 }
+
+    
 
 // Creates the named pipe to the report
 int openFifoToRecord(controllerInstance *instanceOfMySelf){
-    mkfifo(RECORD_FIFO, 0666);
-    instanceOfMySelf->pipeToRecord = open(RECORD_FIFO, O_WRONLY);
+    mkfifo(REPORT_FIFO, 0666);
+    instanceOfMySelf->pipeToRecord = open(REPORT_FIFO, O_WRONLY);
 }
 
 // only for debug... wait a certain amount of time

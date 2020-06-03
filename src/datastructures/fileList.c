@@ -206,7 +206,7 @@ void removeNode(FileList *list, char *name){
 
 /**
  * Decrements the value of numOfRemainingPortionsToRead of the first file with id idFile
- * returns the new value of numOfRemainingPortionsToRead, or -1 in the case that the 
+ * Returns the new value of numOfRemainingPortionsToRead, or -1 in the case that the 
  * file was not found
  */
 int decrementRemainingPortionsById(FileList *list, int idFile){
