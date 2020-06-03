@@ -30,7 +30,7 @@ void       appendToNamesList(NamesList*, struct NodeName*);
 void       appendNameToNamesList(NamesList*, string);
 NodeName*  getNodeNameByName(NamesList*, string);
 int        removeNodeNameByName(NamesList*, string);
-void       emptyNameList(NamesList*);
+
 
 
 NodeName *constructorNodeName(string fileName){
@@ -56,9 +56,9 @@ void deleteNodeName(NodeName *node){
  */
 NamesList *constructorNamesList(){
     NamesList *list = (NamesList*) malloc(sizeof(NamesList));
-    list->first   = NULL;
-    list->last    = NULL;
-    list->counter = 0;
+    list->first     = NULL;
+    list->last      = NULL;
+    list->counter   = 0;
 
     return list;
 }
@@ -169,11 +169,6 @@ int removeNodeNameByName(NamesList *list, string fileName){
         result = 0;
     }
     return result;
-}
-
-void emptyNameList(NamesList *list){
-    deleteNamesList(list);
-    list = constructorNamesList();
 }
 
 /**

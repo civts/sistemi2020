@@ -17,7 +17,6 @@
 
 controllerInstance *cInstance;
 NamesList *filePaths;
-string myPath;
 int numOfFiles = 0, n = 0, m = 0;
 
 int  modeSwitcher(char, int, char**);
@@ -25,7 +24,7 @@ void helpMode();
 void interactiveMode();
 void staticMode(int, int, int, NamesList *);
 bool isValidMode(string);
-int  getFilePathsFromArgv(string[], NamesList*, int);
+int  getFilePathsFromArgv(string[], int);
 bool checkParameters();
 int  generateNewControllerInstance();
 void sendAllFiles();
@@ -41,24 +40,23 @@ bool isValidMode(string mode){
 // extract file paths from argv array. In case of folder,
 // it uses the crawler to inspect inner files and folders.
 // It returns the number of scanned files.
-int getFilePathsFromArgv(string argv[], NamesList *fileList, int numPaths){
+int getFilePathsFromArgv(string argv[], int numPaths){
     const int padding = 4;      // index inside argv from which filenames occur
     unsigned long numFiles = 0; // number of files recognized
     int out;
-    fileList = constructorNamesList();
+    filePaths = constructorNamesList();
 
     int i;
     for (i = 0; i < numPaths; i++){
         if (isDirectory(argv[i + padding], '/', &out) && out == 0){
             int outNewFiles = 0;
-            crawler(argv[i + padding], fileList, &outNewFiles);
+            crawler(argv[i + padding], filePaths, &outNewFiles);
             numFiles += outNewFiles;
         } else if ( isValidFile(argv[i + padding]) && out == 0 ){
-            appendNameToNamesList(fileList, argv[i + padding]);
+            appendNameToNamesList(filePaths, argv[i + padding]);
             numFiles++;
         }
     }
-
     return (int)numFiles;
 }
 
@@ -103,7 +101,7 @@ int modeSwitcher(char mode, int argc, char *argv[]){
                 m = atoi(argv[3]);
 
                 // Get file paths with the crawler
-                numOfFiles = getFilePathsFromArgv(argv, filePaths, argc - 4);
+                numOfFiles = getFilePathsFromArgv(argv, argc - 4);
 
                 if (!checkParameters()){
                     returnCode = 2;
@@ -261,7 +259,9 @@ void staticMode(int numOfP, int numOfQ, int numOfFiles, NamesList *listFilePaths
 
     // TODO: what do we do when static analisys is started?
     // da FRA: io direi niente... è statica per qualche motivo
+    // da Sam: e invece stampiamo l'avanzamento, infame! 
     waitAnalisysEnd();
+
     processExit();
 }
 
@@ -303,7 +303,7 @@ int generateNewControllerInstance(){
             fprintf(stderr, "controllerInstance created\n");
             close(cInstance->pipeAC[WRITE]);
             close(cInstance->pipeCA[READ]);
-            while(true);
+            // while(true);
             controller(cInstance);
             exit(0);
         } else {
@@ -336,7 +336,9 @@ void sendAllFiles(){
         }
         file = file->next;
     }
-    emptyNameList(filePaths);
+
+    deleteNamesList(filePaths);
+    filePaths = constructorNamesList();
 }
 
 /**
@@ -348,7 +350,6 @@ int processExit(){
     sendDeathPacket(cInstance->pipeAC);
 
     // free occupied memory:
-    free(myPath);
     free(cInstance);
     deleteNamesList(filePaths);
 
@@ -359,15 +360,19 @@ int processExit(){
 // TODO: this function should wait a packet from the Controller
 // Function that animates the waiting for static analysis to end.
 void waitAnalisysEnd(){
-    int numberOfPoints = 10;
-    int i;
-    while (true){
-        // wait untill reading the analisys-ended packet from controller
-        for (i = numberOfPoints; i>0; i--){
-            sleep(1);
-            printf(".");
+    int numBytesRead, dataSectionSize, offset;
+    byte packetHeader[1 + INT_SIZE];
+
+    while(true){
+        numBytesRead = read(cInstance->pipeCA[READ], packetHeader, 1 + INT_SIZE);
+        if (numBytesRead == (1 + INT_SIZE)){
+            int packetCode = packetHeader[0];
+            if(packetCode != 16){
+                printf("Analyzer recieved wrong packet code from controller!\n");
+            } else {
+                break;
+            }
         }
-        printf("\n");
     }
     printf("\nAnalisys ended\n");
 }

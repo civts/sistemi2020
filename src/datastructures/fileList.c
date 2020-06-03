@@ -134,10 +134,6 @@ void *appendFileState(FileList *list, struct NodeFileState *newNode){
     list->number_of_nodes++;
 }
 
-void appendName(){
-    
-}
-
 /**
  * Returns the first NodeFileState with a file with the argument name
  * returns NULL if there's no file with that name

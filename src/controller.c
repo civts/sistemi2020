@@ -5,8 +5,8 @@
 #include "packets.h"
 #include "utils.c"
 #include "p.c"
-#include "datastructures/namesList.c"
-#include "datastructures/fileList.c"
+// #include "datastructures/namesList.c"
+// #include "datastructures/fileList.c"
 
 #define READ 0
 #define WRITE 1
@@ -31,6 +31,8 @@ int  processMessageInControllerFromAnalyzer(byte, byte*, int, controllerInstance
 int  processMessageInControllerFromP(byte, byte*, int, controllerInstance*);
 int  openFifoToRecord(controllerInstance*);
 
+void wait_a_bit();
+
 // Initialization of controller fields
 void controller(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->pInstances = NULL;
@@ -41,7 +43,7 @@ void controller(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->fileNameList = constructorNamesList();
     instanceOfMySelf->removedFileNames = constructorNamesList();
     instanceOfMySelf->fileList = constructorFileNameList();
-    openPipeToRecord(instanceOfMySelf); 
+    openFifoToRecord(instanceOfMySelf); 
     waitForMessagesInController(instanceOfMySelf);
 }
 
@@ -87,12 +89,12 @@ void waitForMessagesInCFromP(controllerInstance *instanceOfMySelf){
 
     int i;
     for (i = 0; i < instanceOfMySelf->currN; i++){
-        numBytesRead = read(instanceOfMySelf->pInstances[i]->pipePC, packetHeader, 1 + INT_SIZE);
+        numBytesRead = read(instanceOfMySelf->pInstances[i]->pipePC[READ], packetHeader, 1 + INT_SIZE);
         if (numBytesRead == (1 + INT_SIZE)){
             dataSectionSize = fromBytesToInt(packetHeader + 1);
             byte packetData[dataSectionSize];
 
-            numBytesRead  = read(instanceOfMySelf->pInstances[i]->pipePC, packetData, dataSectionSize);
+            numBytesRead  = read(instanceOfMySelf->pInstances[i]->pipePC[READ], packetData, dataSectionSize);
             processMessageInControllerFromP(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
         }
     }
@@ -146,12 +148,12 @@ int shapeTree(int newN, int newM, controllerInstance *instanceOfMySelf){
         if (i >= newN){
             killInstanceOfP(i, instanceOfMySelf);
         } else if (newM != currM){
-            notifyNewMToPInstance(instanceOfMySelf->pInstances + i, newM);
+            notifyNewMToPInstance(instanceOfMySelf->pInstances[i], newM);
         }
     }
 
     // allocate the space necessary for new_n
-    instanceOfMySelf->pInstances = (pInstance*) realloc(instanceOfMySelf->pInstances, newN * sizeof(pInstance));
+    instanceOfMySelf->pInstances = (pInstance **) realloc(instanceOfMySelf->pInstances, newN * sizeof(pInstance*));
     
     if (instanceOfMySelf->pInstances == NULL){
         fprintf(stderr, "Not enough space to allocate new P table\n");
@@ -159,7 +161,7 @@ int shapeTree(int newN, int newM, controllerInstance *instanceOfMySelf){
     } else {
         // generate new instances of P if necessary
         for (i = instanceOfMySelf->currN; i < newN && returnCode == 0; i++){
-            if (generateNewPInstance(instanceOfMySelf->pInstances + i, i, newM) != 0){
+            if (generateNewPInstance(instanceOfMySelf->pInstances[i], i, newM) != 0){
                 fprintf(stderr, "Failed to generate new P process\n");
                 returnCode = 2;
             }
@@ -388,7 +390,8 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
 
     // update status in file list
     if (decrementRemainingPortionsById(instanceOfMySelf->fileList, idFile) != -1){
-        forwardPacket(instanceOfMySelf->pipeToRecord, 6, packetDataSize, packetData);
+        int dummyPipe[2] = {-1, instanceOfMySelf->pipeToRecord};
+        forwardPacket(dummyPipe, 6, packetDataSize, packetData);
     }
 
     // check if we have analyzed everything
@@ -396,6 +399,7 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
         instanceOfMySelf->isAnalysing = false;
 
         // TODO: notify the used we have finished to analyze
+        sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
     }
 }
 
