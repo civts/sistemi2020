@@ -80,6 +80,7 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 // 13: deleteFolderFromReportPacket pt1 if file name doesn't fit in one packet
 // 14: deleteFolderFromReportPacket pt2 if file name doesn't fit in one packet
 // 15: sendNewFilePacketWithID used in C->P->Q
+// 16: sendFinishedAnalysis packet sent from controller to analyzer at the end of an analisys
 
 /**
  * This function sends the newFilePacket to the file descriptor
@@ -392,6 +393,24 @@ int deleteFolderFromReportPacket(int fd[], pid_t pidAnalyzer, string folderPath)
         if (returnCode == 0){
             returnCode = _internal_deleteFolderFromReportPacket(14, fd, pidAnalyzer, folderPath + lenFirstPartOfPath, folderPathLength - lenFirstPartOfPath);
         }
+    }
+
+    return returnCode;
+}
+
+// Send finished analisys packet
+// Error codes:
+// 1 - Error with fd sending the packet
+int sendFinishedAnalysisPacket(int fd[]){
+    int returnCode = 0;
+    byte finAnalisysPacket[1 + INT_SIZE];
+
+    finAnalisysPacket[0] = 16;
+    fromIntToBytes(0, finAnalisysPacket + 1);
+
+    if (write(fd[WRITE], finAnalisysPacket, 1 + INT_SIZE) != (1 + INT_SIZE)){
+        returnCode = 1;
+        fprintf(stderr, "Error with fd sending the finished analisys packet\n");
     }
 
     return returnCode;
