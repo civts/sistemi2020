@@ -402,8 +402,7 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
 
     // update status in file list
     if (decrementRemainingPortionsById(instanceOfMySelf->fileList, idFile) != -1){
-        int dummyPipe[2] = {-1, instanceOfMySelf->pipeToRecord};
-        forwardPacket(dummyPipe, 6, packetDataSize, packetData);
+        forwardPacket(instanceOfMySelf->pipeToReport, 6, packetDataSize, packetData);
     }
     
     instanceOfMySelf->filesFinished++;
@@ -423,7 +422,7 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
 // Creates the named pipe to the report
 int openFifoToRecord(controllerInstance *instanceOfMySelf){
     mkfifo(REPORT_FIFO, 0666);
-    instanceOfMySelf->pipeToRecord = open(REPORT_FIFO, O_WRONLY);
+    instanceOfMySelf->pipeToReport[WRITE] = open(REPORT_FIFO, O_WRONLY);
 }
 
 // only for debug... wait a certain amount of time

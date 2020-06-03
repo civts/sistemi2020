@@ -40,7 +40,7 @@ typedef struct{
     pid_t pidAnalyzer;
     int   pipeAC[2];
     int   pipeCA[2];
-    int   pipeToRecord;
+    int   pipeToReport[2];
     int   currN;
     int   currM;
     int   nextFileID;
@@ -70,7 +70,7 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 // 2:  death packet
 // 3:  notify new M value
 // 4:  notify new N value
-// 5:  start analisys packet
+// 5:  start analysis packet
 // 6:  file occurences results
 // 7:  remove file by id packet
 // 8:  newFileNameToReportPacket if file name fits in one packet
@@ -81,8 +81,9 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 // 13: deleteFolderFromReportPacket pt1 if file name doesn't fit in one packet
 // 14: deleteFolderFromReportPacket pt2 if file name doesn't fit in one packet
 // 15: sendNewFilePacketWithID used in C->P->Q
-// 16: sendFinishedAnalysis packet sent from controller to analyzer at the end of an analisys
-// 17: oneFileCompleted packet sent from controller to analyzer when the analisys of a single file is completed
+// 16: sendFinishedAnalysis packet sent from controller to analyzer at the end of an analysis
+// 17: oneFileCompleted packet sent from controller to analyzer when the analysis of a single file is completed
+// 18: send string message to report
 
 
 /**
@@ -401,19 +402,19 @@ int deleteFolderFromReportPacket(int fd[], pid_t pidAnalyzer, string folderPath)
     return returnCode;
 }
 
-// Send finished analisys packet
+// Send finished analysis packet
 // Error codes:
 // 1 - Error with fd sending the packet
 int sendFinishedAnalysisPacket(int fd[]){
     int returnCode = 0;
-    byte finAnalisysPacket[1 + INT_SIZE];
+    byte finAnalysisPacket[1 + INT_SIZE];
 
-    finAnalisysPacket[0] = 16;
-    fromIntToBytes(0, finAnalisysPacket + 1);
+    finAnalysisPacket[0] = 16;
+    fromIntToBytes(0, finAnalysisPacket + 1);
 
-    if (write(fd[WRITE], finAnalisysPacket, 1 + INT_SIZE) != (1 + INT_SIZE)){
+    if (write(fd[WRITE], finAnalysisPacket, 1 + INT_SIZE) != (1 + INT_SIZE)){
         returnCode = 1;
-        fprintf(stderr, "Error with fd sending the finished analisys packet\n");
+        fprintf(stderr, "Error with fd sending the finished analysis packet\n");
     }
 
     return returnCode;
@@ -423,16 +424,41 @@ int sendFinishedAnalysisPacket(int fd[]){
 // Error codes:
 // 1 - Error with fd sending the packet
 int sendFinishedFilePacket(int fd[], int yetFinished, int total){
-    int returnCode = 0;
-    byte finishedFilePacket[1 + 2*INT_SIZE];
+    int returnCode = 0, offset = 0;
+    byte finishedFilePacket[1 + 3 * INT_SIZE];
 
-    finishedFilePacket[0] = 17;
-    fromIntToBytes(yetFinished, finishedFilePacket + 1);
-    fromIntToBytes(total, finishedFilePacket + 1 + INT_SIZE);
+    // header section
+    finishedFilePacket[offset++] = 17;
+    fromIntToBytes(2 * INT_SIZE, finishedFilePacket + offset);
+    offset += INT_SIZE;
 
-    if (write(fd[WRITE], finishedFilePacket, 1 + 2*INT_SIZE) != (1 + 2*INT_SIZE)){
+    // data section
+    fromIntToBytes(yetFinished, finishedFilePacket + offset);
+    offset += INT_SIZE;
+    fromIntToBytes(total, finishedFilePacket + offset);
+
+    if (write(fd[WRITE], finishedFilePacket, 1 + 3*INT_SIZE) != (1 + 3*INT_SIZE)){
         returnCode = 1;
-        fprintf(stderr, "Error with fd sending the finished analisys packet\n");
+        fprintf(stderr, "Error with fd sending the finished analysis packet\n");
+    }
+
+    return returnCode;
+}
+
+int sendTextMessageToReport(int fd[], const string message){
+    int returnCode = 0;
+    int messageLength = strlen(message);
+    int packetSize = 1 + INT_SIZE + messageLength + 1;
+    byte messagePacket[packetSize];
+
+    messagePacket[0] = 18;
+    fromIntToBytes(messageLength, messagePacket + 1);
+    memcpy(messagePacket + 1 + INT_SIZE, message, messageLength);
+    messagePacket[packetSize - 1] = '\0';
+
+    if (write(fd[WRITE], messagePacket, packetSize) != (packetSize)){
+        returnCode = 1;
+        fprintf(stderr, "Error with fd sending message packet to report\n");
     }
 
     return returnCode;
