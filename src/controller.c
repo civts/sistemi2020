@@ -39,10 +39,22 @@ void controller(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->currM = 0;
     instanceOfMySelf->currN = 0;
     instanceOfMySelf->nextFileID = 0;
+    instanceOfMySelf->filesFinished = 0;
     instanceOfMySelf->isAnalysing = false;
     instanceOfMySelf->fileNameList = constructorNamesList();
     instanceOfMySelf->removedFileNames = constructorNamesList();
     instanceOfMySelf->fileList = constructorFileNameList();
+/*  for finishedFile and finishedAnalisys debug
+    sendFinishedFilePacket(instanceOfMySelf->pipeCA, 0, 3);
+    wait_a_bit();
+    sendFinishedFilePacket(instanceOfMySelf->pipeCA, 1, 3);
+    wait_a_bit();
+    sendFinishedFilePacket(instanceOfMySelf->pipeCA, 2, 3);
+    wait_a_bit();
+    sendFinishedFilePacket(instanceOfMySelf->pipeCA, 3, 3);
+    wait_a_bit();
+    sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
+*/
     openFifoToRecord(instanceOfMySelf); 
     waitForMessagesInController(instanceOfMySelf);
 }
@@ -393,6 +405,9 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
         int dummyPipe[2] = {-1, instanceOfMySelf->pipeToRecord};
         forwardPacket(dummyPipe, 6, packetDataSize, packetData);
     }
+    
+    instanceOfMySelf->filesFinished++;
+    sendFinishedFilePacket(instanceOfMySelf->pipeCA, instanceOfMySelf->filesFinished, instanceOfMySelf->fileNameList->counter);
 
     // check if we have analyzed everything
     if (isAnalisiFinita(instanceOfMySelf->fileList)){
@@ -414,7 +429,7 @@ int openFifoToRecord(controllerInstance *instanceOfMySelf){
 // only for debug... wait a certain amount of time
 void wait_a_bit(){
     long long int i;
-    for (i=0; i<999999999; i++){}
+    for (i=0; i<99999999; i++){}
 }
 
 // int main(){

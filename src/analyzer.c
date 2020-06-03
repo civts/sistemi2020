@@ -357,20 +357,29 @@ int processExit(){
     exit(0); // to exit from infinite loop
 }
 
-// TODO: this function should wait a packet from the Controller
 // Function that animates the waiting for static analysis to end.
 void waitAnalisysEnd(){
     int numBytesRead, dataSectionSize, offset;
-    byte packetHeader[1 + INT_SIZE];
+    byte packetCode[1];
+    byte packetData[INT_SIZE*2];
 
     while(true){
-        numBytesRead = read(cInstance->pipeCA[READ], packetHeader, 1 + INT_SIZE);
-        if (numBytesRead == (1 + INT_SIZE)){
-            int packetCode = packetHeader[0];
-            if(packetCode != 16){
-                printf("Analyzer recieved wrong packet code from controller!\n");
-            } else {
+        numBytesRead = read(cInstance->pipeCA[READ], packetCode, 1);
+        if(numBytesRead > 0){
+            if(packetCode[0] == 16){
                 break;
+            } else if(packetCode[0] == 17){
+                // nuovo file completato
+                numBytesRead = read(cInstance->pipeCA[READ], packetData, 2*INT_SIZE);
+                if(numBytesRead == 2*INT_SIZE){
+                    int completed = fromBytesToInt(packetData + 0);
+                    int total     = fromBytesToInt(packetData + INT_SIZE);
+                    printf("Completed %d files over %d\n", completed, total);
+                } else {
+                    printf("Something has gone wrong with a completedFile packet!\n");
+                }
+            } else {
+                printf("Analyzer recieved wrong packet code from controller!\n");
             }
         }
     }

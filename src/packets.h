@@ -44,6 +44,7 @@ typedef struct{
     int   currN;
     int   currM;
     int   nextFileID;
+    int   filesFinished;
     bool  isAnalysing;
     pInstance **pInstances; // P processes associated to C
     NamesList *fileNameList;
@@ -81,6 +82,8 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 // 14: deleteFolderFromReportPacket pt2 if file name doesn't fit in one packet
 // 15: sendNewFilePacketWithID used in C->P->Q
 // 16: sendFinishedAnalysis packet sent from controller to analyzer at the end of an analisys
+// 17: oneFileCompleted packet sent from controller to analyzer when the analisys of a single file is completed
+
 
 /**
  * This function sends the newFilePacket to the file descriptor
@@ -409,6 +412,25 @@ int sendFinishedAnalysisPacket(int fd[]){
     fromIntToBytes(0, finAnalisysPacket + 1);
 
     if (write(fd[WRITE], finAnalisysPacket, 1 + INT_SIZE) != (1 + INT_SIZE)){
+        returnCode = 1;
+        fprintf(stderr, "Error with fd sending the finished analisys packet\n");
+    }
+
+    return returnCode;
+}
+
+// Send finished file packet
+// Error codes:
+// 1 - Error with fd sending the packet
+int sendFinishedFilePacket(int fd[], int yetFinished, int total){
+    int returnCode = 0;
+    byte finishedFilePacket[1 + 2*INT_SIZE];
+
+    finishedFilePacket[0] = 17;
+    fromIntToBytes(yetFinished, finishedFilePacket + 1);
+    fromIntToBytes(total, finishedFilePacket + 1 + INT_SIZE);
+
+    if (write(fd[WRITE], finishedFilePacket, 1 + 2*INT_SIZE) != (1 + 2*INT_SIZE)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the finished analisys packet\n");
     }
