@@ -150,8 +150,9 @@ int main(int argc, char ** argv){
                     lenBuffer = 0;
                     int numCommands;
                     string* spliced = getArgumentsList(command,&numCommands,spliced);
-                    if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,settedFlags,arguments,invalidtext,false))
-                        parseArguments(&valid,&help,&group,&extended,&verbose,&tab,&compact,&force,&only,&quit,settedFlags,arguments,resolvedPaths);
+                    bool copyFlag[] = {false,false,false,false,false,false,false,false,false};
+                    if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,copyFlag,arguments,invalidtext,false))
+                        parseArguments(&valid,&help,&group,&extended,&verbose,&tab,&compact,&force,&only,&quit,copyFlag,arguments,resolvedPaths);
                 } else {
 
                 }
