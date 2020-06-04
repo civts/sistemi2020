@@ -127,7 +127,7 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
     uint *occurrences = malloc(sizeof(uint)*ASCII_LENGTH);
     int j;
     for (j = 0; j < ASCII_LENGTH; j++) {
-      occurrences[j] = fromBytesToInt(dati + (6+i)* INT_SIZE);
+      occurrences[j] = fromBytesToInt(dati + (6+j)* INT_SIZE);
       //print("occurrences :'%c' n:%u",j,occurrences[j])
     }
     //funzione che aggiorna i dati del corrispondente file
