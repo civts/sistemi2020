@@ -12,3 +12,6 @@ bin/
 *.a
 *.s
 *.out
+
+#our fifo
+myfifo
