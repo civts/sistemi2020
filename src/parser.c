@@ -2,11 +2,10 @@
 #include "utils.c"
 #include "datastructures/namesList.c"
 
-
 int checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char ** arguments, char* invalid,bool printOnFailure){
     bool validity = true;
     int j=0;
-    int i=1;
+    int i=0;
     while (i<argc ){
         bool valid =false;
         for(j=0;j<numberPossibleFlags && i<argc ;j++){

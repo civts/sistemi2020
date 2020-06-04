@@ -57,6 +57,8 @@ typedef struct{
     int  statusAnalisys;
     int  completedFiles;
     int  totalFiles;
+    int  n;
+    int  m;
     char lastCommand[MAX_STRING_SIZE];
 } analyzerInstance;
 
