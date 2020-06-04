@@ -104,21 +104,25 @@ void printPercentage(uint done, uint total, int barWidth) {
   printf("] %.2f%% complete\n", percentage * 100);
 }
 
-void printErrors(analyzer *a){
-    fileWithStats *fNode = a->errors->firstNode;
-    if(a->errors->count!=0){
-      printf("ERRORI IN QUESTI FILE!\n");
-      while (fNode != NULL) {
-        printf("%s\n", fNode->path);
-        fNode = fNode->nextNode;
-      }
-
+void printErrors(analyzer *a) {
+  fileWithStats *fNode = a->errors->firstNode;
+  if (a->errors->count != 0) {
+    printf("ERRORI IN QUESTI FILE!\n");
+    while (fNode != NULL) {
+      char pathCopy[strlen(fNode->path)];
+      strcpy(pathCopy, fNode->path);
+      trimStringToLength(pathCopy, 80);
+      printf("%s\n", pathCopy);
+      fNode = fNode->nextNode;
     }
+  }
 }
 // void printRecap(analyzerList *aList) {
 //   printFirstInfoLine(aList);
 //   printf(
-//       "                                                  |  a-z   |  A-Z   | digits | punct. | spaces | others |  read  | total  |   %%   |\n"); // 127
+//       "                                                  |  a-z   |  A-Z   |
+//       digits | punct. | spaces | others |  read  | total  |   %%   |\n"); //
+//       127
 //   // caratteri
 //   analyzer *a = aList->firstNode;
 //   while (a != NULL) {
@@ -146,7 +150,8 @@ void printErrors(analyzer *a){
 //       totalCharsRead = fileStats.totalCharsRead;
 //       totalChars = fileStats.totalChars;
 //       cursor = cursor->nextNode;
-//       printf("%u,%u,%u,%u,%u,%u,%u,%u\n", az, AZ, digits, punctuation, spaces,
+//       printf("%u,%u,%u,%u,%u,%u,%u,%u\n", az, AZ, digits, punctuation,
+//       spaces,
 //              otherChars, totalCharsRead, totalChars);
 //     }
 //     a = a->nextNode;
@@ -393,7 +398,8 @@ void printRecapTabela(analyzerList *aList, bool shouldGroup) {
     // la lunghezza di ogni pezzo dev'essere groupWidth-1:
     // strlen("|az  ") = 6 = groupWidth
     // si termini con |
-    const string beforeBar = "|az   |AZ   |num  |puntg|spazi|altri|letti|total|";
+    const string beforeBar =
+        "|az   |AZ   |num  |puntg|spazi|altri|letti|total|";
     sprintf(msg + firstColWidth, beforeBar);
     const string barTxt = "progress bar";
     int positionNow = firstColWidth + strlen(beforeBar);
@@ -430,7 +436,7 @@ void printRecapTabela(analyzerList *aList, bool shouldGroup) {
       sprintf(line + firstColWidth, "|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
               stats.az, stats.AZ, stats.digits, stats.punctuation, stats.spaces,
               stats.otherChars, stats.totalCharsRead, stats.totalChars);
-      printf("%s",line);
+      printf("%s", line);
       printProgressBar(f->readCharacters, f->totalCharacters, barWidth);
       f = f->nextNode;
     }
