@@ -27,7 +27,7 @@ NamesList* constructorNamesList();
 void       printNamesList(NamesList*);
 void       deleteNamesList(NamesList*);
 void       appendToNamesList(NamesList*, struct NodeName*);
-void       appendNameToNamesList(NamesList*, string);
+int        appendNameToNamesList(NamesList*, string);
 NodeName*  getNodeNameByName(NamesList*, string);
 int        removeNodeNameByName(NamesList*, string);
 
@@ -110,16 +110,20 @@ void appendToNamesList(NamesList *list, struct NodeName *newNode){
 
 /**
  * Checks if it exists already in the list a node with that name, if it doesen't creates a new
- * NodeName with that name and appends it to the list. 
+ * NodeName with that name and appends it to the list.
+ * Returns 0 if Name appended, 1 if not. 
  */
-void appendNameToNamesList(NamesList *list, string name){
+int appendNameToNamesList(NamesList *list, string name){
+    int ret = 1;
     NodeName *tmp = getNodeNameByName(list, name);
     if(tmp == NULL){
         NodeName *newNode = constructorNodeName(name);
         appendToNamesList(list, newNode);
+        ret = 0;
     } else {
         printf("File gia' presente nella lista!\n");
     }
+    return ret;
 }
 
 /**

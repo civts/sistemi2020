@@ -21,19 +21,20 @@ char buf[BUFFER_SIZE], command[BUFFER_SIZE];
  */
 
 // da spostare in utils?
-int numberPossibleFlags = 8; 
-string possibleFlags[]  = {"-i", "-s", "-h", "-n", "-m", "-show", "-add", "-rem"};
-bool   flagsWithArgs[]  = {false, true, false, true, true, false, true, true};
-bool   settedFlags[]    = {false, false, false, false, false, false, false, false};
-string arguments[8];
+int numberPossibleFlags = 10; 
+string possibleFlags[]  = {"-analyze", "-i",  "-s", "-h",  "-show", "-rem", "-add", "-n", "-m", "-quit"};
+bool   flagsWithArgs[]  = {false,      false, true, false, false,   true,   true,   true,  true, false};
+bool   settedFlags[]    = {false, false, false, false, false, false, false, false, false, false};
+string arguments[10];
 string invalidPhrase    = "Wrong command syntax\n"; 
 
-string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"};
+string statuses[] = {"Still not started", "Analisys is running", "Analysis finished"};
 
 analyzerInstance instanceOfMySelf;
 controllerInstance *cInstance;
 NamesList *filePaths;
 
+void initialize();
 int  modeSwitcher(string, int, char**);
 void helpMode();
 void interactiveMode();
@@ -50,11 +51,22 @@ void switchCommand(int, int, string*);
 void printState();
 void addFiles(int, string*);
 void removeFiles(int, string*);
+void clear();
 
 // check if the mode is a two char string, with the
 // first char being '-'
 bool isValidMode(string mode){
     return (strlen(mode) == 2) && (mode[0] == '-');
+}
+
+void initialize(){
+    filePaths = constructorNamesList();
+    instanceOfMySelf.completedFiles = 0;
+    instanceOfMySelf.totalFiles = 0;
+    instanceOfMySelf.statusAnalisys = 0;
+    instanceOfMySelf.n = instanceOfMySelf.m = 0;
+    strcpy(instanceOfMySelf.lastCommand, "No commands yet");
+    int returnCode = generateNewControllerInstance();
 }
 
 // extract file paths from argv array. In case of folder,
@@ -82,12 +94,7 @@ int getFilePathsFromArgv(string argv[], int numPaths){
 
 int main(int argc, char *argv[]){
     int returnCode = 0;
-    filePaths = constructorNamesList();
-    instanceOfMySelf.completedFiles = 0;
-    instanceOfMySelf.totalFiles = 0;
-    instanceOfMySelf.statusAnalisys = 0;
-    instanceOfMySelf.n = instanceOfMySelf.m = 0;
-    strcpy(instanceOfMySelf.lastCommand, "No commands yet");
+    initialize();
 
     bool validCall = checkArguments(argc-1, argv+1, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
     int command = -1;
@@ -110,13 +117,18 @@ int main(int argc, char *argv[]){
                 switchCommand(i, numArgs, argumentList);
             }
         } 
+
+        for(i=0; i<numberPossibleFlags; i++){
+            free(arguments[i]);
+            arguments[i] = NULL;
+        }
         // printf("num args: %d\n", numArgs);
         // for(i=0; i<numArgs; i++){
         //     printf("argument #%d: %s\n", i, argumentList[i]);
         // }
         // modeSwitcher(possibleFlags[command], numArgs, argumentList);
     } else {
-        strcpy(instanceOfMySelf.lastCommand, "Command invalid, check your syntax");
+        strcpy(instanceOfMySelf.lastCommand, "Invalid command, check your syntax");
         inputReader(instanceOfMySelf);
         returnCode = 1;
     }
@@ -162,6 +174,7 @@ int modeSwitcher(string mode, int argc, char *argv[]){
 }
 
 void helpMode(){
+    clear();
     string help_message = "Help mode\n\n"
                           "Usages:\n"
                           "-i: interactive mode\n"
@@ -182,11 +195,12 @@ void helpMode(){
                           "3: usage mode not supported\n";
 
     printf("%s\n", help_message);
+    sleep(3);
+    inputReader();
 }
 
 // TODO - check all error codes from sys calls and from out functions
 void interactiveMode(){
-    int returnCode = generateNewControllerInstance();
     sendAllFiles();
 
 
@@ -319,12 +333,18 @@ void staticMode(NamesList *listFilePaths){
 // Returns true if n, m and at least one file/folder are set with valid values
 bool checkParameters(){
     int returnValue = true;
-    if (instanceOfMySelf.n <= 0 || instanceOfMySelf.m <= 0){
-        fprintf(stderr, "Error: specify numeric non-zero positive values for n and m\n");
+    if (instanceOfMySelf.n <= 0){
+        fprintf(stderr, "Error: specify numeric non-zero positive values for n\n");
         returnValue = false;
-    }  else if (instanceOfMySelf.totalFiles == 0){
+        sleep(3);
+    } else if(instanceOfMySelf.m <=0 ) {
+        fprintf(stderr, "Error: specify numeric non-zero positive values for m\n");
+        returnValue = false;
+        sleep(3);
+    } else if (instanceOfMySelf.totalFiles == 0){
         fprintf(stderr, "Error: all the files or folders specified are inexistent\n");
         returnValue = false;
+        sleep(3);
     }
 
     return returnValue;
@@ -409,6 +429,9 @@ int processExit(){
 }
 
 // Function that animates the waiting for static analysis to end.
+/**
+ * TODO: rewrite package reading
+ */
 void waitAnalisysEnd(){
     int numBytesRead, dataSectionSize, offset;
     byte packetCode[1];
@@ -537,6 +560,10 @@ int inputReader(){
                     strcpy(instanceOfMySelf.lastCommand, invalidCommand);
                 }
                 free(argsList);
+                for(i=0; i<numberPossibleFlags; i++){
+                    free(arguments[i]);
+                    arguments[i] = NULL;
+                }
             } else {
                 
             }
@@ -559,28 +586,37 @@ void switchCommand(int commandCode, int numArgs, string *arguments){
     sleep(2);
     switch(commandCode){
         case 0:
-            interactiveMode();
+            if(checkParameters()){
+                sendStartAnalysisPacket(cInstance->pipeAC);
+                instanceOfMySelf.statusAnalisys = 1;
+            }
             break;
         case 1:
-            staticMode(filePaths);
+            interactiveMode();
             break;
         case 2:
-            helpMode();
+            staticMode(filePaths);
             break;
         case 3:
-            instanceOfMySelf.n = atoi(arguments[0]);
+            helpMode();
             break;
         case 4:
-            instanceOfMySelf.m = atoi(arguments[0]);
+            printState();
             break;
         case 5:
-            printState();
+            removeFiles(numArgs, arguments);
             break;
         case 6:
             addFiles(numArgs, arguments);
             break;
         case 7:
-            removeFiles(numArgs, arguments);
+            instanceOfMySelf.n = atoi(arguments[0]);
+            break;
+        case 8:
+            instanceOfMySelf.m = atoi(arguments[0]);
+            break;
+        case 9:
+            processExit();
             break;
     }
     return;
@@ -598,11 +634,13 @@ void addFiles(int numFiles, string *fileNames){
     for(i=0; i<numFiles; i++){
         int numOfFilesInFolder; // used in case it's a folder
         int pathType = inspectPath(fileNames[i]);
-
         if (pathType == 0){
             // it's an existing file
-            appendNameToNamesList(filePaths, fileNames[i]);
-            instanceOfMySelf.totalFiles+=1;
+            strcpy( absolutePath, realpath(fileNames[i], absolutePath) );
+            int appended = appendNameToNamesList(filePaths, absolutePath);
+            if(appended == 0){
+                instanceOfMySelf.totalFiles+=1;
+            }
             sendAllFiles();
             printf("Added file %s\n", fileNames[i]);
         } else if (pathType == 1){
@@ -622,19 +660,18 @@ void removeFiles(int numFiles, string *fileNames){
     int i;
     for(i=0; i<numFiles; i++){
         // Management of removal of file or folder
-        string absPath;
-        absPath = realpath(absPath, fileNames[i]);
+        strcpy( absolutePath, realpath(fileNames[i], absolutePath) );
 
         int numOfFilesInFolder; // used in case it's a folder
-        int pathType = inspectPath(absPath);
+        int pathType = inspectPath(absolutePath);
 
         if (pathType == 0){
             // it's an existing file
-            if (removeFileByNamePacket(cInstance->pipeAC, absPath) != -1){
-                printf("Remove file %s\n", absPath);
+            if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
+                printf("Remove file %s\n", absolutePath);
                 instanceOfMySelf.totalFiles-=1;
             } else {
-                fprintf(stderr, "?Error trying to remove %s\n", absPath);
+                fprintf(stderr, "?Error trying to remove %s\n", absolutePath);
             }                
         } else if (pathType == 1){
             // it's an existing folder
@@ -646,6 +683,5 @@ void removeFiles(int numFiles, string *fileNames){
             // invalid file/folder
             fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");
         }
-        free(absPath);
     }
 }

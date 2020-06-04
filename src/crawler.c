@@ -12,6 +12,8 @@
 // maximum file path length: 4096 (is the file name included?)
 #define SIZE_OF_BUFFER_TO_READ_PIPE 4096
 
+char absolutePath[SIZE_OF_BUFFER_TO_READ_PIPE];
+
 int parseFileListFromFind(int readDescriptor, NamesList *fileList){
     FILE *pipeToRead = fdopen(readDescriptor, "r");
     int numOfFileNamesProcessed = 0;
@@ -20,7 +22,8 @@ int parseFileListFromFind(int readDescriptor, NamesList *fileList){
 
     while(fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead) != NULL){
         filePath = strtok(buffer, "\n");
-        appendNameToNamesList(fileList, filePath);
+        strcpy(absolutePath, realpath(filePath, absolutePath) );
+        appendNameToNamesList(fileList, absolutePath);
         numOfFileNamesProcessed++;
     }
 
