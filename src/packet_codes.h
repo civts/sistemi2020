@@ -71,9 +71,9 @@ string path
 #define A_DELETE_FOLDER_INCOMPLETE_PART1 13
 // As A_NEW_FILE_COMPLETE but contains only second half of the path
 #define A_DELETE_FOLDER_INCOMPLETE_PART2 14
-#ifndef bool
-typedef unsigned char bool;
-#define false 0
-#define true 1
-#endif
-#endif
+// #ifndef bool
+// typedef unsigned char bool;
+// #define false 0
+// #define true 1
+// #endif
+ #endif

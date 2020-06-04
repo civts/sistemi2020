@@ -12,42 +12,42 @@
 char buf[BUFFER_SIZE], command[BUFFER_SIZE];
 int counter = 0;
 
+
+#define help 0
+#define verbose 1
+#define tab 2
+#define compact 3
+#define only 4
+#define extended 5
+#define force 6
+#define quit 7
+
+
 // Flag for telling the report to show help dialog
 char helpFlag[] = "-h";
-bool help = false;
-// Flag for telling the report to show grouped stats (a-z instead of a,b,c...)
-char groupFlag[] = "-g";
-bool group = true;
-// Flag for telling the report to show extended stats (a,b,c... instead of a-z)
-char extendedFlag[] = "-e";
-bool extended = false;
 // Flag for telling the report to show verbose stats
 char verboseFlag[] = "-v";
-bool verbose = false;
 // Flag for tab mode
 char tabFlag[] = "-t";
-bool tab = false;
 // Flag for telling the report to show compact
 char compactFlag[] = "-c";
-bool compact =false;
-// Flag for telling the report to force another analysis. Discards all previous data
-char forceReAnalysisFlag[] = "-r";
-bool force = false;
 // Flag for telling the report to give you only the stats for a given file, after that specify le list of arguments "--only /home/a.txt  /home/abac/ ", ? MAYBE THIS PART if a pid is specified in the same line, it will appied only to an analyzer with that pid
 char onlyFlag[] = "--only";
-bool only = false;
+// Flag for telling the report to show extended stats (a,b,c... instead of a-z)
+char extendedFlag[] = "-e";
+// Flag for telling the report to force another analysis. Discards all previous data
+char forceReAnalysisFlag[] = "-r";
 // Flag for telling the report to quit
 char quitFlag[] = "-q";
-bool quit = false;
 
 void clearScreen(){
-//   const char *CLEAR_SCREEN_ANSI = "\e[1;1H\e[2J";
-//   write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 12);
+//  const char *CLEAR_SCREEN_ANSI = "\e[1;1H\e[2J";
+//  write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 12);
     printf("\e[1;1H\e[2J");
 }
-// void clear(){
-//     system("clear");
-// }
+void clear(){
+    system("clear");
+}
 void resetBuffer(char buffer[], int size){
     int i;
     for (i = 0; i < BUFFER_SIZE; i++){
@@ -55,56 +55,113 @@ void resetBuffer(char buffer[], int size){
     }
 }
 
-void parseArguments(bool *valid,bool *help, bool * group, bool * extended, bool * verbose, bool * tab, bool * compact, bool * force, bool * only, bool * quit, bool * settedFlags,char ** arguments,char ** resolvedPaths){
-    if(*valid){
-        *help = settedFlags[0]; *group = settedFlags[1]; *extended=settedFlags[2]; *verbose = settedFlags[3]; *tab= settedFlags[4]; *compact=settedFlags[5]; *force=settedFlags[6]; *only=settedFlags[7]; *quit=settedFlags[8];
+//controlla se la combinazione di argomenti è valid
+bool optionCombinationValid(bool *settedFlags){
+    bool valid = true;
+    // controllo non ci siano combinazioni invalide
+    if(settedFlags[help] + settedFlags[tab]+ settedFlags[compact]+ settedFlags[only] + settedFlags[verbose]>= 2 ){
+        valid = false;
     }
-    // invalid combinatons
-    if(*verbose + *compact + *tab + *only >= 2){
-        *valid = false;
-    }
-    if(*group && *extended){
-        *valid = false;
-    }
-    // default group is on
-    if(!*group && !*extended){
-        *group = true;
-    }
-    // default view is tab
-    if(*verbose + *compact + *tab == 0){
-       *tab = true;
-    }
-    int numArgs;
-    string* unresolvedPaths = getArgumentsList(arguments[7],&numArgs,unresolvedPaths);
+    return valid;
+}
+//funzione che fa il parsing dei file passati ad arguments trasformandoli in una lista di stringhe in resolvedPaths, lunghezza della lista in numArgs
+bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
+    char * unresolvedPaths[PATH_MAX];
+    parser(arguments,numArgs,unresolvedPaths);
+    bool valid = true;
     int i=0; int j=0;
-    while(j<numArgs){
+    // for(i=0;i<*numArgs;i++){
+    //     printf("%s ",unresolvedPaths[i]);
+    // }
+    //printf("\n");
+    while(j<*numArgs){
+        //printf("sto cercando di risolvere : %s \n",unresolvedPaths[j]);
         resolvedPaths[i]=realpath(unresolvedPaths[j],resolvedPaths[i]);
+        //printf("risolto con  : %s \n",resolvedPaths[i]);
         if(inspectPath(resolvedPaths[i])!=-1){
+            //printf("path valido : %s \n",resolvedPaths[i]);
             i++;
         }else{
-            *valid = false;
-            printf("path %s non valido\n",unresolvedPaths[i]);
+            valid = false;
+            //printf("path %s non valido\n",unresolvedPaths[j]);
         }
         j++;
     }
-}
-int main(int argc, char ** argv){
-    int retCode = 0;
-    char * possibleFlags[] = {helpFlag,groupFlag,extendedFlag,verboseFlag,tabFlag,compactFlag,forceReAnalysisFlag,onlyFlag,quitFlag};
-    // SPECIFICARE LA DIMENSIONE
-    int numberPossibleFlags =  9;
-    // SPECIFICARE QUALI FLAG ACCETTANO ARGOMENTI, da passare in una stringa "adasda dasdas asdad". Esempio: "--only "patate ecmpa cobp""
-    bool flagsWithArguments[] = {false,false,false,false,false,false,false,true,false};
-    // QUI RITORNO GLI ARGOMENTI PASSATI AL FLAG CHE HA ARGOMENTO
-    char *arguments[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
-    //inizializzare i flag coi loro valori di default
-    bool settedFlags[] = {false,false,false,false,false,false,false,false,false};
-    char* invalidtext = "argomenti non validi\n";
-    bool valid = checkArguments(argc-1,argv+1,possibleFlags,flagsWithArguments,numberPossibleFlags,settedFlags,arguments,invalidtext,false);
-    char* resolvedPaths[PATH_MAX];
+    for(j=0;j<*numArgs;j++){
+        free(unresolvedPaths[j]);
+    }
+    //free(unresolvedPaths);
 
+    // for(j=0;j<i;j++){
+    //     printf("%s ",resolvedPaths[j]);
+    // }
+    // printf("\n");
+    *numArgs = i;
+    // unresolvedPaths = getArgumentsList(arguments[9],numFilesLog,unresolvedPaths);
+    // i=0; j=0;
+    // while(j<*numFilesLog){
+    //     resolvedPaths[i]=realpath(unresolvedPaths[j],resolvedPaths[i]);
+    //     if(inspectPath(resolvedPaths[i])!=-1){
+    //         i++;
+    //     }else{
+    //         valid = false;
+    //         printf("path %s non valido\n",unresolvedPaths[i]);
+    //     }
+    //     j++;
+    // }
+    return valid;
+}
+int main(int argc, char * argv[]){
+    int retCode = 0;
+    char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag};
+    // SPECIFICARE LA DIMENSIONE
+    int numberPossibleFlags =  8;
+    // SPECIFICARE QUALI FLAG ACCETTANO ARGOMENTI, da passare in una stringa "adasda dasdas asdad". Esempio: "--only "patate ecmpa cobp""
+    bool flagsWithArguments[] = {false,false,false,false,true,false,false,false};
+    // QUI RITORNO GLI ARGOMENTI PASSATI AL FLAG CHE HA ARGOMENTO
+    char *arguments[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+    //inizializzare i flag coi loro valori di default
+    bool settedFlags[] = {false,false,false,false,false,false,false,false};
+
+    char* resolvedPaths[PATH_MAX];
+    int i=0;
+    for(i=0;i<PATH_MAX;i++){
+        resolvedPaths[i]=NULL;
+    }
+
+    int currentFilesCount = 0;
+    bool valid = false;
+    //controllo gli argomenti siano validi
+    if (checkArguments(argc-1,argv+1,possibleFlags,flagsWithArguments,numberPossibleFlags,settedFlags,arguments,NULL,false)){
+        // controllo la combinazione sia valida
+        if( optionCombinationValid(settedFlags)){
+            //faccio ulteriore parsing solo se devo lavorare col flag --only
+            if(settedFlags[only]){
+                // provo ad effettuare il parsing
+                if(parseArguments(arguments[only],&currentFilesCount,resolvedPaths)){
+                    //parsing riuscito
+                    valid=true;
+                }else{
+                    valid=false; settedFlags[only]=false;
+                }
+            }else{
+                valid=true;
+            }
+        }
+    }
+
+    // for(i=0;i<currentFilesCount;i++){
+    //         printf("%s ",resolvedPaths[i]);
+    // }
+    // printf("\n");
+    // printf("%d\n",true);
+    // printf("%d\n",false);
     if(valid){
-        parseArguments(&valid,&help,&group,&extended,&verbose,&tab,&compact,&force,&only,&quit,settedFlags,arguments,resolvedPaths);
+        
+        // default view is tab
+        if(settedFlags[help] + settedFlags[tab]+ settedFlags[compact]+ settedFlags[only] + settedFlags[verbose]==0 ){
+            settedFlags[tab] = true;
+        }
 
         int lenBuffer = 0, numReadCharacters = 0;
         char *endCommandPosition;
@@ -148,11 +205,70 @@ int main(int argc, char ** argv){
                     command[commandLength - 1] = '\0';
                     resetBuffer(buf, BUFFER_SIZE);
                     lenBuffer = 0;
-                    int numCommands;
-                    string* spliced = getArgumentsList(command,&numCommands,spliced);
-                    bool copyFlag[] = {false,false,false,false,false,false,false,false,false};
-                    if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,copyFlag,arguments,invalidtext,false))
-                        parseArguments(&valid,&help,&group,&extended,&verbose,&tab,&compact,&force,&only,&quit,copyFlag,arguments,resolvedPaths);
+
+                    int numCommands=0;
+                    int i=0;
+                    // resetto valid, potrebbe non essere valido
+                    valid = false;
+                    // copia dei flag su cui lavorare
+                    bool copyFlags[] = {false,false,false,false,false,false,false,false};
+                    // reset degli argomenti
+                    for(i=0;i<numberPossibleFlags;i++){ if(arguments[i]!=NULL){free(arguments[i]);arguments[i]=NULL;}}
+                    // buffer temporaneo
+                    int tmpFilesCount = 0;
+                    // buffer temporaneo dove inserire i percorsi
+                    char* tmpResolvedPaths[PATH_MAX];
+                    for(i=0;i<PATH_MAX;i++){
+                        tmpResolvedPaths[i]=NULL;
+                    }
+                    // spezzo i comandi in stringhe
+                    char* spliced[PATH_MAX];
+
+                    parser(command,&numCommands,spliced);
+                    // for(i=0;i<numCommands;i++){
+                    //     printf("%s\n,",spliced[i]);
+                    // }
+                    //controllo se siano validi
+                    if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,copyFlags,arguments,NULL,false)){
+                        //controllo se la specifica combinazione sia valida
+                        if(optionCombinationValid(copyFlags)){
+                            //faccio ulteriore parsing solo se devo lavorare col flag --only
+                           if(copyFlags[only]){
+                                // provo ad effettuare il parsing
+                                
+                                if(parseArguments(arguments[only],&tmpFilesCount,tmpResolvedPaths)){
+                                    //parsing riuscito
+                                    valid=true;
+                                }else{
+                                    valid=false; copyFlags[only]=false;
+                                }
+                            }else{
+                                valid=true;
+                            }
+                        }
+                    }
+                    //parsing riuscito, argomenti validi e altre cose
+                    if(valid){
+                        // se valido, copio i dati
+                        for(i=0;i<numberPossibleFlags;i++){
+                            settedFlags[i] = copyFlags[i];
+                        }
+                        currentFilesCount = tmpFilesCount;
+                        for(i=0;i<currentFilesCount;i++){
+                            resolvedPaths[i] = malloc(strlen(tmpResolvedPaths[i])+1);
+                            strcpy(resolvedPaths[i],tmpResolvedPaths[i]);
+                            //printf("%s ",resolvedPaths[i]);
+                        }
+                            
+                    }
+
+                    // printf("\n");
+                    // for(i=0;i<numberPossibleFlags;i++){
+                    //     printf("%d ",settedFlags[i]);
+                    // }
+                    // printf("\n");
+                    // printf("\n");
+                    //sleep(5);   
                 } else {
 
                 }
@@ -164,22 +280,32 @@ int main(int argc, char ** argv){
                 //lettura di 1 pacchetto
                 reportReadOnePacket(pipe,analyzers);
             }
-            clearScreen();
+            clear();
+            //clearScreen();
             //printErrors(analyzers);
-            if(tab)
-                printRecapTabela(analyzers,group);
-            if(verbose)
-                printRecapVerbose(analyzers,group);
-            if(compact)
+            if(settedFlags[tab])
+                printRecapTabela(analyzers,!settedFlags[extended]);
+            if(settedFlags[verbose])
+                printRecapVerbose(analyzers,!settedFlags[extended]);
+            if(settedFlags[compact])
                 printRecapCompact(analyzers);
-            if(help)
+            if(settedFlags[only]){
+                //prints only the files in 
+                int i=0;
+                // for(i=0;i<currentFilesCount;i++){
+                //             printf("%s ",resolvedPaths[i]);
+                //         }
+                printSelectedFiles(analyzers,currentFilesCount,resolvedPaths,!settedFlags[extended]);
+            }
+            if(settedFlags[help])
                 printf("AIUTO\n");
-            if(quit)
+            if(settedFlags[quit])
                 exit(1);
-            if(force){
+            if(settedFlags[force]){
                 destructoraAnalyzerList(analyzers);
                 analyzers = constructorAnalyzerListEmpty();
             }
+            //if(!valid)
             //printRecapTabela(analyzers,group);
 
             //NON ELIMINARE QUESTE DUE STAMPE BUF E FFLUSH, SONO FONDAMENTALI PER IL CORRETTO FUNZIONAMENTO
@@ -190,7 +316,7 @@ int main(int argc, char ** argv){
         // restore the old settings
         tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
     }else{
-        printf("%s\n",invalidtext);
+        printf("%s\n","Arguments not valid");
     }
 
 

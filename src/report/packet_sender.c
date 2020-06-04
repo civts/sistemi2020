@@ -22,11 +22,12 @@ int main(){
     newFileNameToReportPacket(fd, 30, 0, "/tmp/file1.txt");
     sendOccurencesPacketToReport(fd, 30, 0, 4, 0, 40, 5, occurences);
     newFileNameToReportPacket(fd, 30, 1, "/tmp/file2.txt");
-    newFileNameToReportPacket(fd, 30, 2, "/file3.txt");
+    newFileNameToReportPacket(fd, 30, 2, "/home/michele/Documents/SISTEMI/sistemi2020-report/src/report/patate.txt");
+    newFileNameToReportPacket(fd, 30, 3, "/home/michele/Documents/SISTEMI/sistemi2020-report/src/report/formaggio.txt");
     sendOccurencesPacketToReport(fd, 40, 0, 5, 0, 50, 10, occurences);
     // reportErrorOnFilePacket(fd, 30, 0);
 
-    deleteFolderFromReportPacket(fd, 30, "/tmp");
+    //deleteFolderFromReportPacket(fd, 30, "/tmp");
     
     
 

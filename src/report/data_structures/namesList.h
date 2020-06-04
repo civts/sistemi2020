@@ -118,7 +118,7 @@ void appendNameToNamesList(NamesList *list, string name){
         NodeName *newNode = constructorNodeName(name);
         appendToNamesList(list, newNode);
     } else {
-        printf("File gia' presente nella lista!\n");
+       // printf("File gia' presente nella lista!\n");
     }
 }
 
