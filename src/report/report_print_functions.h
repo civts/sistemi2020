@@ -418,7 +418,7 @@ void printRecapTabela(analyzerList *aList, bool shouldGroup) {
       if (f == NULL)
         break;
       charGroupStats stats = statsForFile(f);
-      string line[totWidth];
+      char line[totWidth];
       char trimmedPath[strlen(f->path)];
       strcpy(trimmedPath, f->path);
       trimStringToLength(trimmedPath, firstColWidth);
@@ -430,7 +430,7 @@ void printRecapTabela(analyzerList *aList, bool shouldGroup) {
       sprintf(line + firstColWidth, "|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
               stats.az, stats.AZ, stats.digits, stats.punctuation, stats.spaces,
               stats.otherChars, stats.totalCharsRead, stats.totalChars);
-      printf(line);
+      printf("%s",line);
       printProgressBar(f->readCharacters, f->totalCharacters, barWidth);
       f = f->nextNode;
     }
