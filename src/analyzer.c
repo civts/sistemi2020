@@ -35,7 +35,6 @@ controllerInstance *cInstance;
 NamesList *filePaths;
 
 void initialize();
-int  modeSwitcher(string, int, char**);
 void helpMode();
 void interactiveMode();
 void staticMode(NamesList*);
@@ -97,7 +96,6 @@ int main(int argc, char *argv[]){
     initialize();
 
     bool validCall = checkArguments(argc-1, argv+1, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
-    int command = -1;
     int i;
     if(validCall && argc > 1){
         for(i=numberPossibleFlags-1; i>=0; i--){
@@ -126,48 +124,18 @@ int main(int argc, char *argv[]){
         // for(i=0; i<numArgs; i++){
         //     printf("argument #%d: %s\n", i, argumentList[i]);
         // }
-        // modeSwitcher(possibleFlags[command], numArgs, argumentList);
+        inputReader();
     } else {
-        strcpy(instanceOfMySelf.lastCommand, "Invalid command, check your syntax");
+        char invalidCommand[BUFFER_SIZE];
+        strcpy(invalidCommand,"Invalid commnad '");
+        for(i=1; i<argc; i++){
+            strcat(invalidCommand, argv[i]);
+            strcat(invalidCommand, " ");
+        }
+        strcat(invalidCommand, "'");
+        strcpy(instanceOfMySelf.lastCommand, invalidCommand);
         inputReader(instanceOfMySelf);
         returnCode = 1;
-    }
-
-    return returnCode;
-}
-
-// Switch mode of the analyzer (interactive, static, help)
-// Error codes:
-// 1 - not enough args for static mode
-// 2 - n, m and files are not valid
-// 3 - mode not supported
-int modeSwitcher(string mode, int argc, char *argv[]){
-    int returnCode = 0;
-
-    if(!strcmp(mode, "-h")){
-            helpMode();
-    } else if(!strcmp(mode, "-i")) {
-        interactiveMode();
-    } else if(!strcmp(mode, "-s")){
-        if (argc < 3){
-            fprintf(stderr, "?Error: specify a valid mode, n, m and at least one file/folder\n");
-            returnCode = 1;
-        } else {
-            instanceOfMySelf.n = atoi(argv[0]);
-            instanceOfMySelf.m = atoi(argv[1]);
-
-            // Get file paths with the crawler
-            instanceOfMySelf.totalFiles+=getFilePathsFromArgv(argv, argc - 2);
-
-            if (!checkParameters()){
-                returnCode = 2;
-            } else {
-                staticMode(filePaths);
-            }
-        }
-    } else {
-        fprintf(stderr, "Error: mode not supported\n");
-        returnCode = 3;
     }
 
     return returnCode;
@@ -195,122 +163,15 @@ void helpMode(){
                           "3: usage mode not supported\n";
 
     printf("%s\n", help_message);
-    sleep(3);
+    printf("\npress enter to continue...");
+    while(getchar()!='\n');
     inputReader();
 }
 
 // TODO - check all error codes from sys calls and from out functions
 void interactiveMode(){
     sendAllFiles();
-
-
-    inputReader();
-
-    const char analyzeString[] = "analyze";
-    const char exitString[] = "exit";
-
-    printf("Interactive mode\n");
-
-    char command[MINIQ_MAX_BUFFER_SIZE];
-    char fileNameBuffer[MINIQ_MAX_BUFFER_SIZE];
-
-    printf("> ");
-    scanf("%s", command);
-    while (strcmp(command, exitString) != 0){
-        if (strcmp(command, analyzeString) == 0){
-            // start analyzing process (if parameters are good)
-            if (checkParameters()){
-                printf("Start analysis\n");
-                sendStartAnalysisPacket(cInstance->pipeAC);
-            }
-
-        } else if (command[0] == '+'){
-            // Managment of addition of file or folder
-            if (command + 1 != NULL){
-                realpath(command + 1, fileNameBuffer);
-            } else {
-                fileNameBuffer[0] = '\0';
-            }
-            
-            int numOfFilesInFolder; // used in case it's a folder
-            int pathType = inspectPath(fileNameBuffer);
-
-            if (pathType == 0){
-                // it's an existing file
-                appendNameToNamesList(filePaths, fileNameBuffer);
-                instanceOfMySelf.totalFiles+=1;
-                sendAllFiles();
-                printf("Added file %s\n", fileNameBuffer);
-            } else if (pathType == 1){
-                // it's an existing folder
-                crawler(fileNameBuffer, filePaths, &numOfFilesInFolder);
-                instanceOfMySelf.totalFiles+=numOfFilesInFolder;
-                sendAllFiles();
-                printf("Added folder %s\n", fileNameBuffer);
-            } else {
-                // invalid file/folder
-                fprintf(stderr, "File/folder inserted doesn't exist!\n");
-            }
-
-        } else if (command[0] == '-'){
-            // Management of removal of file or folder
-            if (command + 1 != NULL){
-                realpath(command + 1, fileNameBuffer);
-            } else {
-                fileNameBuffer[0] = '\0';
-            }
-
-            int numOfFilesInFolder; // used in case it's a folder
-            int pathType = inspectPath(fileNameBuffer);
-
-            if (pathType == 0){
-                // it's an existing file
-                if (removeFileByNamePacket(cInstance->pipeAC, fileNameBuffer) != -1){
-                    printf("Remove file %s\n", fileNameBuffer);
-                    instanceOfMySelf.totalFiles-=1;
-                } else {
-                    fprintf(stderr, "?Error trying to remove %s\n", fileNameBuffer);
-                }                
-            } else if (pathType == 1){
-                // it's an existing folder
-                // crawler(fileNameBuffer, filePaths, &numOfFilesInFolder);
-                // sendAllFiles();
-                printf("Not implemented yet\n");
-                // printf("Removed folder %s\n", fileNameBuffer);
-            } else {
-                // invalid file/folder
-                fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");
-            }
-
-        // TODO per Sam: ATTENZIONE: stai supponendo che command sia di almeno tre caratteri!
-        // rischiamo un out of bound! (sia per n che per m)
-        } else if (command[0] == 'n'){
-            // Update the value of N
-            printf("Change n to %s\n", command + 2);
-            instanceOfMySelf.n = atoi(command + 2);
-            sendNewNPacket(cInstance->pipeAC, instanceOfMySelf.n);
-            printf("Now n=%d\n", instanceOfMySelf.n);
-
-        } else if (command[0] == 'm'){
-            // Update the value of M
-            printf("Change m to %s\n", command + 2);
-            instanceOfMySelf.m = atoi(command + 2);
-            sendNewMPacket(cInstance->pipeAC, instanceOfMySelf.m);
-            printf("Now m=%d\n", instanceOfMySelf.m);
-
-        } else if (command[0] == 's'){
-            printNamesList(filePaths);
-        }else {
-            // Command not supported
-            fprintf(stderr, "This command is not supported.\n");
-        }
-
-        // wait for next command
-        printf("> ");
-        scanf("%s", command);
-    }
-    // Management of exit command
-    processExit();    
+    inputReader();    
 }
 
 void staticMode(NamesList *listFilePaths){
@@ -336,15 +197,18 @@ bool checkParameters(){
     if (instanceOfMySelf.n <= 0){
         fprintf(stderr, "Error: specify numeric non-zero positive values for n\n");
         returnValue = false;
-        sleep(3);
+        printf("\npress enter to continue...");
+        while(getchar()!='\n');
     } else if(instanceOfMySelf.m <=0 ) {
         fprintf(stderr, "Error: specify numeric non-zero positive values for m\n");
         returnValue = false;
-        sleep(3);
+        printf("\npress enter to continue...");
+        while(getchar()!='\n');
     } else if (instanceOfMySelf.totalFiles == 0){
         fprintf(stderr, "Error: all the files or folders specified are inexistent\n");
         returnValue = false;
-        sleep(3);
+        printf("\npress enter to continue...");
+        while(getchar()!='\n');
     }
 
     return returnValue;
@@ -404,6 +268,8 @@ void sendAllFiles(){
     for (i = 0; i < numberOFfiles; i++){
         if (sendNewFilePacket(cInstance->pipeAC, file->name) != 0){
             fprintf(stderr, "Could not send file %s from A to C\n", file->name);
+            printf("\npress enter to continue...");
+            while(getchar()!='\n');
         }
         file = file->next;
     }
@@ -424,7 +290,9 @@ int processExit(){
     free(cInstance);
     deleteNamesList(filePaths);
 
+    clear();
     printf("Cleanup complete, see you next time!\n");
+    sleep(3);
     exit(0); // to exit from infinite loop
 }
 
@@ -529,6 +397,13 @@ int inputReader(){
                 int numCommands;
                 argsList = getArgumentsList(command, &numCommands, argsList);
                 bool validCall = checkArguments(numCommands, argsList, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
+                // -s richiamata qui può essere invocata senza parametri
+                if(strcmp(argsList[0], "-s") == 0){
+                    validCall = true;
+                    settedFlags[2] = true;
+                    printf("special case\n");
+                    sleep(2);
+                }   
                 // lista con comandi e relativi argomenti
                 int i;
                 if(validCall && numCommands > 0){
@@ -540,8 +415,10 @@ int inputReader(){
                             int numArgs;
                             string *argumentList;
                             if(flagsWithArgs[i]){
-                                strcat(instanceOfMySelf.lastCommand, " "); 
-                                strcat(instanceOfMySelf.lastCommand, arguments[i]); 
+                                if(arguments[i]!=NULL){
+                                    strcat(instanceOfMySelf.lastCommand, " ");
+                                    strcat(instanceOfMySelf.lastCommand, arguments[i]); 
+                                } 
                                 argumentList = getArgumentsList(arguments[i], &numArgs, argumentList);
                             } else {
                                 numArgs = 0;
@@ -595,7 +472,10 @@ void switchCommand(int commandCode, int numArgs, string *arguments){
             interactiveMode();
             break;
         case 2:
-            staticMode(filePaths);
+            if(checkParameters()){
+                staticMode(filePaths);
+                instanceOfMySelf.statusAnalisys = 1;
+            }
             break;
         case 3:
             helpMode();
@@ -626,7 +506,8 @@ void printState(){
     printf("number of files = %d\n", instanceOfMySelf.totalFiles);
     printf("n = %d\n", instanceOfMySelf.n);
     printf("m = %d\n", instanceOfMySelf.m);
-    sleep(3);
+    printf("\npress enter to continue...");
+    while(getchar()!='\n');
 }
 
 void addFiles(int numFiles, string *fileNames){
