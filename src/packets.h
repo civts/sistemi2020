@@ -260,7 +260,7 @@ int sendNewFilePacketWithID(int fd[], int idFile, string fileName){
 // -------------------------------- PACKETS TO REPORT --------------------------------------
 
 int sendOccurencesPacketToReport(int fd[], int pidAnalyzer, int idFile, int m, int index,
-                         ull totalFileSize, ull numCharsReadInThisSection, int occurences[NUM_OCCURENCES]){
+                         ull totalFileSize, ull numCharsReadInThisSection, ull occurences[NUM_OCCURENCES]){
     int returnCode = 0, offset = 0, i;
     byte packet[1 + 263 * INT_SIZE];
 

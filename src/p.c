@@ -8,9 +8,6 @@
 #include "utils.c"
 #include "q.c"
 
-#define READ 0
-#define WRITE 1
-
 int  p(pInstance*, int);
 int  generateNewQInstance(qInstance*, int, int);
 void waitForMessagesInP(pInstance*);
@@ -105,7 +102,7 @@ void waitForMessagesInPFromQ(pInstance *instanceOfMySelf){
 
     int i;
     for (i = 0; i < currM; i++){
-        numBytesRead  = read(qInstances[i].pipeQP[READ], packetHeader, 1 + INT_SIZE);
+        numBytesRead = read(qInstances[i].pipeQP[READ], packetHeader, 1 + INT_SIZE);
 
         if (numBytesRead == (1 + INT_SIZE)){
             dataSectionSize = fromBytesToInt(packetHeader + 1);
@@ -117,7 +114,7 @@ void waitForMessagesInPFromQ(pInstance *instanceOfMySelf){
     }
 }
 
-// here the messages can not be sent or received atomically
+// Here the messages can not be sent or received atomically
 // since the new file packet contains the full file path as string
 void waitForMessagesInPFromController(pInstance *instanceOfMySelf){
     int numBytesRead, dataSectionSize, offset;
@@ -162,10 +159,10 @@ int processMessageInPFromQ(byte packetCode, byte *packetData, int packetDataSize
 int processMessageInPFromController(byte packetCode, byte *packetData, int packetDataSize, pInstance *instanceOfMySelf){
     int returnCode;
     switch (packetCode){
-        case 0:
+        case 15:
             returnCode = processPNewFilePacket(packetData, packetDataSize);
             break;
-        case 1:
+        case 7:
             returnCode = processPRemoveFilePacket(packetData, packetDataSize);
             break;
         case 2:
@@ -186,7 +183,7 @@ int processMessageInPFromController(byte packetCode, byte *packetData, int packe
 int processPNewFilePacket(byte packetData[], int packetDataSize){
     int i, returnCode = 0;
     for (i = 0; i < currM; i++){
-        returnCode = forwardPacket(qInstances[i].pipePQ, 0, packetDataSize, packetData);
+        returnCode = forwardPacket(qInstances[i].pipePQ, 15, packetDataSize, packetData);
         if (returnCode < 0){
             fprintf(stderr, "Could not forward file packet to Q\n");
         }
@@ -195,13 +192,13 @@ int processPNewFilePacket(byte packetData[], int packetDataSize){
     return 0;
 }
 
-// forward the message to delete a file to all its Qs
+// Forward the message to delete a file to all its Qs
 int processPRemoveFilePacket(byte packetData[], int packetDataSize){
     int returnCode = 0;
     
     int i;
     for (i = 0; i < currM; i++){
-        if (forwardPacket(qInstances[i].pipePQ, 1, packetDataSize, packetData) < 0){
+        if (forwardPacket(qInstances[i].pipePQ, 7, packetDataSize, packetData) < 0){
             returnCode = 1;
             fprintf(stderr, "Error trying to remove file from P to Q\n");
         }
@@ -210,106 +207,64 @@ int processPRemoveFilePacket(byte packetData[], int packetDataSize){
     return returnCode;
 }
 
-// it sends a kill message to all its Qs and in the end
-// it kills also itself
+// Free resources and send a kill message to all its Qs
 int processPDeathPacket(){
-    int i, returnCode;
+    int i, returnCode = 0;
     for (i = 0; i < currM; i++){
-        returnCode = sendDeathPacket(qInstances[i].pipePQ);
-        if (returnCode == 1){
-            // error killing the process Q[i]
-            // we should try to kill the process manually
+        if (sendDeathPacket(qInstances[i].pipePQ) != 0){
+            // if pipes are not working than kill with a signal
+            if (kill(qInstances[i].pid, SIGKILL) != 0){
+                returnCode = 1;
+            }
         }
+
     }
 
     free(qInstances);
     printf("P is dead\n");
 
-    exit(0); // to exit from infinite loop in waitForMessagesInP()
+    exit(returnCode); // to exit from infinite loop in waitForMessagesInP()
 }
 
+// Forward back occurences packet if its M value is up to date
 int processPFileResults(byte packetData[], int packetDataSize, pInstance *instanceOfMySelf){
     int returnCode = 0;
-    if (forwardPacket(instanceOfMySelf->pipePC, 4, packetDataSize, packetData) < 0){
-        returnCode = 1;
-    }
+    int m = fromBytesToInt(packetData + 2 * INT_SIZE);
+
+    if (currM == m){
+        if (forwardPacket(instanceOfMySelf->pipePC, 6, packetDataSize, packetData) < 0){
+            returnCode = 1;
+        }
+    } else {
+        returnCode = 2;
+    }   
 
     return returnCode;
 }
 
-// TODO: reassign files??
 int processPNewValueForM(byte packetData[], pInstance *instanceOfMySelf){
-    // // the packet data conists only in the new m value
-    // uint new_m = fromBytesToInt(packetData);
-    // printf("P got new value for M\n");
+    int i, returnCode = 0;
+    int newM = fromBytesToInt(packetData);
+
+    // remove all exceeding Qs
+    for (i = newM; i < currM; i++){
+        if (sendDeathPacket(qInstances[i].pipePQ) != 0){
+            kill(qInstances[i].pid, SIGKILL);
+        }
+        
+    }
+
+    // reallocate space for next Qs
+    qInstances = (qInstance*) realloc(qInstances, sizeof(qInstance) * newM);
+
+    // create new Q instances if newM > currM
+    for (i = currM; i < newM; i++){
+        generateNewQInstance(qInstances + i, i, newM);
+    }
     
-    // int **newPipesToQ   = (int**) malloc( ((int)new_m) * sizeof(int*) );
-    // int **newPipesFromQ = (int**) malloc( ((int)new_m) * sizeof(int*) );
-    // pid_t *newPids = (pid_t*) malloc(new_m * sizeof(pid_t));
-
-    // int difference = ((int)new_m) - m;
-
-    // if(difference < 0){
-    //     // Gotta kill some children
-    //     int i;
-    //     for(i=0; i<m; i++){
-    //         if(i<new_m) {
-    //             newPipesToQ[i] = pipeListToQ[i];
-    //             newPipesFromQ[i] = pipeListFromQ[i];
-    //             newPids[i] = oldPids[i]; 
-    //         }
-    //         else {
-    //             killTheQ(i, pipeListToQ);
-    //             free(pipeListToQ[i]);
-    //             free(pipeListFromQ[i]);
-    //         }
-    //     }
-    //     free(oldPids);
-    // } else {
-    //     // Create some new little Qs
-        
-    //     // Copy old ones
-    //     int i;
-    //     for(i = 0; i < m; i++){
-    //         newPipesToQ[i] = pipeListToQ[i];
-    //         newPipesFromQ[i] = pipeListFromQ[i];
-    //         newPids[i] = oldPids[i]; 
-    //     }
-        
-    //     // Create new ones
-    //     for(i=m; i<new_m; i++){
-    //         // TODO: if we need also pipesFromQ we have to update them HERE
-    //         newPipesToQ[i]   = (int*) malloc(sizeof(int) * 2);
-    //         newPipesFromQ[i] = (int*) malloc(sizeof(int) * 2);
-
-    //         // TODO: check syscall return
-    //         pipe(newPipesToQ[i]);
-    //         pipe(newPipesFromQ[i]);
-
-    //         int f = fork();
-    //         if (f < 0){
-    //             printf("Error creating Q\n");
-    //             i--;
-    //         } else if (f == 0){
-    //             // child
-    //             printf("Q%d created\n", i);
-    //             close(newPipesToQ[i][WRITE]);
-    //             close(newPipesFromQ[i][READ]);
-    //             // AAAARG aggiornare m per i vecchi Q o ucciderli e crearne di nuovi?
-    //             q(new_m, i, newPipesFromQ[i], newPipesToQ[i]);
-    //             exit(0);
-    //         } else {
-    //         // parent
-    //         close(newPipesToQ[i][READ]);
-    //         close(newPipesFromQ[i][WRITE]);
-    //         newPids[i] = f;
-    //         }
-    //     }
-    // }
-
-    // waitForMessagesInPFromController(newPids, pipeFromC, newPipesToQ, newPipesFromQ, new_m);
+    // Nota: qui non serve riassegnare i file perché C invia subito dopo il pacchetto di cambio M anche
+    // i pacchetti di tutti i file che non erano stati completati
 }
-
 
 void sig_handler_P(){
     printf("\nP killed with signal\n");

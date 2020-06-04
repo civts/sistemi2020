@@ -24,6 +24,7 @@ void killInstanceOfP(int, controllerInstance*);
 int  processCNewFilePacket(byte[], int, controllerInstance*);
 int  processCRemoveFilePacket(byte[], int, controllerInstance*);
 int  processCDeathPacket(controllerInstance*);
+int processCStartAnalysis(controllerInstance*);
 int  processCNewValueForM(byte[], controllerInstance*);
 int  processCNewValueForN(byte[], controllerInstance*);
 int  processCNewFileOccurrences(byte[], int, controllerInstance *);
@@ -106,7 +107,7 @@ void waitForMessagesInCFromP(controllerInstance *instanceOfMySelf){
             dataSectionSize = fromBytesToInt(packetHeader + 1);
             byte packetData[dataSectionSize];
 
-            numBytesRead  = read(instanceOfMySelf->pInstances[i]->pipePC[READ], packetData, dataSectionSize);
+            numBytesRead = read(instanceOfMySelf->pInstances[i]->pipePC[READ], packetData, dataSectionSize);
             processMessageInControllerFromP(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
         }
     }
@@ -278,8 +279,12 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerIn
         // remove the file from the list of added files
         removeNodeNameByName(instanceOfMySelf->fileNameList, buffer);
     } else {
-        // TODO: dobbiamo cercare il P che l'ha processato e dirgli
-        // che quel file non ci serve più
+        // dynamic removal of a file
+        NodeFileState *node = getNodeByName(instanceOfMySelf->fileList, buffer);
+        removeFileByIdPacket(instanceOfMySelf->pInstances[node->data->pIndex]->pipeCP,
+                             instanceOfMySelf->pidAnalyzer,
+                             node->data->idFile);
+        removeNode(instanceOfMySelf->fileList, node->data->fileName);
     }
 
     return returnCode;
@@ -290,11 +295,11 @@ int processCDeathPacket(controllerInstance *instanceOfMySelf){
     for (i = 0; i < instanceOfMySelf->currN; i++){
         if (sendDeathPacket(instanceOfMySelf->pInstances[i]->pipeCP) != 0){
             // another mechanism to kill the P if the pipes C->P are down
-            kill(instanceOfMySelf->pInstances[i]->pid, SIGINT);
+            kill(instanceOfMySelf->pInstances[i]->pid, SIGKILL);
         }
     }
 
-    // TODO: delete list of files
+    deleteList(instanceOfMySelf->fileList);
     deleteNamesList(instanceOfMySelf->fileNameList);
     deleteNamesList(instanceOfMySelf->removedFileNames);
     free(instanceOfMySelf->pInstances);
@@ -304,18 +309,36 @@ int processCDeathPacket(controllerInstance *instanceOfMySelf){
     exit(0);
 }
 
+// TODO: we can still receive some packets with old m value. What to do? -> we should save inside FileState the m value it has been created with
 // Notify all Ps that M value has been changed. Even if they are analyzing
 int processCNewValueForM(byte packetData[], controllerInstance *instanceOfMySelf){
     int returnCode = 0;
-
     uint new_m = fromBytesToInt(packetData);
-    instanceOfMySelf->currM = new_m;
 
+    // if we are not analysing we are not supposed to update now m values for Ps
+    // it will do it for us the shape tree before starting analyzing
+    if (instanceOfMySelf->isAnalysing){
+        int i;
+        for (i = 0; i < instanceOfMySelf->currN; i++){
+            sendNewMPacket(instanceOfMySelf->pInstances[i]->pipeCP, new_m);
+        }
+    }
+
+    NodeFileState *nodo = instanceOfMySelf->fileList->first;
     int i;
-    for (i = 0; i < instanceOfMySelf->currN; i++){
-        sendNewMPacket(instanceOfMySelf->pInstances[i]->pipeCP, new_m);
+    for (i = 0; i < instanceOfMySelf->fileList->number_of_nodes; i++){
+        if (nodo->data->numOfRemainingPortionsToRead != 0){
+            nodo->data->numOfRemainingPortionsToRead = new_m;
+
+            // we need to resend the file to process since we have new Q value
+            sendNewFilePacketWithID(instanceOfMySelf->pInstances[nodo->data->pIndex]->pipeCP,
+                                    nodo->data->idFile,
+                                    nodo->data->fileName);
+        }
+        nodo = nodo->next;
     }
     
+    instanceOfMySelf->currM = new_m;
     return returnCode;
 }
 
@@ -327,28 +350,42 @@ int processCNewValueForN(byte packetData[], controllerInstance *instanceOfMySelf
     int returnCode = 0;
     uint new_n = fromBytesToInt(packetData);
     
-    // TODO: manage dynamic change of N during the analysis
     if (instanceOfMySelf->isAnalysing){
-        fprintf(stderr, "We currently can't change N during analysis\n");
-        // decide if we should use shape tree or not
-        if (new_n < instanceOfMySelf->currN){
-            // delete all exceeding Ps.
-            // we need to redistribute their load to the remaining Ps
-        } else if (new_n > instanceOfMySelf->currN){
-            // create new Ps
-            // redistribute the existing load or do it only with new files?
-        }
-    }
+        // reshape tree according to new n value
+        shapeTree(new_n, instanceOfMySelf->currM, instanceOfMySelf);
 
+        if (new_n < instanceOfMySelf->currN){
+            // redistribute their load to the remaining Ps
+            NodeFileState *node = instanceOfMySelf->fileList->first;
+            int i, loadIndex = 0;
+            for (i = 0; i < instanceOfMySelf->fileList->number_of_nodes; i++){
+                if (node->data->pIndex >= new_n){
+                    node->data->numOfRemainingPortionsToRead = instanceOfMySelf->currM;
+                    node->data->pIndex = loadIndex % new_n;
+
+                    sendNewFilePacketWithID(instanceOfMySelf->pInstances[node->data->pIndex]->pipeCP,
+                                            node->data->idFile,
+                                            node->data->fileName);
+                }
+
+                node = node->next;
+            }
+        } else if (new_n > instanceOfMySelf->currN){
+            // TODO: redistribute the existing load or do it only with new files?
+        }
+    } else {
+
+    }
     instanceOfMySelf->currN = new_n;
+    
     
     return returnCode;
 }
 
-/**
- * Start the analysis.
- * TODO: check all the mechanics
- */
+// Start the analysis in 3 steps:
+// 1) remove the files inside instanceOfMySelf->removedFileNames from the file list
+// 2) insert the files inside instanceOfMySelf->fileNameList inside the file list
+// 3) assign the files in fileList to P
 int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     int returnCode = 0, i;
     instanceOfMySelf->isAnalysing = true;
@@ -362,6 +399,10 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
         deleteFileNamePointer = deleteFileNamePointer->next;
     }
 
+    // remove all elements from removedFileNames list
+    deleteNamesList(instanceOfMySelf->removedFileNames);
+    constructorFileNameList(instanceOfMySelf->removedFileNames);
+
     // 2) insert the files inside instanceOfMySelf->fileNameList inside the file list
     NodeName *newFileNamePointer = instanceOfMySelf->fileNameList->first;
     for (i = 0; i < instanceOfMySelf->fileNameList->counter; i++){
@@ -373,8 +414,13 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
         newFileNamePointer = newFileNamePointer->next;
     }
 
+    // remove all elements from fileNameList list
+    deleteNamesList(instanceOfMySelf->fileNameList);
+    constructorFileNameList(instanceOfMySelf->fileNameList);
+
     // 3) assign the files in fileList to P
     NodeFileState *nodeFileState = instanceOfMySelf->fileList->first;
+    NodeFileState *previousFileState = NULL;
     for (i = 0; i < instanceOfMySelf->fileList->number_of_nodes; i++){
         // assign the file to a P process and divide it into M portions
         nodeFileState->data->numOfRemainingPortionsToRead = instanceOfMySelf->currM;
@@ -383,41 +429,54 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
         int successfulSend = sendNewFilePacketWithID(instanceOfMySelf->pInstances[nodeFileState->data->pIndex]->pipeCP,
                                 nodeFileState->data->idFile,
                                 nodeFileState->data->fileName);
-        if (successfulSend != 0){
-            // TODO: since we were not able to send that file, then we should remove it from the fileList
-            // delete file from fileList; decrease i; pay attention to nodeFileState
-        }
 
+        previousFileState = nodeFileState;
         nodeFileState = nodeFileState->next;
+
+        // since we were not able to send that file, then we should remove it from the fileList
+        // to prevent errors we should already be on the next element
+        if (successfulSend != 0){
+            // since we can't have identical absolute paths in fileList, we are always
+            // deleting the current node
+            removeNode(instanceOfMySelf->fileList, previousFileState->data->fileName);
+            i--;
+        }
     }
     
     return returnCode;  
 }
 
-// Redirects the occurrences packet to the report
+// Redirects the occurrences packet to the report adn check for end of analysis
 int processCNewFileOccurrences(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
-    // insert pid analyzer in the occurrences packet to report
-    fromIntToBytes(instanceOfMySelf->pidAnalyzer, packetData + 1 + INT_SIZE);
-    int idFile = fromBytesToInt(packetData + 1 + 2 * INT_SIZE);
+    int returnCode = 0;
+    int m = fromBytesToInt(packetData + 2 * INT_SIZE);
 
-    // update status in file list
-    if (decrementRemainingPortionsById(instanceOfMySelf->fileList, idFile) != -1){
-        forwardPacket(instanceOfMySelf->pipeToReport, 6, packetDataSize, packetData);
+    if (instanceOfMySelf->currM == m){
+        // insert pid analyzer in the occurrences packet to report
+        fromIntToBytes(instanceOfMySelf->pidAnalyzer, packetData + 1 + INT_SIZE);
+        int idFile = fromBytesToInt(packetData + 1 + 2 * INT_SIZE);
+
+        // update status in file list
+        if (decrementRemainingPortionsById(instanceOfMySelf->fileList, idFile) != -1){
+            forwardPacket(instanceOfMySelf->pipeToReport, 6, packetDataSize, packetData);
+        }
+        
+        instanceOfMySelf->filesFinished++;
+        sendFinishedFilePacket(instanceOfMySelf->pipeCA, instanceOfMySelf->filesFinished, instanceOfMySelf->fileList->number_of_nodes);
+
+        // check if we have analyzed everything
+        if (isAnalisiFinita(instanceOfMySelf->fileList)){
+            instanceOfMySelf->isAnalysing = false;
+
+            // notify the used we have finished to analyze
+            sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
+        }
+    } else {
+        returnCode = 2;
     }
     
-    instanceOfMySelf->filesFinished++;
-    sendFinishedFilePacket(instanceOfMySelf->pipeCA, instanceOfMySelf->filesFinished, instanceOfMySelf->fileNameList->counter);
-
-    // check if we have analyzed everything
-    if (isAnalisiFinita(instanceOfMySelf->fileList)){
-        instanceOfMySelf->isAnalysing = false;
-
-        // TODO: notify the used we have finished to analyze
-        sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
-    }
+    return returnCode;
 }
-
-    
 
 // Creates the named pipe to the report
 int openFifoToRecord(controllerInstance *instanceOfMySelf){

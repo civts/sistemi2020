@@ -16,6 +16,7 @@ void  miniQ(string, miniQinfo*);
 void  sendOccurencesToReport(string, int, ull[NUM_OCCURENCES]);
 byte* encodePacketForReport(string, int, ull[NUM_OCCURENCES], int*);
 int   getOccurences(string, long, long, ull[NUM_OCCURENCES]);
+int   getBigOccurences(string, long, long, ull[NUM_OCCURENCES]);
 long  getFileLength(string fileName);
 void  printOccurencesTemp(string, ull[NUM_OCCURENCES]);
 void sig_handler_miniQ();
@@ -42,6 +43,9 @@ void miniQ(string fileName, miniQinfo *instanceOfMySelf){
             ull occurences[256];
             int numCharsInPortion = getBigOccurences(fileName, startPosition, endPosition, occurences);
             // sendOccurencesToReport(fileName, numCharsInPortion, occurences);
+            sendOccurencesPacketToReport(instanceOfMySelf->pipeToQ, -1, instanceOfMySelf->fileId,
+                                         instanceOfMySelf->currM, instanceOfMySelf->index, fileLength,
+                                         lenPortion, occurences);
             printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
         }
     }
@@ -50,67 +54,67 @@ void miniQ(string fileName, miniQinfo *instanceOfMySelf){
     exit(0);
 }
 
-// TODO atm I'm doing output on a normal file, change the it to the nominal pipe according to report.c
-// send char occureces to the report through a nominal pipe
-void sendOccurencesToReport(string fileName, int numCharInPortion, ull occurences[NUM_OCCURENCES]){
-    int fd = open("file.txt", O_WRONLY|O_CREAT, 0644);
+// // TODO atm I'm doing output on a normal file, change the it to the nominal pipe according to report.c
+// // send char occureces to the report through a nominal pipe
+// void sendOccurencesToReport(string fileName, int numCharInPortion, ull occurences[NUM_OCCURENCES]){
+//     int fd = open("file.txt", O_WRONLY|O_CREAT, 0644);
 
-    if (fd == -1){
-        // TODO if errors try again after a delay (set max number of attemps)
-        fprintf(stderr, "Could not write packet in the pipe\n");
-    } else {
-        // write encoded stream of bytes to the pipe
-        int bufferSize;
-        byte *buffer = encodePacketForReport(fileName, numCharInPortion, occurences, &bufferSize);
-        write(fd, buffer, bufferSize);
+//     if (fd == -1){
+//         // TODO if errors try again after a delay (set max number of attemps)
+//         fprintf(stderr, "Could not write packet in the pipe\n");
+//     } else {
+//         // write encoded stream of bytes to the pipe
+//         int bufferSize;
+//         byte *buffer = encodePacketForReport(fileName, numCharInPortion, occurences, &bufferSize);
+//         write(fd, buffer, bufferSize);
 
-        // free resources
-        close(fd);
-        free(buffer);
-    }
-}
+//         // free resources
+//         close(fd);
+//         free(buffer);
+//     }
+// }
 
-// Encode an occurences packet to send to the record through the nominal
-// return the number of bytes in the packet
-byte* encodePacketForReport(string fileName, int numCharInPortion, ull occurences[NUM_OCCURENCES], int* outBufferSize){
-    int lenFileName = strlen(fileName);
-    const int bufferSize = 1 + INT_SIZE + lenFileName + INT_SIZE + NUM_OCCURENCES*INT_SIZE; // see docs
+// // Encode an occurences packet to send to the record through the nominal
+// // return the number of bytes in the packet
+// byte* encodePacketForReport(string fileName, int numCharInPortion, ull occurences[NUM_OCCURENCES], int* outBufferSize){
+//     int lenFileName = strlen(fileName);
+//     const int bufferSize = 1 + INT_SIZE + lenFileName + INT_SIZE + NUM_OCCURENCES*INT_SIZE; // see docs
 
-    byte* outBuffer = (byte*) malloc(sizeof(byte) * bufferSize);
-    byte tempInteger[INT_SIZE]; // used for integer to bytes conversion
+//     byte* outBuffer = (byte*) malloc(sizeof(byte) * bufferSize);
+//     byte tempInteger[INT_SIZE]; // used for integer to bytes conversion
 
-    int offset = 0;
+//     int offset = 0;
 
-    // packet type: occurences
-    outBuffer[offset] = 0;
-    offset++;
+//     // packet type: occurences
+//     outBuffer[offset] = 0;
+//     offset++;
 
-    // length of pathname
-    fromIntToBytes(lenFileName, tempInteger);
-    memcpy(outBuffer + offset, tempInteger, INT_SIZE);
-    offset += INT_SIZE;
+//     // length of pathname
+//     fromIntToBytes(lenFileName, tempInteger);
+//     memcpy(outBuffer + offset, tempInteger, INT_SIZE);
+//     offset += INT_SIZE;
 
-    // filename (without ending \0)
-    memcpy(outBuffer + offset, fileName, lenFileName);
-    offset += lenFileName;
+//     // filename (without ending \0)
+//     memcpy(outBuffer + offset, fileName, lenFileName);
+//     offset += lenFileName;
 
-    // TODO change to long
-    // total number of chars in the current file portion
-    fromIntToBytes(numCharInPortion, tempInteger);
-    memcpy(outBuffer + offset, tempInteger, INT_SIZE);
-    offset += INT_SIZE;
+//     // TODO change to long
+//     // total number of chars in the current file portion
+//     fromIntToBytes(numCharInPortion, tempInteger);
+//     memcpy(outBuffer + offset, tempInteger, INT_SIZE);
+//     offset += INT_SIZE;
 
-    // print the chars occurences
-    int i;
-    for (i = 0; i < NUM_OCCURENCES; i++){
-        fromIntToBytes(occurences[i], tempInteger);
-        memcpy(outBuffer + offset, tempInteger, INT_SIZE);
-        offset += INT_SIZE;
-    }
+//     // print the chars occurences
+//     int i;
+//     for (i = 0; i < NUM_OCCURENCES; i++){
+//         fromIntToBytes(occurences[i], tempInteger);
+//         memcpy(outBuffer + offset, tempInteger, INT_SIZE);
+//         offset += INT_SIZE;
+//     }
     
-    *outBufferSize = bufferSize;
-    return outBuffer;
-}
+//     *outBufferSize = bufferSize;
+//     return outBuffer;
+// }
 
 // Giving the starting and ending offset in the file, it gets the number of
 // occurences for each char. It returns the number of byte read.

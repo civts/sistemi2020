@@ -28,7 +28,7 @@ bool   settedFlags[]    = {false, false, false, false};
 string arguments[4];
 string invalidPhrase    = "Wrong command syntax\n"; 
 
-string statuses[] = {"Still not started", "Analisys is running", "Analisys finished"};
+string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"};
 
 analyzerInstance instanceOfMySelf;
 controllerInstance *cInstance;
@@ -46,6 +46,7 @@ int  generateNewControllerInstance();
 void sendAllFiles();
 int  processExit();
 void waitAnalisysEnd();
+int inputReader(void);
 
 int checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char ** arguments, char* invalid,bool printOnFailure){
     bool validity = true;
@@ -186,7 +187,6 @@ int main(int argc, char *argv[]){
     instanceOfMySelf.totalFiles = 0;
     strcpy(instanceOfMySelf.lastCommand, "No commands yet");
     instanceOfMySelf.statusAnalisys = 0;
-
 
     bool validCall = checkArguments(argc, argv, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
 
@@ -416,7 +416,7 @@ bool checkParameters(){
     if (n <= 0 || m <= 0){
         fprintf(stderr, "Error: specify numeric non-zero positive values for n and m\n");
         returnValue = false;
-    } else if(filePaths->counter == 0){
+    }  else if (filePaths->counter == 0){
         fprintf(stderr, "Error: all the files or folders specified are inexistent\n");
         returnValue = false;
     }

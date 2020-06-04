@@ -15,8 +15,7 @@ void waitForMessagesInQFromP(qInstance*);
 void waitForMessagesInQFromMiniQ(qInstance*);
 int  processMessageInQFromP(byte, byte*, int, qInstance*);
 int  processMessageInQFromMiniQ(byte, byte*, int, qInstance*);
-int  processQNewFilePacket(byte[], int, qInstance*);
-int processQNewFilePacketWithID(byte[], int, qInstance*);
+int  processQNewFilePacketWithID(byte[], int, qInstance*);
 int  processQRemoveFilePacket(byte[], int);
 int  processQDeathPacket();
 int  processQNewValueForM(byte[], qInstance*);
@@ -84,7 +83,7 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
             dataSectionSize = fromBytesToInt(packetHeader + 1);
             byte packetData[dataSectionSize];
 
-            numBytesRead  = read(currElement->data->pipeToQ[READ], packetData, dataSectionSize);
+            numBytesRead = read(currElement->data->pipeToQ[READ], packetData, dataSectionSize);
             processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
         }
         currElement = currElement->next;
@@ -94,14 +93,14 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
 int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize, qInstance *instanceOfMySelf){
     int returnCode;
     switch (packetCode){
-        case 0:
-            returnCode = processQNewFilePacket(packetData, packetDataSize, instanceOfMySelf);
-            break;
-        case 1:
-            // TODO: remove this message after official release
-            printf("Stai tentando di eliminare un file per nome in q.c! Elimina solo per pid!\n");
-            exit(0);
-            break;
+        // case 0:
+        //     returnCode = processQNewFilePacket(packetData, packetDataSize, instanceOfMySelf);
+        //     break;
+        // case 1:
+        //     // TODO: remove this message after official release
+        //     printf("Stai tentando di eliminare un file per nome in q.c! Elimina solo per pid!\n");
+        //     exit(0);
+        //     break;
         case 2:
             returnCode = processQDeathPacket();
             break;
@@ -136,46 +135,16 @@ int processMessageInQFromMiniQ(byte packetCode, byte *packetData, int packetData
     return returnCode;
 }
 
-// Da buttare, meglio non usare (deprecato)
-int processQNewFilePacket(byte packetData[], int packetDataSize, qInstance* instanceOfMySelf){
-    bool isInsideFolder = packetData[0];
-    char pathName[packetDataSize];
-    // string pathName = (string) malloc((packetDataSize) * sizeof(char));
-    memcpy(pathName, packetData + 1, packetDataSize - 1);
-    pathName[packetDataSize - 1] = '\0';
-
-    int pipeMiniQQ[2];
-    pipe(pipeMiniQQ);
-    fcntl(pipeMiniQQ[READ], F_SETFL, O_NONBLOCK);
-    miniQinfo *newMiniQ = constructorMiniQinfo(0, 0, pipeMiniQQ, instanceOfMySelf->currM, instanceOfMySelf->index);
-
-    // create miniQ process
-    pid_t f;
-    f = fork();
-    if (f < 0){
-        fprintf(stderr, "Error, creating miniQ\n");
-    } else if (f == 0){
-        printf("Created miniQ\n");
-        miniQ(pathName, newMiniQ);
-    } else {
-        newMiniQ->pid = f;
-        appendMiniQ(miniQs, constructorNodeMiniQ(newMiniQ));
-    }
-
-    return 0;
-}
-
 int processQNewFilePacketWithID(byte packetData[], int packetDataSize, qInstance* instanceOfMySelf){
-    int fileIndex = fromBytesToInt(packetData + 0);
+    int idFile = fromBytesToInt(packetData);
     char pathName[packetDataSize - INT_SIZE + 1];
-    // string pathName = (string) malloc((packetDataSize) * sizeof(char));
-    memcpy(pathName, packetData + 1, packetDataSize - INT_SIZE);
+    memcpy(pathName, packetData + INT_SIZE, packetDataSize - INT_SIZE);
     pathName[packetDataSize - INT_SIZE] = '\0';
 
     int pipeMiniQQ[2];
     pipe(pipeMiniQQ);
     fcntl(pipeMiniQQ[READ], F_SETFL, O_NONBLOCK);
-    miniQinfo *newMiniQ = constructorMiniQinfo(0, fileIndex, pipeMiniQQ, instanceOfMySelf->currM, instanceOfMySelf->index);
+    miniQinfo *newMiniQ = constructorMiniQinfo(0, idFile, pipeMiniQQ, instanceOfMySelf->currM, instanceOfMySelf->index);
 
     // create miniQ process
     pid_t f;
@@ -196,8 +165,7 @@ int processQNewFilePacketWithID(byte packetData[], int packetDataSize, qInstance
 
 int processQRemoveFilePacket(byte packetData[], int packetDataSize){
     // TODO: remove debug printfs
-    int pidAnalyzer  = fromBytesToInt(packetData);
-    int fileId = fromBytesToInt(packetData+1);
+    int fileId = fromBytesToInt(packetData + INT_SIZE);
     printf("fileID read from packet: %d\n", fileId);
     
     pid_t miniQPid = removeMiniQByFileId(miniQs, fileId);
@@ -211,8 +179,16 @@ int processQRemoveFilePacket(byte packetData[], int packetDataSize){
 }
 
 int processQDeathPacket(){
-    // TODO kill miniQs
-    // TODO free list of miniQ
+    // kill all miniQs
+    NodeMiniQ *node = miniQs->first;
+    int i;
+    for (i = 0; i < miniQs->counter; i++){
+        kill(node->data->pid, SIGKILL);
+    }
+
+    // erase miniQ list
+    deleteMiniQlist(miniQs);
+
     printf("Q is dead\n");
     exit(0);
     return 0;
@@ -221,17 +197,34 @@ int processQDeathPacket(){
 int processQNewValueForM(byte packetData[], qInstance* instanceOfMySelf){
     instanceOfMySelf->currM = fromBytesToInt(packetData);
 
-    // TODO kill all miniQ created with the old M value and restart them
+    // kill all existing miniQ since their M is deprecated
+    NodeMiniQ *node = miniQs->first;
+    int i;
+    for (i = 0; i < miniQs->counter; i++){
+        kill(node->data->pid, SIGKILL);
+    }
+
+    // erase miniQ list
+    deleteMiniQlist(miniQs);
+    miniQs = constructorMiniQlist();
+
     return 0;
 }
 
 int processQFileResults(byte packetData[], int packetDataSize, qInstance *instanceOfMySelf){
     int returnCode = 0;
-    if (forwardPacket(instanceOfMySelf->pipeQP, 4, packetDataSize, packetData) < 0){
-        returnCode = 1;
+    int idFile = fromBytesToInt(packetData + INT_SIZE);
+    int m = fromBytesToInt(packetData + 2 * INT_SIZE);
+    
+    if (instanceOfMySelf->currM == m){
+        if (forwardPacket(instanceOfMySelf->pipeQP, 6, packetDataSize, packetData) < 0){
+            returnCode = 1;
+        }
+    } else {
+        returnCode = 2;
     }
-    // TODO - get file id from packetData
-    removeMiniQByFileId(miniQs, 0);
+
+    removeMiniQByFileId(miniQs, idFile);
 
     return returnCode;
 }
