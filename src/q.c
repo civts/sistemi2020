@@ -156,7 +156,7 @@ int processQNewFilePacketWithID(byte packetData[], int packetDataSize, qInstance
     if (f < 0){
         fprintf(stderr, "Error, creating miniQ\n");
     } else if (f == 0){
-        printf("Created miniQ\n");
+        printf("Created miniQ with m=%d\n", instanceOfMySelf->currM);
         miniQ(pathName, newMiniQ);
         exit(0);
     } else {
@@ -199,18 +199,24 @@ int processQDeathPacket(){
 }
 
 int processQNewValueForM(byte packetData[], qInstance* instanceOfMySelf){
-    instanceOfMySelf->currM = fromBytesToInt(packetData);
+    int new_m = fromBytesToInt(packetData);
 
-    // kill all existing miniQ since their M is deprecated
-    NodeMiniQ *node = miniQs->first;
-    int i;
-    for (i = 0; i < miniQs->counter; i++){
-        kill(node->data->pid, SIGKILL);
+    if (new_m != instanceOfMySelf->currM){
+        instanceOfMySelf->currM = new_m;
+
+        // kill all existing miniQ since their M is deprecated
+        NodeMiniQ *node = miniQs->first;
+        int i;
+        for (i = 0; i < miniQs->counter; i++){
+            printf("MiniQ killed\n");
+            kill(node->data->pid, SIGKILL);
+        }
+
+        // erase miniQ list
+        deleteMiniQlist(miniQs);
+        miniQs = constructorMiniQlist();
     }
-
-    // erase miniQ list
-    deleteMiniQlist(miniQs);
-    miniQs = constructorMiniQlist();
+    
 
     return 0;
 }

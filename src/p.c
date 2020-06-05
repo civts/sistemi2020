@@ -48,7 +48,7 @@ int p(pInstance *instanceOfMySelf, int _currM){
     return returnCode;
 }
 
-int generateNewQInstance(qInstance *newQ, int index, int currM){
+int generateNewQInstance(qInstance *newQ, int index, int mValue){
     int returnCode = 0;
 
     if (pipe(newQ->pipePQ) != -1 && pipe(newQ->pipeQP) != -1){
@@ -58,7 +58,7 @@ int generateNewQInstance(qInstance *newQ, int index, int currM){
         fcntl(newQ->pipeQP[READ], F_SETFL, O_NONBLOCK);
 
         newQ->pid = fork();
-        newQ->currM = currM;
+        newQ->currM = mValue;
         newQ->index = index;
 
         if (newQ->pid < 0){
@@ -263,10 +263,16 @@ int processPNewValueForM(byte packetData[], pInstance *instanceOfMySelf){
     qInstances = (qInstance*) realloc(qInstances, sizeof(qInstance) * newM);
 
     // create new Q instances if newM > currM
+    for (i = 0; i <currM; i++){
+        sendNewMPacket(qInstances[i].pipePQ, newM);
+    }
+    
     for (i = currM; i < newM; i++){
+        printf("Seeee %d %d %d\n", i, currM, newM);
         generateNewQInstance(qInstances + i, i, newM);
     }
     
+    currM = newM;
     // Nota: qui non serve riassegnare i file perché C invia subito dopo il pacchetto di cambio M anche
     // i pacchetti di tutti i file che non erano stati completati
 }

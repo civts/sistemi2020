@@ -320,7 +320,7 @@ int processCNewValueForM(byte packetData[], controllerInstance *instanceOfMySelf
 
     // if we are not analysing we are not supposed to update now m values for Ps
     // it will do it for us the shape tree before starting analyzing
-    if (instanceOfMySelf->isAnalysing){
+    if (instanceOfMySelf->isAnalysing && instanceOfMySelf->currM != new_m){
         int i;
         for (i = 0; i < instanceOfMySelf->currN; i++){
             sendNewMPacket(instanceOfMySelf->pInstances[i]->pipeCP, new_m);
@@ -330,6 +330,10 @@ int processCNewValueForM(byte packetData[], controllerInstance *instanceOfMySelf
         for (i = 0; i < instanceOfMySelf->fileList->number_of_nodes; i++){
             if (nodo->data->numOfRemainingPortionsToRead != 0){
                 nodo->data->numOfRemainingPortionsToRead = new_m;
+
+                removeFileByIdPacket(instanceOfMySelf->pInstances[nodo->data->pIndex]->pipeCP,
+                                     instanceOfMySelf->pidAnalyzer,
+                                     nodo->data->idFile);
 
                 // we need to resend the file to process since we have new Q value
                 sendNewFilePacketWithID(instanceOfMySelf->pInstances[nodo->data->pIndex]->pipeCP,
@@ -499,6 +503,7 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
             printf("C - Finished analysis\n");
         }
     } else {
+        printf("Got file with old m\n");
         returnCode = 2;
     }
     

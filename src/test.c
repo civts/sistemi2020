@@ -24,7 +24,8 @@ int main(int argc, char *argv[]){
     sendNewFilePacket(cInstance->pipeAC, "file.txt");
     sendNewFilePacket(cInstance->pipeAC, "file2.txt");
     sendStartAnalysisPacket(cInstance->pipeAC, -1);
-    removeFileByNamePacket(cInstance->pipeAC, "file.txt"); 
+    sendNewMPacket(cInstance->pipeAC, 3);
+    // removeFileByNamePacket(cInstance->pipeAC, "file.txt"); 
     
     sleep(4);
 
