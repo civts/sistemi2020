@@ -116,6 +116,7 @@ int generateNewPInstance(pInstance *newP, int index, int newM){
         fcntl(newP->pipeCP[READ], F_SETFL, O_NONBLOCK);
         fcntl(newP->pipePC[READ], F_SETFL, O_NONBLOCK);
 
+        pInstance pChild = *newP;
         newP->pid = fork();
 
         if (newP->pid < 0){
@@ -123,15 +124,10 @@ int generateNewPInstance(pInstance *newP, int index, int newM){
             returnCode = 2;
         } else if (newP->pid == 0){
             // child: new instance of P
-            pInstance pChild = *newP;
             fprintf(stderr, "New P%d created\n", index);
-            // close(newP->pipeCP[WRITE]);
-            // close(newP->pipePC[READ]);
-            // p(newP, newM);
             close(pChild.pipeCP[WRITE]);
             close(pChild.pipePC[READ]);
             p(&pChild, newM);
-
 
             exit(0); // just to be sure... it should not be necessary
         } else {
@@ -158,8 +154,10 @@ int shapeTree(int newN, int newM, controllerInstance *instanceOfMySelf){
     for (i = 0; i < instanceOfMySelf->currN; i++){
         if (i >= newN){
             killInstanceOfP(i, instanceOfMySelf);
-        } else if (newM != currM){
-            notifyNewMToPInstance(instanceOfMySelf->pInstances[i], newM);
+        } else {
+            if (newM != instanceOfMySelf->currM){
+                notifyNewMToPInstance(instanceOfMySelf->pInstances[i], newM);
+            }
         }
     }
 
@@ -287,6 +285,9 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerIn
         removeFileByIdPacket(instanceOfMySelf->pInstances[node->data->pIndex]->pipeCP,
                              instanceOfMySelf->pidAnalyzer,
                              node->data->idFile);
+        // removeFileByIdPacket(instanceOfMySelf->pipeToReport,
+        //                      instanceOfMySelf->pidAnalyzer,
+        //                      node->data->idFile);
         removeNode(instanceOfMySelf->fileList, node->data->fileName);
     }
 
@@ -306,7 +307,6 @@ int processCDeathPacket(controllerInstance *instanceOfMySelf){
     deleteNamesList(instanceOfMySelf->fileNameList);
     deleteNamesList(instanceOfMySelf->removedFileNames);
     free(instanceOfMySelf->pInstances);
-    // free(instanceOfMySelf);
 
     printf("Controller is dead\n");
     exit(0);
@@ -343,7 +343,7 @@ int processCNewValueForM(byte packetData[], controllerInstance *instanceOfMySelf
         instanceOfMySelf->tempM = new_m;
     }
 
-    printf("C - update m to %d\n", new_m);
+    // printf("C - update m to %d\n", new_m);
     return returnCode;
 }
 
@@ -383,7 +383,7 @@ int processCNewValueForN(byte packetData[], controllerInstance *instanceOfMySelf
         instanceOfMySelf->tempN = new_n;
     }
     
-    printf("C - update n to %d\n", new_n);
+    // printf("C - update n to %d\n", new_n);
     
     return returnCode;
 }
@@ -398,15 +398,23 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->isAnalysing = true;
 
     shapeTree(instanceOfMySelf->tempN, instanceOfMySelf->tempM, instanceOfMySelf);
+
     instanceOfMySelf->currN = instanceOfMySelf->tempN;
     instanceOfMySelf->currM = instanceOfMySelf->tempM;
     printf("Tree shaped -> n: %d, m: %d\n", instanceOfMySelf->currN, instanceOfMySelf->currM);
 
+    // Send start analysis packet to report
+    sendStartAnalysisPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer);
+
     // 1) remove the files inside instanceOfMySelf->removedFileNames from the file list
+    int idRemovedFile = -1;
     NodeName *deleteFileNamePointer = instanceOfMySelf->removedFileNames->first;
     for (i = 0; i < instanceOfMySelf->removedFileNames->counter; i++){
         printf("Delete from file list %s\n", deleteFileNamePointer->name);
-        removeNode(instanceOfMySelf->fileList, deleteFileNamePointer->name);
+        idRemovedFile = removeNode(instanceOfMySelf->fileList, deleteFileNamePointer->name);
+        // delete file from report
+        // removeFileByIdPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer, idRemovedFile);
+
         deleteFileNamePointer = deleteFileNamePointer->next;
     }
 
@@ -421,6 +429,9 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
         FileState *newFileState = constructorFileState(newFileNamePointer->name, instanceOfMySelf->nextFileID, -1, -1);
         NodeFileState *newFileStateNode = constructorFileNode(newFileState);
         appendFileState(instanceOfMySelf->fileList, newFileStateNode);
+
+        // sending to report new files
+        // newFileNameToReportPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer, newFileState->idFile, newFileState->fileName);
 
         instanceOfMySelf->nextFileID++;
         newFileNamePointer = newFileNamePointer->next;

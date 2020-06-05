@@ -127,7 +127,7 @@ int sendNewFilePacket(int fd[], const string fileName){
  * file descriptor as argument.
  * 1 - Error with the fd sending name packet
  */
-int removeFileByNamePacket(int fd[], string fileName){
+int removeFileByNamePacket(int fd[], const string fileName){
     int returnCode = 0;
     int fileNameLength = strlen(fileName);
     int packetSize = 1 + INT_SIZE + fileNameLength;
@@ -356,7 +356,7 @@ int reportErrorOnFilePacket(int fd[], pid_t pidAnalyzer, int fileId){
     byte packet[1 + 3*INT_SIZE];
 
     packet[0] = 11;
-    fromIntToBytes(INT_SIZE, packet + 1);
+    fromIntToBytes(INT_SIZE*2, packet + 1);
     fromIntToBytes(pidAnalyzer, packet + 1 + INT_SIZE);
     fromIntToBytes(fileId, packet + 1 + 2*INT_SIZE);
 

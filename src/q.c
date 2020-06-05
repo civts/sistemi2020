@@ -113,7 +113,7 @@ int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize
             returnCode = processQRemoveFilePacket(packetData, packetDataSize);
             break;
         case 15:
-            printf("Q received new file packet\n");
+            // printf("Q received new file packet\n");
             returnCode = processQNewFilePacketWithID(packetData, packetDataSize, instanceOfMySelf);
             break;
         default:
@@ -230,9 +230,9 @@ int processQFileResults(byte packetData[], int packetDataSize, qInstance *instan
         returnCode = 2;
     }
 
-    printMiniQlist(miniQs);
+    // printMiniQlist(miniQs);
     removeMiniQByFileId(miniQs, idFile);
-    printMiniQlist(miniQs);
+    // printMiniQlist(miniQs);
     return returnCode;
 }
 

@@ -179,12 +179,14 @@ NodeFileState *getNodeById(FileList *list, int id){
  * If there's no node with that name it does noting.
  * If there are more nodes with that name it deletes the first one.
  */
-void removeNode(FileList *list, char *name){
+int removeNode(FileList *list, char *name){
+    int idRemovedFile = -1;
     NodeFileState *toRemove = getNodeByName(list, name);
     
     if(toRemove == NULL){
         printf("No node found with name %s\n", name);
     } else {
+        idRemovedFile = toRemove->data->idFile;
         if(list->first == toRemove){
             list->first = toRemove->next;
             if(list->first != NULL)list->first->prev = NULL;
@@ -199,6 +201,8 @@ void removeNode(FileList *list, char *name){
         deleteNode(toRemove);
         list->number_of_nodes--;
     }
+
+    return idRemovedFile;
 }
 
 /**

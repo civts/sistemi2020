@@ -18,15 +18,16 @@ int n = 2;
 
 int main(int argc, char *argv[]){
     int returnCode = generateNewControllerInstance();
-    sendNewMPacket(cInstance->pipeAC, 5);
     sendNewNPacket(cInstance->pipeAC, n);
     sendNewMPacket(cInstance->pipeAC, m);
 
     sendNewFilePacket(cInstance->pipeAC, "file.txt");
     sendNewFilePacket(cInstance->pipeAC, "file2.txt");
-    sendStartAnalysisPacket(cInstance->pipeAC, -1);    
+    sendStartAnalysisPacket(cInstance->pipeAC, -1);
+    removeFileByNamePacket(cInstance->pipeAC, "file.txt"); 
     
     sleep(4);
+
     sendDeathPacket(cInstance->pipeAC);
     sleep(2);
     return returnCode;

@@ -154,7 +154,7 @@ int removeNodeNameByName(NamesList *list, string fileName){
     NodeName *toRemove = getNodeNameByName(list, fileName);
     int result = 1;
     if(toRemove == NULL){
-        printf("There is no file %s in the list\n", fileName);
+        // printf("There is no file %s in the list\n", fileName);
     } else {
         if(list->first == toRemove){
             list->first = toRemove->next;
@@ -167,9 +167,9 @@ int removeNodeNameByName(NamesList *list, string fileName){
             toRemove->next->prev = toRemove->prev;
             
         }
+        printf("%s deleted.\n", fileName);
         deleteNodeName(toRemove);
         list->counter--;
-        printf("%s deleted.\n", fileName);
         result = 0;
     }
     return result;

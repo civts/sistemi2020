@@ -165,7 +165,6 @@ int processMessageInPFromController(byte packetCode, byte *packetData, int packe
     int returnCode;
     switch (packetCode){
         case 15:
-            printf("P received new file packet\n");
             returnCode = processPNewFilePacket(packetData, packetDataSize);
             break;
         case 7:
