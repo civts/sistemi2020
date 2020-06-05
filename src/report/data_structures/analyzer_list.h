@@ -63,15 +63,15 @@ void analyzerListRemoveLast(analyzerList *l);
 
 // adds a new file to the analyzer with given pid. Creates a new analyer if none
 // is found.
-void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs);
+void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs, bool dumps);
 
 // removes any file with given pid from the list of files in current analysis, and places them into a "blacklist"
-void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile);
+void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile, bool dumps);
 
 // adds a new incomplete file to the analyzer with given pid. Creates a new
 // analyer if none is found.
 void analyzerListAddIncompleteFile(analyzerList *l, uint pid,
-                                   fileWithStats *fs);
+                                   fileWithStats *fs, bool dumps);
 // updatas the path of the file with id and places it into mainList from
 // incompleteList if analyzerss or file does not exits, packet is discarded
 void analyzerListUpdateFilePath(analyzerList *l, uint pid, uint idFile,
@@ -214,32 +214,32 @@ void analyzerListRemoveLast(analyzerList *l) {
   }
 }
 
-void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs) {
+void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs, bool dumps) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid);
+    a = constructorAnalyzer(pid, dumps);
     analyzerListAppend(l, a);
   }
   // function that adds the file to the mainList
   analyzerAddNewFile(a, fs);
 }
-void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile){
+void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile, bool dumps){
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid);
+    a = constructorAnalyzer(pid, dumps);
     analyzerListAppend(l, a);
   }
   // function that adds the file to the mainList
   analyzerErrorFile(a, pid);
 }
 void analyzerListAddIncompleteFile(analyzerList *l, uint pid,
-                                   fileWithStats *fs) {
+                                   fileWithStats *fs, bool dumps) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid);
+    a = constructorAnalyzer(pid, dumps);
     analyzerListAppend(l, a);
   }
   // function that adds the file to the incompleteList

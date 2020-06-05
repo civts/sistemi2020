@@ -22,6 +22,7 @@ int counter = 0;
 #define extended 5
 #define force 6
 #define quit 7
+#define dump 8
 
 
 // Flag for telling the report to show help dialog
@@ -40,6 +41,8 @@ char extendedFlag[] = "-e";
 char forceReAnalysisFlag[] = "-r";
 // Flag for telling the report to quit
 char quitFlag[] = "-q";
+// Flag for dumping errors from analyzers in one or more files
+char dumpFlag[] = "--dump";
 
 void clearScreen(){
 //  const char *CLEAR_SCREEN_ANSI = "\e[1;1H\e[2J";
@@ -97,20 +100,27 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     // }
     return valid;
 }
+
 int main(int argc, char * argv[]){
+    int i;
     int retCode = 0;
-    char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag};
+    char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag,dumpFlag};
     // SPECIFICARE LA DIMENSIONE
-    int numberPossibleFlags =  8;
+    int numberPossibleFlags =  9;
     // SPECIFICARE QUALI FLAG ACCETTANO ARGOMENTI, da passare in una stringa "adasda dasdas asdad". Esempio: "--only "patate ecmpa cobp""
-    bool flagsWithArguments[] = {false,false,false,false,true,false,false,false};
+    bool flagsWithArguments[numberPossibleFlags];
+    flagsWithArguments[only]=true; //only flag is true
     // QUI RITORNO GLI ARGOMENTI PASSATI AL FLAG CHE HA ARGOMENTO
-    char *arguments[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+    char *arguments[numberPossibleFlags];
     //inizializzare i flag coi loro valori di default
-    bool settedFlags[] = {false,false,false,false,false,false,false,false};
+    bool settedFlags[numberPossibleFlags];
+    for(i=0;i<numberPossibleFlags;i++){
+        flagsWithArguments[i] = false;
+        arguments[i] = NULL;
+        settedFlags[i] = false;
+    }
 
     char* resolvedPaths[PATH_MAX];
-    int i=0;
     for(i=0;i<PATH_MAX;i++){
         resolvedPaths[i]=NULL;
     }
@@ -190,7 +200,9 @@ int main(int argc, char * argv[]){
                     // resetto valid, potrebbe non essere valido
                     valid = false;
                     // copia dei flag su cui lavorare
-                    bool copyFlags[] = {false,false,false,false,false,false,false,false};
+                    bool copyFlags[numberPossibleFlags];
+                    for(i=0;i<numberPossibleFlags;i++)
+                        copyFlags[i]=false;
                     // reset degli argomenti
                     for(i=0;i<numberPossibleFlags;i++){ if(arguments[i]!=NULL){free(arguments[i]);arguments[i]=NULL;}}
                     // buffer temporaneo
@@ -246,7 +258,7 @@ int main(int argc, char * argv[]){
                 pipe = open(PATH_TO_PIPE, O_RDONLY);
             }else{
                 //lettura di 1 pacchetto
-                reportReadOnePacket(pipe,analyzers);
+                reportReadOnePacket(pipe,analyzers, settedFlags[dump]);
             }
             clear();
             //clearScreen();

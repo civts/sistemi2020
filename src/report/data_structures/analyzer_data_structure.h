@@ -5,6 +5,7 @@
 //intList
 #include <stdio.h>  //print etc
 #include <stdlib.h> // malloc & free
+#include <time.h>
 #ifndef ANALYZER_DATA_STRUCTURE_H
 #define ANALYZER_DATA_STRUCTURE_H
 
@@ -36,6 +37,10 @@ typedef struct analyzer_t {
   // The analyzer of this node
   // Analyzer process pid
   uint pid;
+  // Wether this analyzer dumps errors to file or not
+  bool dumps;
+  // Dump file descriptor
+  FILE* dumpFD;
   // List of the files that were analyzed individually
   fwsList *files;
   // lista di file parziali
@@ -53,7 +58,7 @@ typedef struct analyzer_t {
 } analyzer;
 
 // constructor for Analyzer
-analyzer *constructorAnalyzer(uint pid);
+analyzer *constructorAnalyzer(uint pid, bool dumps);
 // Destructor for Analyzer
 void destructorAnalyzer(analyzer *a);
 
@@ -85,7 +90,7 @@ void analyzerCompletionFolderDelete(analyzer *a, char * path);
 // void analyzerAddFilter(analyzer * a, char* path);
 // // add remove filter
 // void analyzerRemoveFilter(analyzer * a, char* path);
-// add an error to the log
+// adds an error to the analyzer log and prints it to file if necessary
 void analyzerAddError(analyzer * a, char* error);
 //Prints the last 3 errors of this analyzer (or less if there are not enough)
 void analyzerPrintErrorMessages(const analyzer *a);
@@ -93,10 +98,12 @@ void analyzerPrintErrorMessages(const analyzer *a);
 void analyzerPrint(analyzer *a);
 
 // constructor for Analyzer
-analyzer *constructorAnalyzer(uint pid) {
+analyzer *constructorAnalyzer(uint pid, bool dumps) {
   analyzer *a = (analyzer *)malloc(sizeof(analyzer));
   checkNotNull(a);
   a->pid = pid;
+  a->dumps = dumps;
+  a->dumpFD = NULL;
   a->files = constructorFwsListEmpty();
   a->incompleteList = constructorFwsListEmpty();
   a->incompletePathToDelete = NULL;
@@ -124,6 +131,8 @@ void destructorAnalyzer(analyzer *a) {
   destructorFwsList(a->errors);
   deleteNamesList(a->errorMessages);
   deleteNamesList(a->filters);
+  fflush(a->dumpFD);
+  close(a->dumpFD);
   free(a);
 }
 
@@ -221,8 +230,30 @@ void analyzerCompletionFolderDelete(analyzer *a, char * path){
 //   removeNodeNameByName(a->filters,path);
 // }
 
-void analyzerAddError(analyzer * a, char* error){
-   appendToNamesList(a->errorMessages,constructorNodeName(error));
+void analyzerAddError(analyzer *a, char *error) {
+  appendToNamesList(a->errorMessages, constructorNodeName(error));
+  if (a->dumps) {
+    if (a->dumpFD == NULL) {
+      char name[100];
+      sprintf(name, "./analyzer_");
+      sprintf(name + strlen(name), "%d", a->pid);
+      sprintf(name + strlen(name), "_dump.txt");
+      a->dumpFD = fopen(name, "w");
+    }
+    // Various reasons could cause us to not be able to open the file now.
+    // in this case we will not print this error and try to open again the
+    // next time an error arrives
+    if (a->dumpFD != NULL) {
+      time_t t = time(NULL);
+      struct tm tm = *localtime(&t);
+      fprintf(a->dumpFD, "%d-%02d-%02d %02d:%02d:%02d\t", tm.tm_year + 1900,
+              tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      fprintf(a->dumpFD, "%s", error);
+      char lastChar = error[strlen(error) - 1];
+      if (lastChar != '\n' && lastChar != '\r' && lastChar != '\f')
+        fprintf(a->dumpFD, '\n');
+    }
+  }
 }
 
 void analyzerPrintErrorMessages(const analyzer *a) {

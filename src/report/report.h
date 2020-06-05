@@ -14,12 +14,12 @@ const char *PATH_TO_PIPE = "./myfifo";
 const int BATCH_SIZE = 128;
 
 // analyzer (eventually creating the fws if needed)
-void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers);
+void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers, bool dumps);
 // callback for error packets
-void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers);
+void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers, bool dumps);
 // Callback for A_NEW_FILE_INCOMPLETE_PART1 packets.
 //(1st half of a file path)
-void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers);
+void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers, bool dumps);
 // Callback for A_NEW_FILE_INCOMPLETE_PART2 packets.
 //(2nd half of a file path)
 void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers);
@@ -37,9 +37,9 @@ void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
 void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers);
 
 // This is the function that implements report buisiness logic. READS 1 PACKET AT THE TIME
-int reportReadOnePacket(int pipe, analyzerList *analyzers);
+int reportReadOnePacket(int pipe, analyzerList *analyzers, bool analyzersDump);
 
-void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
+void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers, bool dumps) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   checkNotNull(dati);
@@ -49,14 +49,14 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
     uint idFile = fromBytesToInt(dati + INT_SIZE);
     char *path = dati + 2* INT_SIZE;
     //funzione che aggiungo il file all'analyzer corretto, nel caso crea un analyzer se mancante
-    analyzerListAddNewFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL));
+    analyzerListAddNewFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL), dumps);
   } else {
     perror("aggiunta file fallita");
   }
   free(dati);
 }
 
-void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers) {
+void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers, bool dumps) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   checkNotNull(dati);
@@ -64,13 +64,13 @@ void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
-    analyzerListErrorFile(analyzers,pid,idFile);
+    analyzerListErrorFile(analyzers,pid,idFile, dumps);
   } else {
     perror("file con errore perso");
   }
   free(dati);
 }
-void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
+void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers, bool dumps) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   checkNotNull(dati);
@@ -80,7 +80,7 @@ void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
     uint idFile = fromBytesToInt(dati + INT_SIZE);
     char *path = dati + 2* INT_SIZE;
     //funzione che aggiungo il file all'analyzer corretto, nel caso crea un analyzer se mancante
-    analyzerListAddIncompleteFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL));
+    analyzerListAddIncompleteFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL), dumps);
   } else {
     perror("aggiunta file p1 fallita");
   }
@@ -200,7 +200,7 @@ void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
   free(dati);
 }
 // // This is the function that implements report buisiness logic
-int reportReadOnePacket(int pipe, analyzerList *analyzers) {
+int reportReadOnePacket(int pipe, analyzerList *analyzers, bool dumps) {
     // Reading new packet and taking appropriate action
     byte header[INT_SIZE + 1];
     int rdHeader = read(pipe, header, INT_SIZE + 1);
@@ -213,13 +213,13 @@ int reportReadOnePacket(int pipe, analyzerList *analyzers) {
         break;
       case Q_FILE_ERROR_CODE:
         // TODO (What do we do on error? print to the user and forget about it?)
-        gotErrorFilePacket(pipe, header, analyzers);
+        gotErrorFilePacket(pipe, header, analyzers, dumps);
         break;
       case A_NEW_FILE_COMPLETE:
-        gotAddFilePacket(pipe, header, analyzers);
+        gotAddFilePacket(pipe, header, analyzers, dumps);
         break;
       case A_NEW_FILE_INCOMPLETE_PART1:
-        got1stPathPartPacket(pipe, header, analyzers);
+        got1stPathPartPacket(pipe, header, analyzers, dumps);
         break;
       case A_NEW_FILE_INCOMPLETE_PART2:
         got2ndPathPartPacket(pipe, header, analyzers);
