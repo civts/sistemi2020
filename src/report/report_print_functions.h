@@ -104,6 +104,7 @@ void printPercentage(uint done, uint total, int barWidth) {
   printf("] %.2f%% complete\n", percentage * 100);
 }
 
+//Prints the files in this analyzer which have errors
 void printErrors(analyzer *a){
     fileWithStats *fNode = a->errors->firstNode;
     if(a->errors->count!=0){
@@ -160,6 +161,7 @@ void printRecapCompact(analyzerList *aList) {
   az = AZ = digits = spaces = punctuation = otherChars = totalChars =
       totalCharsRead = 0;
   while (current != NULL) {
+    analyzerPrintErrorMessages(current);
     fileWithStats *cursor = current->files->firstNode;
     charGroupStats fileStats = statsForFile(cursor);
     az += fileStats.az;
@@ -195,6 +197,7 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
   current = aList->firstNode;
   // Print stats of each file
   while (current != NULL) {
+    analyzerPrintErrorMessages(current);
     fileWithStats *fNode = current->files->firstNode;
     while (fNode != NULL) {
       printSingleFile(fNode, shouldGroup);
@@ -291,11 +294,17 @@ void printSingleFile(fileWithStats *f, bool group) {
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group) {
   analyzer *a = analyzers->firstNode;
+  bool hasPrintedErrors;
   while (a != NULL) {
+    hasPrintedErrors=false;
     int i = 0;
     for (i = 0; i < pathsLen; i++) {
       fileWithStats *item = fwsListGetElementByPath(a->files, paths[i]);
       if (item != NULL) {
+        if(!hasPrintedErrors){
+          analyzerPrintErrorMessages(a);
+          hasPrintedErrors=true;
+        }
         printSingleFile(item, group);
       }
     }
@@ -434,6 +443,7 @@ void printRecapTabela(analyzerList *aList, bool shouldGroup) {
       printProgressBar(f->readCharacters, f->totalCharacters, barWidth);
       f = f->nextNode;
     }
+    analyzerPrintErrorMessages(a);
     a = a->nextNode;
   }
 }

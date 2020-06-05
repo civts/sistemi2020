@@ -87,6 +87,8 @@ void analyzerCompletionFolderDelete(analyzer *a, char * path);
 // void analyzerRemoveFilter(analyzer * a, char* path);
 // add an error to the log
 void analyzerAddError(analyzer * a, char* error);
+//Prints the last 3 errors of this analyzer (or less if there are not enough)
+void analyzerPrintErrorMessages(const analyzer *a);
 // stampa debug
 void analyzerPrint(analyzer *a);
 
@@ -222,6 +224,30 @@ void analyzerCompletionFolderDelete(analyzer *a, char * path){
 void analyzerAddError(analyzer * a, char* error){
    appendToNamesList(a->errorMessages,constructorNodeName(error));
 }
+
+void analyzerPrintErrorMessages(const analyzer *a) {
+  NodeName *n = a->errorMessages->last;
+  if(n==NULL) return;
+  int i;
+  // go back 2 steps
+  for (i = 0; i < 2; i++) {
+    if (n->prev == NULL)
+      break;
+    n = n->prev;
+  }
+  // forward while printing
+  for (i = 0; i < 3; i++) {
+    if (n == NULL)
+      break;
+    printf("%s", n->name);
+    // if message does not end with \n we add it
+    if (n->name[strlen(n->name - 1)] != '\n')
+      printf('\n');
+
+    n = n->next;
+  }
+}
+
 // stampa debug
 void analyzerPrint(analyzer *a) {
   printf("analyzer pid: %u\n", a->pid);
