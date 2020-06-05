@@ -74,7 +74,7 @@ void printNode(NodeFileState *node){
 void deleteNode(NodeFileState *node){
     deleteFileState(node->data);
     free(node);
-    printf("node destroyed\n");
+    // printf("node destroyed\n");
 }
 
 
@@ -103,13 +103,14 @@ void printList(FileList *list) {
         printNode(node);
         node = node->next;
     }
+    printf("\n");
 }
 
 void deleteList(FileList *list){
     NodeFileState *node = list->first;
     NodeFileState *next;
     int i;
-    for(i=0; i<list->number_of_nodes; i++){
+    for (i=0; i<list->number_of_nodes; i++){
         next = node->next;
         deleteNode(node);
         node = next;

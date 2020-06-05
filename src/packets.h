@@ -44,6 +44,8 @@ typedef struct{
     int   pipeToReport[2];
     int   currN;
     int   currM;
+    int   tempN; // used in interactive mode, before starting the analysis
+    int   tempM; // used in interactive mode, before starting the analysis
     int   nextFileID;
     int   filesFinished;
     bool  isAnalysing;
@@ -102,7 +104,7 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
  * Error codes:
  * 1 - Error with the fd sending name packet
  */
-int sendNewFilePacket(int fd[], string fileName){
+int sendNewFilePacket(int fd[], const string fileName){
     int returnCode = 0;
     int fileNameLength = strlen(fileName);
     int packetSize = 1 + INT_SIZE + fileNameLength;
@@ -202,14 +204,15 @@ int sendNewNPacket(int fd[], int newN){
  * Error codes:
  * 1 - Error with fd sending the death packet
  */
-int sendStartAnalysisPacket(int fd[]){
+int sendStartAnalysisPacket(int fd[], pid_t pidAnalyzer){
     int returnCode = 0;
-    byte packet[1 + INT_SIZE];
+    byte packet[1 + 2 * INT_SIZE];
     
     packet[0] = 5;
-    fromIntToBytes(0, packet + 1);
+    fromIntToBytes(INT_SIZE, packet + 1);
+    fromIntToBytes(pidAnalyzer, packet + 1 + INT_SIZE);
 
-    if (write(fd[WRITE], packet, 1 + INT_SIZE) != (1 + INT_SIZE)){
+    if (write(fd[WRITE], packet, 1 + 2 * INT_SIZE) != (1 + 2 * INT_SIZE)){
         returnCode = 1;
         fprintf(stderr, "Error with fd sending the death packet\n");
     }

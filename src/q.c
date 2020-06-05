@@ -65,6 +65,7 @@ void waitForMessagesInQFromP(qInstance *instanceOfMySelf){
             }
         }
 
+        printf("Got packet %d in Q from P\n", packetHeader[0]);
         processMessageInQFromP(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
     }
 }
@@ -84,6 +85,7 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
             byte packetData[dataSectionSize];
 
             numBytesRead = read(currElement->data->pipeToQ[READ], packetData, dataSectionSize);
+            printf("Got packet %d in Q from miniQ\n", packetHeader[0]);
             processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
         }
         currElement = currElement->next;
@@ -111,6 +113,7 @@ int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize
             returnCode = processQRemoveFilePacket(packetData, packetDataSize);
             break;
         case 15:
+            printf("Q received new file packet\n");
             returnCode = processQNewFilePacketWithID(packetData, packetDataSize, instanceOfMySelf);
             break;
         default:
@@ -137,6 +140,7 @@ int processMessageInQFromMiniQ(byte packetCode, byte *packetData, int packetData
 
 int processQNewFilePacketWithID(byte packetData[], int packetDataSize, qInstance* instanceOfMySelf){
     int idFile = fromBytesToInt(packetData);
+    
     char pathName[packetDataSize - INT_SIZE + 1];
     memcpy(pathName, packetData + INT_SIZE, packetDataSize - INT_SIZE);
     pathName[packetDataSize - INT_SIZE] = '\0';
@@ -215,6 +219,8 @@ int processQFileResults(byte packetData[], int packetDataSize, qInstance *instan
     int returnCode = 0;
     int idFile = fromBytesToInt(packetData + INT_SIZE);
     int m = fromBytesToInt(packetData + 2 * INT_SIZE);
+
+    printf("We shall delete miniQ for file %d\n", idFile);
     
     if (instanceOfMySelf->currM == m){
         if (forwardPacket(instanceOfMySelf->pipeQP, 6, packetDataSize, packetData) < 0){
@@ -224,8 +230,9 @@ int processQFileResults(byte packetData[], int packetDataSize, qInstance *instan
         returnCode = 2;
     }
 
+    printMiniQlist(miniQs);
     removeMiniQByFileId(miniQs, idFile);
-
+    printMiniQlist(miniQs);
     return returnCode;
 }
 

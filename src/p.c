@@ -66,11 +66,14 @@ int generateNewQInstance(qInstance *newQ, int index, int currM){
             returnCode = 2;
         } else if (newQ->pid == 0){
             // child: new instance of Q
+            qInstance qChild = *newQ;
             fprintf(stderr, "New Q%d created\n", index);
-            close(newQ->pipePQ[WRITE]);
-            close(newQ->pipeQP[READ]);
-
-            q(newQ);
+            // close(newQ->pipePQ[WRITE]);
+            // close(newQ->pipeQP[READ]);
+            // q(newQ);
+            close(qChild.pipePQ[WRITE]);
+            close(qChild.pipeQP[READ]);
+            q(&qChild);
             exit(0); // just to be sure... it should not be necessary
         } else {
             // parent
@@ -109,6 +112,7 @@ void waitForMessagesInPFromQ(pInstance *instanceOfMySelf){
             byte packetData[dataSectionSize];
 
             numBytesRead = read(qInstances[i].pipeQP[READ], packetData, dataSectionSize);
+            printf("Got packet %d in P from Q\n", packetHeader[0]);
             processMessageInPFromQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
         }
     }
@@ -138,6 +142,7 @@ void waitForMessagesInPFromController(pInstance *instanceOfMySelf){
             }
         }
 
+        printf("Got packet %d in P from C\n", packetHeader[0]);
         processMessageInPFromController(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
     }
 }
@@ -160,6 +165,7 @@ int processMessageInPFromController(byte packetCode, byte *packetData, int packe
     int returnCode;
     switch (packetCode){
         case 15:
+            printf("P received new file packet\n");
             returnCode = processPNewFilePacket(packetData, packetDataSize);
             break;
         case 7:
