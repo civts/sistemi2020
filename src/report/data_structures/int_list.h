@@ -37,7 +37,7 @@ void destructorIntList(intList *l);
 
 intNode *constructorIntNode(int v) {
   intNode *node = (intNode *)malloc(sizeof(intNode));
-  checkNotNull(node);
+   checkNotNull(node);
   node->value = v;
   node->nextNode = NULL;
   node->previousNode = NULL;

@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -105,7 +104,7 @@ void checkNotNull(void *ptr) {
     exit(1);
   }
 }
-
+																	
 // // FUNZIONE CHE GESTISCE IL PARSING
 // //DOCUMENTAZIONE
 // // argc parametri del main. Da chiamare con 1
@@ -147,10 +146,11 @@ int inspectPath(const char *path) {
   return returnCode;
 }
 
+
 bool checkArguments(int argc, char *argv[], char **possibleFlags,
                     bool *flagsWithArguments, int numberPossibleFlags,
                     bool *settedFlags, char **arguments, char *invalid,
-                    bool printOnFailure, bool* dumps) {
+                    bool printOnFailure) {
   bool validity = true;
   int j = 0;
   int i = 0;
@@ -205,8 +205,7 @@ bool checkArguments(int argc, char *argv[], char **possibleFlags,
       }
     }
   }
-  if(settedFlags[dump])
-    *dumps = true;
+
   return validity;
 }
 

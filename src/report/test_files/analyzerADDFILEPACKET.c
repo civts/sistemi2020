@@ -15,15 +15,12 @@ int main(int argc, char **argv)
 
   printf("Write the PID\n");
   uint *pid = malloc(sizeof(uint));
-  checkNotNull(pid);
   scanf("%u", pid);
   printf("Write the FILEID\n");
   uint *idFile = malloc(sizeof(uint));
-  checkNotNull(idFile);
   scanf("%u", idFile);
   printf("Write the PATH\n");
   char *path = malloc(1024);
-  checkNotNull(path);
   scanf("%s", path);
 
   int fd;
@@ -32,9 +29,11 @@ int main(int argc, char **argv)
   // Creating the named file(FIFO)
   // mkfifo(<pathname>, <permission>)
   mkfifo(myfifo, 0666);
-  // fd = open(myfifo, O_WRONLY |  O_NONBLOCK);
-  fd = open(myfifo, O_WRONLY);
+  printf("si blooca\n");
+  fd = open(myfifo, O_WRONLY |  O_NONBLOCK);
 
+  //fd = open(myfifo, O_WRONLY);
+  printf("si blooca noogcc \n");
   byte header[INT_SIZE + 1] = {'\0', '\0', '\0', '\0', '\0'};
   header[0] = A_NEW_FILE_COMPLETE;
   fromIntToBytes(INT_SIZE * 2 + strlen(path) + 1, header + 1);

@@ -43,6 +43,7 @@ INT_SIZE pid dell'A
 INT_SIZE id file
 string path
 */
+#define  A_ANALYZER_START 5
 #define A_NEW_FILE_COMPLETE 8
 // As A_NEW_FILE_COMPLETE but contains only first half of the path
 #define A_NEW_FILE_INCOMPLETE_PART1 9
@@ -71,6 +72,7 @@ string path
 #define A_DELETE_FOLDER_INCOMPLETE_PART1 13
 // As A_NEW_FILE_COMPLETE but contains only second half of the path
 #define A_DELETE_FOLDER_INCOMPLETE_PART2 14
+#define A_ERROR_LOG 18
 // #ifndef bool
 // typedef unsigned char bool;
 // #define false 0

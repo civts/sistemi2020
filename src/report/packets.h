@@ -295,7 +295,7 @@ int reportErrorOnFilePacket(int fd[], pid_t pidAnalyzer, int fileId){
     byte packet[1 + 3*INT_SIZE];
 
     packet[0] = 11;
-    fromIntToBytes(INT_SIZE, packet + 1);
+    fromIntToBytes(2*INT_SIZE, packet + 1);
     fromIntToBytes(pidAnalyzer, packet + 1 + INT_SIZE);
     fromIntToBytes(fileId, packet + 1 + 2*INT_SIZE);
 

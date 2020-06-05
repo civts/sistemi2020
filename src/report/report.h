@@ -14,83 +14,80 @@ const char *PATH_TO_PIPE = "./myfifo";
 const int BATCH_SIZE = 128;
 
 // analyzer (eventually creating the fws if needed)
-void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers, bool dumps);
+void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // callback for error packets
-void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers, bool dumps);
+void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // Callback for A_NEW_FILE_INCOMPLETE_PART1 packets.
 //(1st half of a file path)
-void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers, bool dumps);
+void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // Callback for A_NEW_FILE_INCOMPLETE_PART2 packets.
 //(2nd half of a file path)
-void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers);
+void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // Callback for Q_NEW_DATA_CODE packets.
-void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers);
+void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // Callback for A_DELETE_FILE_CODE packets.
-void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers);
+void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // Callback for A_DELETE_FOLDER_CODE
-void gotDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers);
+void gotDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // Callback for A_DELETE:FOLDER_INCOMPLETE_PART1 packets.
 //(1st half of a file path)
-void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers);
+void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // Callback for A_NEW_FILE_INCOMPLETE_PART2 packets.
 //(2nd half of a file path)
-void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers);
+void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
+// errors
+void gotErrorLogPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
+// restart the analyzer, resetting all data in it
+void gotStartPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
+
 
 // This is the function that implements report buisiness logic. READS 1 PACKET AT THE TIME
-int reportReadOnePacket(int pipe, analyzerList *analyzers, bool analyzersDump);
+int reportReadOnePacket(int pipe, analyzerList *analyzers);
 
-void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers, bool dumps) {
-  int dimDati = fromBytesToInt(header + 1);
-  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  checkNotNull(dati);
+void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
+  byte dati [dimDati];
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
     char *path = dati + 2* INT_SIZE;
     //funzione che aggiungo il file all'analyzer corretto, nel caso crea un analyzer se mancante
-    analyzerListAddNewFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL), dumps);
+    analyzerListAddNewFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL));
   } else {
     perror("aggiunta file fallita");
   }
-  free(dati);
+  
 }
 
-void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers, bool dumps) {
-  int dimDati = fromBytesToInt(header + 1);
-  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  checkNotNull(dati);
+void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
+  byte dati [dimDati];
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
-    analyzerListErrorFile(analyzers,pid,idFile, dumps);
+    analyzerListErrorFile(analyzers,pid,idFile);
   } else {
     perror("file con errore perso");
   }
-  free(dati);
 }
-void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers, bool dumps) {
-  int dimDati = fromBytesToInt(header + 1);
-  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  checkNotNull(dati);
+void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
+  byte dati [dimDati];
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
     char *path = dati + 2* INT_SIZE;
     //funzione che aggiungo il file all'analyzer corretto, nel caso crea un analyzer se mancante
-    analyzerListAddIncompleteFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL), dumps);
+    analyzerListAddIncompleteFile(analyzers,pid,constructorFWS(path, idFile, 0, NULL));
   } else {
     perror("aggiunta file p1 fallita");
   }
-  free(dati);
+
 }
 
-void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
-  int dimDati = fromBytesToInt(header + 1);
-  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  checkNotNull(dati);
+void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
+  byte dati [dimDati];
+
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
@@ -101,18 +98,19 @@ void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   } else {
     perror("update del path fallito\n");
   }
-  free(dati);
+  // perché qui non va avanti ?
+  // printAnalyzerList(analyzers);
+  // printf("bananare");
+
 }
 
-void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
-  int dimDati = fromBytesToInt(header + 1);
-  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  checkNotNull(dati);
+void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
+  byte dati [dimDati];
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
     uint idFile = fromBytesToInt(dati + INT_SIZE);
-    //adesso butto via m ed i
+    //adesso butto i
     uint m = fromBytesToInt(dati + 2 * INT_SIZE);
     uint i = fromBytesToInt(dati + 3 * INT_SIZE);
     //dimensione totale del file
@@ -120,25 +118,22 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
     //caratteri letti in questa porzione
     uint totCharsRead = fromBytesToInt(dati + 5 * INT_SIZE);
     uint *occurrences = malloc(sizeof(uint)*ASCII_LENGTH);
-    checkNotNull(occurrences);
     int j;
     for (j = 0; j < ASCII_LENGTH; j++) {
-      occurrences[j] = fromBytesToInt(dati + (6+i)* INT_SIZE);
+      occurrences[j] = fromBytesToInt(dati + (6+j)* INT_SIZE);
       //print("occurrences :'%c' n:%u",j,occurrences[j])
     }
     //funzione che aggiorna i dati del corrispondente file
-    analyzerListUpdateFileData(analyzers,pid,idFile,dimFile,totCharsRead,occurrences);
+    analyzerListUpdateFileData(analyzers,pid,idFile,dimFile,totCharsRead,occurrences,m);
     free(occurrences);
   } else {
     perror("updateDelFileFallito\n");
   }
-  free(dati);
+
 }
 
-void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
-  int dimDati = fromBytesToInt(header + 1);
-  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  checkNotNull(dati);
+void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
+  byte dati [dimDati];
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid;
@@ -149,12 +144,10 @@ void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   } else {
     perror("errore in eliminazione\n");
   }
-  free(dati);
+ 
 }
-void gotDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
-  int dimDati = fromBytesToInt(header + 1);
-  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  checkNotNull(dati);
+void gotDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
+  byte dati [dimDati];
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid;
@@ -165,12 +158,10 @@ void gotDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
   } else {
     perror("errore in eliminazione di una cartella\n");
   }
-  free(dati);
+ 
 }
-void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
-  int dimDati = fromBytesToInt(header + 1);
-  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  checkNotNull(dati);
+void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
+  byte dati [dimDati];
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid;
@@ -181,12 +172,10 @@ void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
   } else {
     perror("errore in eliminazione di una cartella\n");
   }
-  free(dati);
+ 
 }
-void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
-  int dimDati = fromBytesToInt(header + 1);
-  byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
-  checkNotNull(dati);
+void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
+  byte dati [dimDati];
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid;
@@ -197,44 +186,75 @@ void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
   } else {
     perror("errore in eliminazione di una cartella\n");
   }
-  free(dati);
+ 
+}
+void gotErrorLogPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati){
+  byte dati [dimDati];
+  int rdDati = read(pipe, dati, dimDati);
+  if (rdDati == dimDati) {
+    uint pid;
+    char* path;
+    pid = fromBytesToInt(dati);
+    path = dati + INT_SIZE;
+    analyzerListAddError(analyzers,pid,path);
+  } else {
+    perror("errore in fase di aggiunta errore al log\n");
+  }
+ 
+}
+void gotStartPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati){
+  byte dati [dimDati];
+  int rdDati = read(pipe, dati, dimDati);
+  if (rdDati == dimDati) {
+    uint pid;
+    pid = fromBytesToInt(dati);
+    analyzerListStart(analyzers,pid);
+  } else {
+    perror("errore in fase di start\n");
+  }
+  
 }
 // // This is the function that implements report buisiness logic
-int reportReadOnePacket(int pipe, analyzerList *analyzers, bool dumps) {
+int reportReadOnePacket(int pipe, analyzerList *analyzers) {
     // Reading new packet and taking appropriate action
     byte header[INT_SIZE + 1];
     int rdHeader = read(pipe, header, INT_SIZE + 1);
     if (rdHeader == INT_SIZE + 1) {
       if (DEBUGGING)
-        printf("Got new packet with code %d\n", header[0]);
+        printf("Got new packet with code %d\n", header[0]); sleep(1);
       switch (header[0]) {
       case Q_NEW_DATA_CODE:
-        gotNewDataPacket(pipe, header, analyzers);
+        gotNewDataPacket(pipe, header, analyzers,fromBytesToInt(header+1));
         break;
       case Q_FILE_ERROR_CODE:
-        // TODO (What do we do on error? print to the user and forget about it?)
-        gotErrorFilePacket(pipe, header, analyzers, dumps);
+        gotErrorFilePacket(pipe, header, analyzers,fromBytesToInt(header+1));
+        break;
+      case A_ANALYZER_START:
+        gotStartPacket(pipe,header,analyzers,fromBytesToInt(header+1));
         break;
       case A_NEW_FILE_COMPLETE:
-        gotAddFilePacket(pipe, header, analyzers, dumps);
+        gotAddFilePacket(pipe, header, analyzers,fromBytesToInt(header+1));
         break;
       case A_NEW_FILE_INCOMPLETE_PART1:
-        got1stPathPartPacket(pipe, header, analyzers, dumps);
+        got1stPathPartPacket(pipe, header, analyzers,fromBytesToInt(header+1));
         break;
       case A_NEW_FILE_INCOMPLETE_PART2:
-        got2ndPathPartPacket(pipe, header, analyzers);
+        got2ndPathPartPacket(pipe, header, analyzers,fromBytesToInt(header+1));
         break;
       case A_DELETE_FILE_CODE:
-        gotDeleteFilePacket(pipe, header, analyzers);
+        gotDeleteFilePacket(pipe, header, analyzers,fromBytesToInt(header+1));
         break;
       case A_DELETE_FOLDER:
-        gotDeleteFolderPacket(pipe, header, analyzers);
+        gotDeleteFolderPacket(pipe, header, analyzers,fromBytesToInt(header+1));
         break;
       case A_DELETE_FOLDER_INCOMPLETE_PART1:
-        got1stPathPartDeleteFolderPacket(pipe, header, analyzers);
+        got1stPathPartDeleteFolderPacket(pipe, header, analyzers,fromBytesToInt(header+1));
         break;
       case A_DELETE_FOLDER_INCOMPLETE_PART2:
-        got2ndPathPartDeleteFolderPacket(pipe, header, analyzers);
+        got2ndPathPartDeleteFolderPacket(pipe, header, analyzers,fromBytesToInt(header+1));
+        break;
+      case A_ERROR_LOG:
+        gotErrorLogPacket(pipe,header,analyzers,fromBytesToInt(header+1));   
         break;
       }
   }

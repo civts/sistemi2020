@@ -1,4 +1,3 @@
-#include "./help.h";
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -77,7 +76,7 @@ bool optionCombinationValid(bool *settedFlags){
     if( settedFlags[extended] && settedFlags[help] )
         valid = false;
     return valid;
-} 
+}
 //funzione che fa il parsing dei file passati ad arguments trasformandoli in una lista di stringhe in resolvedPaths, lunghezza della lista in numArgs
 bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     char * unresolvedPaths[PATH_MAX];
@@ -110,36 +109,29 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     // }
     return valid;
 }
-
 int main(int argc, char * argv[]){
-    int i;
     int retCode = 0;
     char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag,dumpFlag};
     // SPECIFICARE LA DIMENSIONE
-    int numberPossibleFlags =  9;
+    int numberPossibleFlags =  8;
     // SPECIFICARE QUALI FLAG ACCETTANO ARGOMENTI, da passare in una stringa "adasda dasdas asdad". Esempio: "--only "patate ecmpa cobp""
-    bool flagsWithArguments[numberPossibleFlags];
-    flagsWithArguments[only] = true; //only flag is true
+    bool flagsWithArguments[] = {false,false,false,false,true,false,false,false,false};
     // QUI RITORNO GLI ARGOMENTI PASSATI AL FLAG CHE HA ARGOMENTO
-    char *arguments[numberPossibleFlags];
+    char *arguments[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
     //inizializzare i flag coi loro valori di default
-    bool settedFlags[numberPossibleFlags];
-    for(i=0;i<numberPossibleFlags;i++){
-        flagsWithArguments[i] = false;
-        arguments[i] = NULL;
-        settedFlags[i] = false;
-    }
+    bool settedFlags[] = {false,false,false,false,false,false,false,false,false};
 
     char* resolvedPaths[PATH_MAX];
+    int i=0;
     for(i=0;i<PATH_MAX;i++){
         resolvedPaths[i]=NULL;
     }
 
     int currentFilesCount = 0;
     bool valid = false;
+    bool pathValid = true;
     //controllo gli argomenti siano validi
-    if (checkArguments(argc-1, argv+1, possibleFlags, flagsWithArguments,
-        numberPossibleFlags, settedFlags, arguments, NULL, false, settedFlags[dump])){
+    if (checkArguments(argc-1,argv+1,possibleFlags,flagsWithArguments,numberPossibleFlags,settedFlags,arguments,NULL,false)){
         // controllo la combinazione sia valida
         if( optionCombinationValid(settedFlags)){
             //faccio ulteriore parsing solo se devo lavorare col flag --only
@@ -147,17 +139,24 @@ int main(int argc, char * argv[]){
                 // provo ad effettuare il parsing
                 if(parseArguments(arguments[only],&currentFilesCount,resolvedPaths)){
                     //parsing riuscito
-                    valid=true;
+                    valid=true; pathValid=true;
                 }else{
-                    valid=false; settedFlags[only]=false;
+                    valid=false; settedFlags[only]=false; pathValid=false;
                 }
             }else{
                 valid=true;
             }
         }
     }
+
+    // for(i=0;i<currentFilesCount;i++){
+    //         printf("%s ",resolvedPaths[i]);
+    // }
+    // printf("\n");
+    // printf("%d\n",true);
+    // printf("%d\n",false);
     if(valid){
-        bool dumps = settedFlags[dump];
+        
         // default view is tab
         if(settedFlags[help] + settedFlags[tab]+ settedFlags[compact]+ settedFlags[only] + settedFlags[verbose]==0 ){
             settedFlags[tab] = true;
@@ -193,7 +192,7 @@ int main(int argc, char * argv[]){
         analyzerList *analyzers = constructorAnalyzerListEmpty();
         // PIPE opening
  
-        int pipe = open(PATH_TO_PIPE, O_RDONLY);
+        int pipe = open(PATH_TO_PIPE, O_RDONLY );
         while(1){
             if ((numReadCharacters = read(0, buf + lenBuffer, BUFFER_SIZE - lenBuffer)) > 0){
                 lenBuffer += numReadCharacters;
@@ -210,10 +209,9 @@ int main(int argc, char * argv[]){
                     int i=0;
                     // resetto valid, potrebbe non essere valido
                     valid = false;
+                    pathValid = true;
                     // copia dei flag su cui lavorare
-                    bool copyFlags[numberPossibleFlags];
-                    for(i=0;i<numberPossibleFlags;i++)
-                        copyFlags[i]=false;
+                    bool copyFlags[] = {false,false,false,false,false,false,false,false};
                     // reset degli argomenti
                     for(i=0;i<numberPossibleFlags;i++){ if(arguments[i]!=NULL){free(arguments[i]);arguments[i]=NULL;}}
                     // buffer temporaneo
@@ -225,10 +223,11 @@ int main(int argc, char * argv[]){
                     }
                     // spezzo i comandi in stringhe
                     char* spliced[PATH_MAX];
+
                     parser(command,&numCommands,spliced);
+
                     //controllo se siano validi
-                    if(checkArguments(numCommands, spliced, possibleFlags, flagsWithArguments,
-                        numberPossibleFlags, copyFlags, arguments, NULL, false, dumps)){
+                    if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,copyFlags,arguments,NULL,false)){
                         //controllo se la specifica combinazione sia valida
                         if(optionCombinationValid(copyFlags)){
                             //faccio ulteriore parsing solo se devo lavorare col flag --only
@@ -237,9 +236,9 @@ int main(int argc, char * argv[]){
                                 
                                 if(parseArguments(arguments[only],&tmpFilesCount,tmpResolvedPaths)){
                                     //parsing riuscito
-                                    valid=true;
+                                    valid=true; pathValid=true;
                                 }else{
-                                    valid=false; copyFlags[only]=false;
+                                    valid=false; copyFlags[only]=false; pathValid=false;
                                 }
                             }else{
                                 valid=true;
@@ -260,7 +259,7 @@ int main(int argc, char * argv[]){
                         }
                             
                     }
-                    //sleep(5);   
+
                 } else {
 
                 }
@@ -270,13 +269,13 @@ int main(int argc, char * argv[]){
                 pipe = open(PATH_TO_PIPE, O_RDONLY);
             }else{
                 //lettura di 1 pacchetto
-                reportReadOnePacket(pipe,analyzers, dumps);
+                reportReadOnePacket(pipe,analyzers);
             }
             clear();
             //clearScreen();
             //printErrors(analyzers);
             if(settedFlags[tab])
-                printRecapTabela(analyzers,!settedFlags[extended]);
+                printRecapTabela(analyzers);
             if(settedFlags[verbose])
                 printRecapVerbose(analyzers,!settedFlags[extended]);
             if(settedFlags[compact])
@@ -284,18 +283,29 @@ int main(int argc, char * argv[]){
             if(settedFlags[only]){
                 //prints only the files in 
                 int i=0;
-                printSelectedFiles(analyzers,currentFilesCount,resolvedPaths,!settedFlags[extended]);
+                for(i=0;i<currentFilesCount;i++){
+                    printf("%s \n",resolvedPaths[i]);
+                }
+                printFilesOrFolder(analyzers,currentFilesCount,resolvedPaths,!settedFlags[extended]);
             }
             if(settedFlags[help])
-                printf("%s", help_text);
-            if(settedFlags[quit])
-                exit(1);
+                printHelp();
+            if(settedFlags[quit]){
+                byte l[0];
+                int ex = read(pipe,l,1);
+                while (ex!=0){ ex = read(pipe,l,1);};
+                destructoraAnalyzerList(analyzers);
+                exit(0);
+            }
             if(settedFlags[force]){
                 destructoraAnalyzerList(analyzers);
                 analyzers = constructorAnalyzerListEmpty();
             }
-            //if(!valid)
-            //printRecapTabela(analyzers,group);
+            if(!pathValid)
+                printf("Path non valido\n");
+            if(!valid && pathValid)
+                printf("Comando non valido, -h per vedere la sintassi\n");
+
 
             //NON ELIMINARE QUESTE DUE STAMPE BUF E FFLUSH, SONO FONDAMENTALI PER IL CORRETTO FUNZIONAMENTO
             printf("> %s", buf);

@@ -56,6 +56,8 @@ fileWithStats *fwsListGetElementByIndex(fwsList *l, int index);
 fileWithStats *fwsListGetElementByPath(fwsList *l, char *path);
 // return reference to file w/ give id Returns NULL if not found
 fileWithStats *fwsListGetElementByID(fwsList *fwsList, uint id);
+// Returns reference to file  w/ given path Returns NULL if not found
+fileWithStats *fwsListGetElementByPathContained(fwsList *l, char *path);
 // Removes first element from the fileWithStatsfwsList.
 void fwsListRemoveFirst(fwsList *l);
 // Removes the last element from the fwsList.
@@ -63,7 +65,7 @@ void fwsListRemoveLast(fwsList *fwsList);
 // Adds the stats from newData to the right file in this fwsList. If file is not
 // present it is ignored.
 void fwsListUpdateFileData(fwsList *l, uint id, uint charTot, uint charsToAdd,
-                           uint *occourrrences);
+                           uint *occourrrences,uint m);
 // Adds new chars to file path. IF file with this id is not present, it is
 // ignored
 void fwsListUpdateFilePath(fwsList *fwsList, uint id, char *path);
@@ -80,13 +82,14 @@ bool pathIsContained(char* path1, char* path2);
 //deletes all elements in a folder
 void fwsListDeleteFolder(fwsList * l, char* path);
 // returns a list of items( copy) ) that have that belong to that folder
-fwsList* fwsListGetFolder(fwsList * l, char* path);
-
+// fwsList* fwsListGetFolder(fwsList * l, char* path);
+// resets all data in the list
+void fwsListResetData(fwsList * l);
 void fwsListPrint(fwsList *l);
 
 fwsList *constructorFwsListEmpty() {
   fwsList *l = (fwsList *)malloc(sizeof(fwsList));
-  checkNotNull(l);
+    checkNotNull(l);
   l->count = 0;
   l->firstNode = NULL;
   return l;
@@ -176,7 +179,6 @@ void fwsListInsertOrder(fwsList *l, fileWithStats *fs){
       //Inserimento in posizione index
       fwsListInsertAt(l,fs,index);
     }
-
   }
 
 }
@@ -215,7 +217,17 @@ fileWithStats *fwsListGetElementByID(fwsList *l, uint id) {
   // not found
   return NULL;
 }
-
+fileWithStats *fwsListGetElementByPathContained(fwsList *l, char *path) {
+  fileWithStats *current = l->firstNode;
+  while (current != NULL) {
+    if (pathIsContained(path, current->path)) {
+      return current;
+    }
+    current = current->nextNode;
+  }
+  // not found
+  return NULL;
+}
 void fwsListRemoveFirst(fwsList *l) {
   if (!fwsListIsEmpty(l)) {
     fileWithStats *newFirstNode = l->firstNode->nextNode;
@@ -243,11 +255,11 @@ void fwsListRemoveLast(fwsList *l) {
 }
 
 void fwsListUpdateFileData(fwsList *l, uint id, uint charTot, uint charsRead,
-                           uint *occourrrences) {
+                           uint *occourrrences,uint m) {
   fileWithStats *target = fwsListGetElementByID(l, id);
   if (target != NULL) {
     // if already exists
-    fwsUpdateFileData(target, charTot, charsRead, occourrrences);
+    fwsUpdateFileData(target, charTot, charsRead, occourrrences,m);
   }
   /*
   else{
@@ -272,6 +284,8 @@ bool fwsListRemoveElementByID(fwsList *l, uint id, bool delete) {
   if (target != NULL) {
     fileWithStats *prev = target->previousNode;
     fileWithStats *next = target->nextNode;
+    target->nextNode=NULL;
+    target->previousNode=NULL;
     if (delete)
       destructorFWS(target);
 
@@ -283,6 +297,7 @@ bool fwsListRemoveElementByID(fwsList *l, uint id, bool delete) {
       l->firstNode = next;
     if (next != NULL)
       next->previousNode = prev;
+
     l->count--;
     deleted=true;
   }
@@ -295,6 +310,8 @@ bool fwsListRemoveElementByPath(fwsList *l, char *path, bool delete) {
   if (target != NULL) {
     fileWithStats *prev = target->previousNode;
     fileWithStats *next = target->nextNode;
+    target->nextNode=NULL;
+    target->previousNode=NULL;
     if (delete)
       destructorFWS(target);
     if (prev != NULL)
@@ -335,23 +352,29 @@ bool pathIsContained(char* path1, char* path2){
 }
 
 void fwsListDeleteFolder(fwsList * l, char* path){
-  fileWithStats *cursor = l->firstNode;
-  while (cursor->nextNode != NULL){
-    if(pathIsContained(path,cursor->path))
+  fileWithStats *cursor = fwsListGetElementByPathContained(l,path);
+  while (cursor!= NULL){
       fwsListRemoveElementByPath(l,cursor->path,true);
-    cursor = cursor->nextNode;
+      cursor = fwsListGetElementByPathContained(l,path);
   }
 }
 
-fwsList* fwsListGetFolder(fwsList * l, char* path){
+// fwsList* fwsListGetFolder(fwsList * l, char* path){
+//   fileWithStats *cursor = l->firstNode;
+//   fwsList * folder = constructorFwsListEmpty();
+//   while (cursor->nextNode != NULL){
+//     if(pathIsContained(path,cursor->path))
+//       fwsListAppend(folder,constructorFWS(cursor->path,cursor->id,cursor->totalCharacters,cursor->occorrenze));
+//     cursor = cursor->nextNode;
+//   }
+//   return folder;
+// }
+void fwsListResetData(fwsList * l){
   fileWithStats *cursor = l->firstNode;
-  fwsList * folder = constructorFwsListEmpty();
-  while (cursor->nextNode != NULL){
-    if(pathIsContained(path,cursor->path))
-      fwsListAppend(folder,constructorFWS(cursor->path,cursor->id,cursor->totalCharacters,cursor->occorrenze));
+  while (cursor!= NULL){
+    fwsResetData(cursor);
     cursor = cursor->nextNode;
   }
-  return folder;
 }
 // Prints the fwsList debug
 void fwsListPrint(fwsList *l) {

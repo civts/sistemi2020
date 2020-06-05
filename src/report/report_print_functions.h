@@ -3,6 +3,7 @@
 //#include "./file_with_stats_list.h"
 //#include "./analyzer_list.h"
 #include "./report_utils.h"
+#include "./help.h"
 #include <fcntl.h>
 #ifndef REPORT_PRINT_FUNCTIONS_H
 #define REPORT_PRINT_FUNCTIONS_H
@@ -73,7 +74,13 @@ void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
 // Prints all the files in a given folder.
 // If the user has analyzed the folder with more than one analyzer all the
 // analysis are printed sequentially
-void printFolder(analyzerList *analyzers, char *folderPath, bool group);
+// void printFolder(analyzerList *analyzers, char *folderPath, bool group);
+//prints selected file or folders
+void printFilesOrFolder(analyzerList *analyzers,int pathsLen, char *paths[], bool group);
+//prints the help Text
+void printHelp();
+
+void printRecapTabela(analyzerList *analyzers);
 
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
@@ -104,17 +111,18 @@ void printPercentage(uint done, uint total, int barWidth) {
   printf("] %.2f%% complete\n", percentage * 100);
 }
 
-//Prints the files in this analyzer which have errors
-void printErrors(analyzer *a){
-    fileWithStats *fNode = a->errors->firstNode;
-    if(a->errors->count!=0){
-      printf("Errori in questi files:\n");
-      while (fNode != NULL) {
-        printf("%s\n", fNode->path);
-        fNode = fNode->nextNode;
-      }
-
+void printErrors(analyzer *a) {
+  fileWithStats *fNode = a->errors->firstNode;
+  if (a->errors->count != 0) {
+    printf("ERRORI IN QUESTI FILE!\n");
+    while (fNode != NULL) {
+      char pathCopy[strlen(fNode->path)];
+      strcpy(pathCopy, fNode->path);
+      trimStringToLength(pathCopy, 80);
+      printf("%s\n", pathCopy);
+      fNode = fNode->nextNode;
     }
+  }
 }
 // void printRecap(analyzerList *aList) {
 //   printFirstInfoLine(aList);
@@ -161,18 +169,20 @@ void printRecapCompact(analyzerList *aList) {
   az = AZ = digits = spaces = punctuation = otherChars = totalChars =
       totalCharsRead = 0;
   while (current != NULL) {
-    analyzerPrintErrorMessages(current);
+    printErrors(current);
     fileWithStats *cursor = current->files->firstNode;
-    charGroupStats fileStats = statsForFile(cursor);
-    az += fileStats.az;
-    AZ += fileStats.AZ;
-    digits += fileStats.digits;
-    punctuation += fileStats.punctuation;
-    spaces += fileStats.spaces;
-    otherChars += fileStats.otherChars;
-    totalCharsRead += fileStats.totalCharsRead;
-    totalChars += fileStats.totalChars;
-    cursor = cursor->nextNode;
+    while(cursor!=NULL){
+      charGroupStats fileStats = statsForFile(cursor);
+      az += fileStats.az;
+      AZ += fileStats.AZ;
+      digits += fileStats.digits;
+      punctuation += fileStats.punctuation;
+      spaces += fileStats.spaces;
+      otherChars += fileStats.otherChars;
+      totalCharsRead += fileStats.totalCharsRead;
+      totalChars += fileStats.totalChars;
+      cursor = cursor->nextNode;
+    }
     current = current->nextNode;
   }
   printf("a-z: %u\nA-Z: %u\ndigits: %u\npunctuation: %u\nspace: %u\nother: "
@@ -187,6 +197,7 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
   analyzer *current = aList->firstNode;
   // Print file paths
   while (current != NULL) {
+    printErrors(current);
     fileWithStats *fNode = current->files->firstNode;
     while (fNode != NULL) {
       printf("%s\n", fNode->path);
@@ -197,7 +208,6 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
   current = aList->firstNode;
   // Print stats of each file
   while (current != NULL) {
-    analyzerPrintErrorMessages(current);
     fileWithStats *fNode = current->files->firstNode;
     while (fNode != NULL) {
       printSingleFile(fNode, shouldGroup);
@@ -294,29 +304,56 @@ void printSingleFile(fileWithStats *f, bool group) {
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
                         bool group) {
   analyzer *a = analyzers->firstNode;
-  bool hasPrintedErrors;
   while (a != NULL) {
-    hasPrintedErrors=false;
     int i = 0;
     for (i = 0; i < pathsLen; i++) {
       fileWithStats *item = fwsListGetElementByPath(a->files, paths[i]);
       if (item != NULL) {
-        if(!hasPrintedErrors){
-          analyzerPrintErrorMessages(a);
-          hasPrintedErrors=true;
-        }
         printSingleFile(item, group);
       }
     }
     a = a->nextNode;
   }
 }
-void printFolder(analyzerList *analyzers, char *folderPath, bool group) {
+// void printFolder(analyzerList *analyzers, char *folderPath, bool group) {
+//   analyzer *a = analyzers->firstNode;
+//   while (a != NULL) {
+//     fwsList *folder = fwsListGetFolder(a->files, folderPath);
+//     // adesso dentro folder puoi farci quello che vuoi. Per adesso è ancora una
+//     // copia. Nel caso
+//     a = a->nextNode;
+//   }
+// }
+
+void printFilesOrFolder(analyzerList *analyzers,int pathsLen, char *paths[], bool group){
   analyzer *a = analyzers->firstNode;
   while (a != NULL) {
-    fwsList *folder = fwsListGetFolder(a->files, folderPath);
-    // adesso dentro folder puoi farci quello che vuoi. Per adesso è ancora una
-    // copia. Nel caso
+    int i;
+    for(i=0;i<pathsLen;i++){
+        int val = inspectPath(paths[i]);
+        switch (val){
+          case 0:{
+            fileWithStats * fws = fwsListGetElementByPath(a->files,paths[i]);
+            if(fws!=NULL)
+              printSingleFile(fws,group);
+            break;
+          }
+          case 1:
+          {
+            fileWithStats *cursor = a->files->firstNode;
+            while (cursor!= NULL){
+              printf("sadasdadasd\n");sleep(5);
+              if(pathIsContained(paths[i],cursor->path)){
+                printSingleFile(cursor,group);
+              }
+              cursor = cursor->nextNode;
+            }
+            break;
+          }
+          case -1: printf("file/cartella non esistente %s\n",paths[i]);
+            break;
+        }
+    }
     a = a->nextNode;
   }
 }
@@ -375,12 +412,13 @@ void printProgressBar(uint done, uint total, int barWidth) {
   printf("%-3d\n", (int)(percentage * 100));
 }
 
-void printRecapTabela(analyzerList *aList, bool shouldGroup) {
+void printRecapTabela(analyzerList *aList) {
   analyzer *a = aList->firstNode;
   const int totWidth = 120;
   const int groupWidth = 6;
   const int barWidth = 15;
   while (a != NULL) {        // forEach analyzer
+    printErrors(a);
     char msg[totWidth + 1];  // table header text
     char leftOver[totWidth]; // se devo finire la print nella riga succ
     leftOver[0] = '\0';
@@ -402,7 +440,7 @@ void printRecapTabela(analyzerList *aList, bool shouldGroup) {
     // la lunghezza di ogni pezzo dev'essere groupWidth-1:
     // strlen("|az  ") = 6 = groupWidth
     // si termini con |
-    const string beforeBar = "|az   |AZ   |num  |puntg|spazi|altri|letti|total|";
+    const string beforeBar = " |az   |AZ   |num  |puntg|spazi|altri|letti|total|";
     sprintf(msg + firstColWidth, beforeBar);
     const string barTxt = "progress bar";
     int positionNow = firstColWidth + strlen(beforeBar);
@@ -436,16 +474,17 @@ void printRecapTabela(analyzerList *aList, bool shouldGroup) {
       for (j = 0; j < firstColWidth - strlen(trimmedPath); j++) {
         line[strlen(trimmedPath) + j] = ' ';
       }
-      sprintf(line + firstColWidth, "|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
+      sprintf(line + firstColWidth, " |%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
               stats.az, stats.AZ, stats.digits, stats.punctuation, stats.spaces,
               stats.otherChars, stats.totalCharsRead, stats.totalChars);
       printf("%s",line);
       printProgressBar(f->readCharacters, f->totalCharacters, barWidth);
       f = f->nextNode;
     }
-    analyzerPrintErrorMessages(a);
     a = a->nextNode;
   }
 }
-
+void printHelp(){
+  printf("%s",help);
+}
 #endif

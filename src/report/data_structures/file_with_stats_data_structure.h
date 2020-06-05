@@ -35,6 +35,8 @@ typedef struct fwsNode_t {
   // array where in position i we count how many chars w/ ASCII code i are in
   // the file
   uint occorrenze[ASCII_LENGTH];
+  // number of parts
+  uint m;
   struct fwsNode_t *nextNode;
   struct fwsNode_t *previousNode;
 } fileWithStats;
@@ -47,16 +49,16 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
 void destructorFWS(fileWithStats *fs);
 // Adds new stats to this fileWithStats
 void fwsUpdateFileData(fileWithStats *fs, uint totChars, uint totCharsToAdd,
-                       uint occorrenze[ASCII_LENGTH]);
+                       uint occorrenze[ASCII_LENGTH],uint m);
 // appends the path
 void fwsUpdateFilePath(fileWithStats *fs, char *path);
 
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
                               uint occorrenze[ASCII_LENGTH]) {
   fileWithStats *fs = (fileWithStats *)malloc(sizeof(fileWithStats));
-  checkNotNull(fs);
+   checkNotNull(fs);
   fs->path = (char *)malloc(strlen(path)+1);
-  checkNotNull(fs->path);
+   checkNotNull(fs->path);
   fs->id = id;
   strcpy(fs->path, path);
   fs->totalCharacters = totalCharacters;
@@ -72,6 +74,7 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
       fs->occorrenze[i] = 0;
     }
   }
+  fs->m = -1;
   fs->previousNode = NULL;
   fs->nextNode = NULL;
   if (DEBUGGING)
@@ -85,11 +88,21 @@ void destructorFWS(fileWithStats *fs) {
   free(fs->path);
   free(fs);
 }
-
+void fwsResetData(fileWithStats * fs){
+  fs->m=-1;
+  int i;
+  for (i = 0; i < ASCII_LENGTH; i++) {
+    fs->occorrenze[i]  = 0;
+  }
+  fs->readCharacters=0;
+}
 void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsRead,
-                       uint occorrenze[ASCII_LENGTH]) {
+                       uint occorrenze[ASCII_LENGTH],uint m) {
   if (DEBUGGING)
     printf("Adding new stats to FWS object of file %s\n", fs->path);
+  if(m!=fs->m){
+    fwsResetData(fs);
+  }
   // totale dei caratteri del file
   fs->totalCharacters = totCharsFile;
   // sommo la quantità letta in questa porzione
@@ -109,6 +122,7 @@ void fwsUpdateFilePath(fileWithStats *fs, char *path) {
   fs->path = tmp;
   free(oldPath);
 };
+
 // Prints the fileWithStats, just fore testing for now - TESTED
 void fwsPrint(fileWithStats *fs) {
   printf("fws adr: %p\n", fs);

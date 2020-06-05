@@ -1,6 +1,6 @@
 #include "../packet_codes.h"
 #include "../utils.c"
-#include "./data_structures/file_with_stats_list.h"
+#include "./file_with_stats_list.h"
 #include "./report_utils.h"
 #include <fcntl.h>
 #ifndef bool

@@ -61,17 +61,18 @@ void analyzerListRemoveLast(analyzerList *l);
 // funzioni per i packet, richiamano la corrispondente funzione cercando
 // l'analyzer corretto
 
+void analyzerListStart(analyzerList *l, uint pid);
 // adds a new file to the analyzer with given pid. Creates a new analyer if none
 // is found.
-void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs, bool dumps);
+void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs);
 
 // removes any file with given pid from the list of files in current analysis, and places them into a "blacklist"
-void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile, bool dumps);
+void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile);
 
 // adds a new incomplete file to the analyzer with given pid. Creates a new
 // analyer if none is found.
 void analyzerListAddIncompleteFile(analyzerList *l, uint pid,
-                                   fileWithStats *fs, bool dumps);
+                                   fileWithStats *fs);
 // updatas the path of the file with id and places it into mainList from
 // incompleteList if analyzerss or file does not exits, packet is discarded
 void analyzerListUpdateFilePath(analyzerList *l, uint pid, uint idFile,
@@ -81,7 +82,7 @@ void analyzerListUpdateFilePath(analyzerList *l, uint pid, uint idFile,
 // discarded
 void analyzerListUpdateFileData(analyzerList *l, uint pid, uint idFile,
                                 uint totChars, uint readChars,
-                                uint occurrences[INT_SIZE]);
+                                uint occurrences[INT_SIZE],uint m);
 // delete a file with given id of pid, If there are no matches, the packet is
 // discarded
 void analyzerListDeleteFile(analyzerList *l, uint pid, uint idFile);
@@ -168,6 +169,8 @@ bool analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
       printf("Found element with pid %u, its @%p\n", pid, targetNode);
     analyzer *prev = targetNode->previousNode;
     analyzer *next = targetNode->nextNode;
+    targetNode->nextNode=NULL;
+    targetNode->previousNode=NULL;
     if (prev != NULL)
       prev->nextNode = next;
     else
@@ -214,32 +217,43 @@ void analyzerListRemoveLast(analyzerList *l) {
   }
 }
 
-void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs, bool dumps) {
+
+void analyzerListStart(analyzerList *l, uint pid){
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid, dumps);
+    a = constructorAnalyzer(pid);
+    analyzerListAppend(l, a);
+  }
+  analyzerStart(a);
+}
+
+void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs) {
+  analyzer *a = analyzerListGetElementByPid(l, pid);
+  // if no analyzer with given pid is found
+  if (a == NULL) {
+    a = constructorAnalyzer(pid);
     analyzerListAppend(l, a);
   }
   // function that adds the file to the mainList
   analyzerAddNewFile(a, fs);
 }
-void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile, bool dumps){
+void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile){
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid, dumps);
+    a = constructorAnalyzer(pid);
     analyzerListAppend(l, a);
   }
   // function that adds the file to the mainList
-  analyzerErrorFile(a, pid);
+  analyzerErrorFile(a, idFile);
 }
 void analyzerListAddIncompleteFile(analyzerList *l, uint pid,
-                                   fileWithStats *fs, bool dumps) {
+                                   fileWithStats *fs) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid, dumps);
+    a = constructorAnalyzer(pid);
     analyzerListAppend(l, a);
   }
   // function that adds the file to the incompleteList
@@ -259,23 +273,24 @@ void analyzerListUpdateFilePath(analyzerList *l, uint pid, uint idFile,
 
 void analyzerListUpdateFileData(analyzerList *l, uint pid, uint idFile,
                                 uint totChars, uint readChars,
-                                uint occurrences[INT_SIZE]) {
+                                uint occurrences[INT_SIZE],uint m) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
     // update
     analyzerUpdateFileData(a, idFile, totChars, readChars,
-                          occurrences);
+                          occurrences,m);
     }else {
     // perror("analyzer non esistente\n");
   }
 }
 
 void analyzerListDeleteFile(analyzerList *l, uint pid, uint idFile) {
+  // printf("pid %u\nidFile %u\n",pid,idFile);
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
     analyzerDeleteFile(a, idFile);
   } else {
-    // file is not here, we do nothing
+    // perror("analyzer non esistente\n");
   }
 }
 void analyzerListDeleteFolder(analyzerList *l,uint pid, char* path){
