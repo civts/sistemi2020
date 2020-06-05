@@ -45,7 +45,7 @@ void miniQ(string fileName, miniQinfo *instanceOfMySelf){
             // sendOccurencesToReport(fileName, numCharsInPortion, occurences);
             sendOccurencesPacketToReport(instanceOfMySelf->pipeToQ, -1, instanceOfMySelf->fileId,
                                          instanceOfMySelf->currM, instanceOfMySelf->index, fileLength,
-                                         lenPortion, occurences);
+                                         endPosition-startPosition, occurences);
             printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
         }
     }

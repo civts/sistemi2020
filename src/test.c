@@ -13,8 +13,8 @@ controllerInstance *cInstance;
 
 int  generateNewControllerInstance();
 
-int m = 2;
-int n = 2;
+int m = 8;
+int n = 1;
 
 int main(int argc, char *argv[]){
     int returnCode = generateNewControllerInstance();
@@ -22,9 +22,12 @@ int main(int argc, char *argv[]){
     sendNewMPacket(cInstance->pipeAC, m);
 
     sendNewFilePacket(cInstance->pipeAC, "file.txt");
-    sendStartAnalysisPacket(cInstance->pipeAC, -1);
     sendNewFilePacket(cInstance->pipeAC, "file2.txt");
-    // sendNewMPacket(cInstance->pipeAC, 3);
+    sendStartAnalysisPacket(cInstance->pipeAC, -1);
+    // sleep(4);
+
+    sendNewNPacket(cInstance->pipeAC, 2);
+    // sendStartAnalysisPacket(cInstance->pipeAC, -1);
     // removeFileByNamePacket(cInstance->pipeAC, "file.txt"); 
     
     sleep(4);

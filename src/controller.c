@@ -8,7 +8,7 @@
 // #include "datastructures/namesList.c"
 // #include "datastructures/fileList.c"
 
-// #define REPORT 1
+#define REPORT 1
 
 string REPORT_FIFO = "/tmp/fifo";
 
@@ -279,6 +279,10 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInsta
             NodeFileState *newNodeFile = constructorFileNode(newFile);
             appendFileState(instanceOfMySelf->fileList, newNodeFile);
 
+            #ifdef REPORT
+            newFileNameToReportPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer, newFile->idFile, newFile->fileName);
+            #endif
+
             pWithMinWorkload->workload++;
             instanceOfMySelf->nextFileID++;
         }
@@ -451,7 +455,9 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
         printf("Delete from file list %s\n", deleteFileNamePointer->name);
         idRemovedFile = removeNode(instanceOfMySelf->fileList, deleteFileNamePointer->name);
         // delete file from report
-        // removeFileByIdPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer, idRemovedFile);
+        #ifdef REPORT
+        removeFileByIdPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer, idRemovedFile);
+        #endif
 
         deleteFileNamePointer = deleteFileNamePointer->next;
     }
@@ -529,6 +535,7 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
         // update status in file list
         if (decrementRemainingPortionsById(instanceOfMySelf->fileList, idFile) != -1){
             #ifdef REPORT
+            printf("Occurences packet with charsread %d\n", fromBytesToInt(packetData + 5*INT_SIZE));
             forwardPacket(instanceOfMySelf->pipeToReport, 6, packetDataSize, packetData);
             #endif
         }
