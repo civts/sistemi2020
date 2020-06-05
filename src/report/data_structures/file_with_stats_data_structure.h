@@ -111,6 +111,7 @@ void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsRead,
   for (i = 0; i < ASCII_LENGTH; i++) {
     fs->occorrenze[i] += occorrenze[i];
   }
+  fs->m=m;
 }
 
 void fwsUpdateFilePath(fileWithStats *fs, char *path) {
