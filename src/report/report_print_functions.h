@@ -107,7 +107,7 @@ void printPercentage(uint done, uint total, int barWidth) {
 void printErrors(analyzer *a){
     fileWithStats *fNode = a->errors->firstNode;
     if(a->errors->count!=0){
-      printf("ERRORI IN QUESTI FILE!\n");
+      printf("Errori in questi files:\n");
       while (fNode != NULL) {
         printf("%s\n", fNode->path);
         fNode = fNode->nextNode;

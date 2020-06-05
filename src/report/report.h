@@ -85,9 +85,7 @@ void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
 }
 
 void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
-  // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
-  // printf("dati : %u\n",dimDati);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
@@ -99,9 +97,6 @@ void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   } else {
     perror("update del path fallito\n");
   }
-  // perché qui non va avanti ?
-  // printAnalyzerList(analyzers);
-  // printf("bananare");
   free(dati);
 }
 
@@ -135,9 +130,7 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
 }
 
 void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
-  // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
-  // printf("dati : %u\n",dimDati);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
@@ -152,9 +145,7 @@ void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   free(dati);
 }
 void gotDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
-  // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
-  // printf("dati : %u\n",dimDati);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
@@ -169,9 +160,7 @@ void gotDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
   free(dati);
 }
 void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
-  // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
-  // printf("dati : %u\n",dimDati);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
@@ -186,9 +175,7 @@ void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
   free(dati);
 }
 void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
-  // printf("code : %u\n",header[0]);
   int dimDati = fromBytesToInt(header + 1);
-  // printf("dati : %u\n",dimDati);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {

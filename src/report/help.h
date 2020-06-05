@@ -1,6 +1,6 @@
 #ifndef __HELP_H__
 #define __HELP_H__
-const char *help =
+const char *help_text =
     "Report permette di visualizzare i risultati delle analisi \n"
     "in maniera semplice e dinamica.\n"
     "Nonostante sia consigliato eseguire questo programma assieme a un\n"

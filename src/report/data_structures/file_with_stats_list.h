@@ -155,27 +155,24 @@ void fwsListInsertOrder(fwsList *l, fileWithStats *fs){
     int index = 0;
     fileWithStats *cursor = l->firstNode;
     while (cursor->nextNode != NULL && comparePaths(cursor->path,fs->path)){
-      // printf("%s ",cursor->path);
-      // printf(less?"<":">");
-      // printf(" %s\n",fs->path);
       index++;
       cursor = cursor->nextNode;
     }
 
     if(index==0 && !comparePaths(cursor->path,fs->path)){
-      //printf("Inserimento in testa\n");
+      //Inserimento in testa
       fwsListInsertAt(l,fs,0);
     }else if(index==0 && comparePaths(cursor->path,fs->path)){
-      //printf("Inserimento in 2 posizione\n");
+      //Inserimento in 2 posizione
       fwsListInsertAt(l,fs,1);
     }else if(index==l->count-1 && !comparePaths(cursor->path,fs->path)){
-      //printf("Inserimento in penultima posizione\n");
+      //Inserimento in penultima posizione
       fwsListInsertAt(l,fs,l->count-2);
     }else if(index==l->count-1 && comparePaths(cursor->path,fs->path)){
-      //printf("Inserimento in ultima posizione\n");
+      //Inserimento in ultima posizione
       fwsListAppend(l,fs);
     }else{
-      //printf("Inserimento in posizione index %d\n",index);
+      //Inserimento in posizione index
       fwsListInsertAt(l,fs,index);
     }
 

@@ -118,7 +118,7 @@ void appendNameToNamesList(NamesList *list, string name){
         NodeName *newNode = constructorNodeName(name);
         appendToNamesList(list, newNode);
     } else {
-       // printf("File gia' presente nella lista!\n");
+       // File gia' presente nella lista, non facciamo niente
     }
 }
 
@@ -150,7 +150,8 @@ int removeNodeNameByName(NamesList *list, string fileName){
     NodeName *toRemove = getNodeNameByName(list, fileName);
     int result = 1;
     if(toRemove == NULL){
-        printf("There is no file %s in the list\n", fileName);
+        if(DEBUGGING)
+            printf("There is no file %s in the list\n", fileName);
     } else {
         if(list->first == toRemove){
             list->first = toRemove->next;
@@ -165,7 +166,8 @@ int removeNodeNameByName(NamesList *list, string fileName){
         }
         deleteNodeName(toRemove);
         list->counter--;
-        printf("%s deleted.\n", fileName);
+        if(DEBUGGING)
+            printf("%s deleted.\n", fileName);
         result = 0;
     }
     return result;
@@ -252,7 +254,6 @@ string *getArgumentsList(char *arguments, int *numArgs, string *argumentsList){
         *numArgs = *numArgs+1;
         int argLength = strlen(arguments) - offset; 
         string argument = (string)malloc(argLength+1);
-        // printf("Arglength: %d\n", argLength);
         memcpy(argument, arguments+offset, argLength);
         argument[argLength] = '\0';
 
@@ -261,12 +262,10 @@ string *getArgumentsList(char *arguments, int *numArgs, string *argumentsList){
         argumentsList = (string *)malloc(*numArgs);
         int i=0;
         NodeName *node = list->first;
-        // printf("num args: %d\n", *numArgs);
         while(node != NULL){
             argumentsList[i] = (string)malloc(strlen(node->name)+1);
             strcpy(argumentsList[i], node->name);
             argumentsList[i][strlen(node->name)] = '\0';
-            // printf("name: %s\n", argumentsList[i]);
             node = node->next;
             i++;
         }

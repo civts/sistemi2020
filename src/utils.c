@@ -135,7 +135,6 @@ bool checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithA
     int i=0;
     while (i<argc ){
         bool valid =false;
-        //printf("%s argument\n",argv[i]);
         for(j=0;j<numberPossibleFlags && i<argc ;j++){
             if(streq(argv[i],possibleFlags[j])){
                 if(flagsWithArguments[j]){

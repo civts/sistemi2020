@@ -132,7 +132,6 @@ void analyzerAddNewFile(analyzer *a, fileWithStats *fs) {
   fileWithStats *isInErrors = fwsListGetElementByID(a->errors, fs->id);
   
   if (isInFiles == NULL && isInErrors==NULL) {
-    printf("IM INSERTINT !\n");
     fwsListAppend(a->files,fs);
   } else {
     destructorFWS(fs);

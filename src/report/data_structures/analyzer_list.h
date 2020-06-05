@@ -270,12 +270,11 @@ void analyzerListUpdateFileData(analyzerList *l, uint pid, uint idFile,
 }
 
 void analyzerListDeleteFile(analyzerList *l, uint pid, uint idFile) {
-  // printf("pid %u\nidFile %u\n",pid,idFile);
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
     analyzerDeleteFile(a, idFile);
   } else {
-    // perror("analyzer non esistente\n");
+    // file is not here, we do nothing
   }
 }
 void analyzerListDeleteFolder(analyzerList *l,uint pid, char* path){

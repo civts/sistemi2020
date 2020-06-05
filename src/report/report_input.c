@@ -1,3 +1,4 @@
+#include "./help.h";
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -70,32 +71,18 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     parser(arguments,numArgs,unresolvedPaths);
     bool valid = true;
     int i=0; int j=0;
-    // for(i=0;i<*numArgs;i++){
-    //     printf("%s ",unresolvedPaths[i]);
-    // }
-    //printf("\n");
     while(j<*numArgs){
-        //printf("sto cercando di risolvere : %s \n",unresolvedPaths[j]);
         resolvedPaths[i]=realpath(unresolvedPaths[j],resolvedPaths[i]);
-        //printf("risolto con  : %s \n",resolvedPaths[i]);
         if(inspectPath(resolvedPaths[i])!=-1){
-            //printf("path valido : %s \n",resolvedPaths[i]);
             i++;
         }else{
-            valid = false;
-            //printf("path %s non valido\n",unresolvedPaths[j]);
-        }
+            valid = false;}
         j++;
     }
     for(j=0;j<*numArgs;j++){
         free(unresolvedPaths[j]);
     }
     //free(unresolvedPaths);
-
-    // for(j=0;j<i;j++){
-    //     printf("%s ",resolvedPaths[j]);
-    // }
-    // printf("\n");
     *numArgs = i;
     // unresolvedPaths = getArgumentsList(arguments[9],numFilesLog,unresolvedPaths);
     // i=0; j=0;
@@ -105,7 +92,6 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     //         i++;
     //     }else{
     //         valid = false;
-    //         printf("path %s non valido\n",unresolvedPaths[i]);
     //     }
     //     j++;
     // }
@@ -149,13 +135,6 @@ int main(int argc, char * argv[]){
             }
         }
     }
-
-    // for(i=0;i<currentFilesCount;i++){
-    //         printf("%s ",resolvedPaths[i]);
-    // }
-    // printf("\n");
-    // printf("%d\n",true);
-    // printf("%d\n",false);
     if(valid){
         
         // default view is tab
@@ -223,11 +202,7 @@ int main(int argc, char * argv[]){
                     }
                     // spezzo i comandi in stringhe
                     char* spliced[PATH_MAX];
-
                     parser(command,&numCommands,spliced);
-                    // for(i=0;i<numCommands;i++){
-                    //     printf("%s\n,",spliced[i]);
-                    // }
                     //controllo se siano validi
                     if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,copyFlags,arguments,NULL,false)){
                         //controllo se la specifica combinazione sia valida
@@ -257,17 +232,9 @@ int main(int argc, char * argv[]){
                         for(i=0;i<currentFilesCount;i++){
                             resolvedPaths[i] = malloc(strlen(tmpResolvedPaths[i])+1);
                             strcpy(resolvedPaths[i],tmpResolvedPaths[i]);
-                            //printf("%s ",resolvedPaths[i]);
                         }
                             
                     }
-
-                    // printf("\n");
-                    // for(i=0;i<numberPossibleFlags;i++){
-                    //     printf("%d ",settedFlags[i]);
-                    // }
-                    // printf("\n");
-                    // printf("\n");
                     //sleep(5);   
                 } else {
 
@@ -292,13 +259,10 @@ int main(int argc, char * argv[]){
             if(settedFlags[only]){
                 //prints only the files in 
                 int i=0;
-                // for(i=0;i<currentFilesCount;i++){
-                //             printf("%s ",resolvedPaths[i]);
-                //         }
                 printSelectedFiles(analyzers,currentFilesCount,resolvedPaths,!settedFlags[extended]);
             }
             if(settedFlags[help])
-                printf("AIUTO\n");
+                printf("%s", help_text);
             if(settedFlags[quit])
                 exit(1);
             if(settedFlags[force]){
