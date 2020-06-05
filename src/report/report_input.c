@@ -21,7 +21,6 @@ int counter = 0;
 #define extended 5
 #define force 6
 #define quit 7
-#define dump 8
 
 
 // Flag for telling the report to show help dialog
@@ -40,8 +39,6 @@ char extendedFlag[] = "-e";
 char forceReAnalysisFlag[] = "-r";
 // Flag for telling the report to quit
 char quitFlag[] = "-q";
-// Flag for dumping errors from analyzers in one or more files
-char dumpFlag[] = "--dump";
 
 void clearScreen(){
 //  const char *CLEAR_SCREEN_ANSI = "\e[1;1H\e[2J";
@@ -83,18 +80,32 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     parser(arguments,numArgs,unresolvedPaths);
     bool valid = true;
     int i=0; int j=0;
+    // for(i=0;i<*numArgs;i++){
+    //     printf("%s ",unresolvedPaths[i]);
+    // }
+    //printf("\n");
     while(j<*numArgs){
+        //printf("sto cercando di risolvere : %s \n",unresolvedPaths[j]);
         resolvedPaths[i]=realpath(unresolvedPaths[j],resolvedPaths[i]);
+        //printf("risolto con  : %s \n",resolvedPaths[i]);
         if(inspectPath(resolvedPaths[i])!=-1){
+            //printf("path valido : %s \n",resolvedPaths[i]);
             i++;
         }else{
-            valid = false;}
+            valid = false;
+            //printf("path %s non valido\n",unresolvedPaths[j]);
+        }
         j++;
     }
     for(j=0;j<*numArgs;j++){
         free(unresolvedPaths[j]);
     }
     //free(unresolvedPaths);
+
+    // for(j=0;j<i;j++){
+    //     printf("%s ",resolvedPaths[j]);
+    // }
+    // printf("\n");
     *numArgs = i;
     // unresolvedPaths = getArgumentsList(arguments[9],numFilesLog,unresolvedPaths);
     // i=0; j=0;
@@ -104,6 +115,7 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     //         i++;
     //     }else{
     //         valid = false;
+    //         printf("path %s non valido\n",unresolvedPaths[i]);
     //     }
     //     j++;
     // }
@@ -111,15 +123,15 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
 }
 int main(int argc, char * argv[]){
     int retCode = 0;
-    char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag,dumpFlag};
+    char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag};
     // SPECIFICARE LA DIMENSIONE
     int numberPossibleFlags =  8;
     // SPECIFICARE QUALI FLAG ACCETTANO ARGOMENTI, da passare in una stringa "adasda dasdas asdad". Esempio: "--only "patate ecmpa cobp""
-    bool flagsWithArguments[] = {false,false,false,false,true,false,false,false,false};
+    bool flagsWithArguments[] = {false,false,false,false,true,false,false,false};
     // QUI RITORNO GLI ARGOMENTI PASSATI AL FLAG CHE HA ARGOMENTO
-    char *arguments[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+    char *arguments[] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
     //inizializzare i flag coi loro valori di default
-    bool settedFlags[] = {false,false,false,false,false,false,false,false,false};
+    bool settedFlags[] = {false,false,false,false,false,false,false,false};
 
     char* resolvedPaths[PATH_MAX];
     int i=0;
@@ -225,7 +237,9 @@ int main(int argc, char * argv[]){
                     char* spliced[PATH_MAX];
 
                     parser(command,&numCommands,spliced);
-
+                    // for(i=0;i<numCommands;i++){
+                    //     printf("%s\n,",spliced[i]);
+                    // }
                     //controllo se siano validi
                     if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,copyFlags,arguments,NULL,false)){
                         //controllo se la specifica combinazione sia valida
@@ -254,8 +268,8 @@ int main(int argc, char * argv[]){
                         currentFilesCount = tmpFilesCount;
                         for(i=0;i<currentFilesCount;i++){
                             resolvedPaths[i] = malloc(strlen(tmpResolvedPaths[i])+1);
-                            checkNotNull(resolvedPaths[i]);
                             strcpy(resolvedPaths[i],tmpResolvedPaths[i]);
+                            //printf("%s ",resolvedPaths[i]);
                         }
                             
                     }

@@ -342,7 +342,6 @@ void printFilesOrFolder(analyzerList *analyzers,int pathsLen, char *paths[], boo
           {
             fileWithStats *cursor = a->files->firstNode;
             while (cursor!= NULL){
-              printf("sadasdadasd\n");sleep(5);
               if(pathIsContained(paths[i],cursor->path)){
                 printSingleFile(cursor,group);
               }
@@ -440,7 +439,7 @@ void printRecapTabela(analyzerList *aList) {
     // la lunghezza di ogni pezzo dev'essere groupWidth-1:
     // strlen("|az  ") = 6 = groupWidth
     // si termini con |
-    const string beforeBar = " |az   |AZ   |num  |puntg|spazi|altri|letti|total|";
+    const string beforeBar = "|az   |AZ   |num  |puntg|spazi|altri|letti|total|";
     sprintf(msg + firstColWidth, beforeBar);
     const string barTxt = "progress bar";
     int positionNow = firstColWidth + strlen(beforeBar);
@@ -474,7 +473,7 @@ void printRecapTabela(analyzerList *aList) {
       for (j = 0; j < firstColWidth - strlen(trimmedPath); j++) {
         line[strlen(trimmedPath) + j] = ' ';
       }
-      sprintf(line + firstColWidth, " |%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
+      sprintf(line + firstColWidth, "|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
               stats.az, stats.AZ, stats.digits, stats.punctuation, stats.spaces,
               stats.otherChars, stats.totalCharsRead, stats.totalChars);
       printf("%s",line);
@@ -485,6 +484,6 @@ void printRecapTabela(analyzerList *aList) {
   }
 }
 void printHelp(){
-  printf("%s",help);
+  printf(help);
 }
 #endif
