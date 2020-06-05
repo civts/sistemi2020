@@ -119,7 +119,7 @@ int main(int argc, char * argv[]){
     int numberPossibleFlags =  9;
     // SPECIFICARE QUALI FLAG ACCETTANO ARGOMENTI, da passare in una stringa "adasda dasdas asdad". Esempio: "--only "patate ecmpa cobp""
     bool flagsWithArguments[numberPossibleFlags];
-    flagsWithArguments[only]=true; //only flag is true
+    flagsWithArguments[only] = true; //only flag is true
     // QUI RITORNO GLI ARGOMENTI PASSATI AL FLAG CHE HA ARGOMENTO
     char *arguments[numberPossibleFlags];
     //inizializzare i flag coi loro valori di default
@@ -138,7 +138,8 @@ int main(int argc, char * argv[]){
     int currentFilesCount = 0;
     bool valid = false;
     //controllo gli argomenti siano validi
-    if (checkArguments(argc-1,argv+1,possibleFlags,flagsWithArguments,numberPossibleFlags,settedFlags,arguments,NULL,false)){
+    if (checkArguments(argc-1, argv+1, possibleFlags, flagsWithArguments,
+        numberPossibleFlags, settedFlags, arguments, NULL, false, settedFlags[dump])){
         // controllo la combinazione sia valida
         if( optionCombinationValid(settedFlags)){
             //faccio ulteriore parsing solo se devo lavorare col flag --only
@@ -156,7 +157,7 @@ int main(int argc, char * argv[]){
         }
     }
     if(valid){
-        
+        bool dumps = settedFlags[dump];
         // default view is tab
         if(settedFlags[help] + settedFlags[tab]+ settedFlags[compact]+ settedFlags[only] + settedFlags[verbose]==0 ){
             settedFlags[tab] = true;
@@ -226,7 +227,8 @@ int main(int argc, char * argv[]){
                     char* spliced[PATH_MAX];
                     parser(command,&numCommands,spliced);
                     //controllo se siano validi
-                    if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,copyFlags,arguments,NULL,false)){
+                    if(checkArguments(numCommands, spliced, possibleFlags, flagsWithArguments,
+                        numberPossibleFlags, copyFlags, arguments, NULL, false, dumps)){
                         //controllo se la specifica combinazione sia valida
                         if(optionCombinationValid(copyFlags)){
                             //faccio ulteriore parsing solo se devo lavorare col flag --only
@@ -268,7 +270,7 @@ int main(int argc, char * argv[]){
                 pipe = open(PATH_TO_PIPE, O_RDONLY);
             }else{
                 //lettura di 1 pacchetto
-                reportReadOnePacket(pipe,analyzers, settedFlags[dump]);
+                reportReadOnePacket(pipe,analyzers, dumps);
             }
             clear();
             //clearScreen();

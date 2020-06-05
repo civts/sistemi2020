@@ -150,7 +150,7 @@ int inspectPath(const char *path) {
 bool checkArguments(int argc, char *argv[], char **possibleFlags,
                     bool *flagsWithArguments, int numberPossibleFlags,
                     bool *settedFlags, char **arguments, char *invalid,
-                    bool printOnFailure) {
+                    bool printOnFailure, bool* dumps) {
   bool validity = true;
   int j = 0;
   int i = 0;
@@ -205,6 +205,8 @@ bool checkArguments(int argc, char *argv[], char **possibleFlags,
       }
     }
   }
+  if(settedFlags[dump])
+    *dumps = true;
   return validity;
 }
 
