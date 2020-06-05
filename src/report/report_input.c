@@ -66,8 +66,18 @@ bool optionCombinationValid(bool *settedFlags){
     if(settedFlags[help] + settedFlags[tab]+ settedFlags[compact]+ settedFlags[only] + settedFlags[verbose]>= 2 ){
         valid = false;
     }
+    // non è possibile utilizzare extened e tab assieme
+    if(settedFlags[extended] && settedFlags[tab]){
+        valid = false;
+    }
+    // non posso avere solo -e
+    if(settedFlags[extended] && (settedFlags[help] + settedFlags[tab]+ settedFlags[compact]+ settedFlags[only] + settedFlags[verbose] == 0) )
+        valid = false;
+    // non posso avere -e e help
+    if( settedFlags[extended] && settedFlags[help] )
+        valid = false;
     return valid;
-}
+} 
 //funzione che fa il parsing dei file passati ad arguments trasformandoli in una lista di stringhe in resolvedPaths, lunghezza della lista in numArgs
 bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     char * unresolvedPaths[PATH_MAX];

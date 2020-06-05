@@ -233,53 +233,6 @@ void deleteFolderNamesList(string folder, NamesList *existentList, NamesList *de
         tempNode = nextNode;
     }
 }
-string *getArgumentsList(char *arguments, int *numArgs, string *argumentsList){
-    argumentsList = NULL;
-    *numArgs = 0;
-    if(arguments == NULL){
-        // nothing
-    } else {
-        NamesList *list = constructorNamesList();    
-        int   offset  = 0;
-        char* oldPointer = arguments;
-        char* pointer = strstr(arguments, " ");
-        while(pointer != NULL){
-            *numArgs = *numArgs+1;
-            int argLength = pointer - oldPointer; 
-            string argument = malloc(argLength+1);
-            checkNotNull(argument);
-            memcpy(argument, arguments+offset, argLength);
-            argument[argLength] = '\0';
-            oldPointer = pointer;
-            offset = pointer - arguments + 1;
-            appendNameToNamesList(list, argument);
-            pointer = NULL;
-            pointer = strstr(oldPointer+1, " ");
-        }
-        *numArgs = *numArgs+1;
-        int argLength = strlen(arguments) - offset; 
-        string argument = (string)malloc(argLength+1);
-        checkNotNull(argument);
-        memcpy(argument, arguments+offset, argLength);
-        argument[argLength] = '\0';
-
-        appendNameToNamesList(list, argument);
-
-        argumentsList = (string *)malloc(*numArgs);
-        checkNotNull(argumentsList);
-        int i=0;
-        NodeName *node = list->first;
-        while(node != NULL){
-            argumentsList[i] = (string)malloc(strlen(node->name)+1);
-            checkNotNull(argumentsList[i]);
-            strcpy(argumentsList[i], node->name);
-            argumentsList[i][strlen(node->name)] = '\0';
-            node = node->next;
-            i++;
-        }
-    }
-    return argumentsList;
-}
 // int main(){
 
 //     NodeName *node1 = constructorNodeName("Marciello.txt");
