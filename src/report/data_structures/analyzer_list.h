@@ -102,6 +102,7 @@ void analyzerListPrint(analyzerList *l);
 
 analyzerList *constructorAnalyzerListEmpty() {
   analyzerList *l = (analyzerList *)malloc(sizeof(analyzerList));
+  checkNotNull(l);
   l->count = 0;
   l->firstNode = NULL;
   return l;

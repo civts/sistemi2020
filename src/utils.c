@@ -1,7 +1,7 @@
 
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #ifndef UTILS_H
 #define UTILS_H
@@ -20,7 +20,7 @@ typedef unsigned long long ull;
 #define DEBUGGING true
 typedef unsigned int uint;
 typedef unsigned char byte;
-typedef char* string;
+typedef char *string;
 
 // #define false 0
 // #define true 1
@@ -98,105 +98,126 @@ typedef struct {
   uint totalCharsRead, totalChars;
 } charGroupStats;
 
+void checkNotNull(void *ptr) {
+  if (ptr == NULL) {
+    perror("\nNon è disponibile abbastanza memoria RAM per permettere "
+           "l'esecuzione di questo programma.\n");
+    exit(1);
+  }
+}
+
 // // FUNZIONE CHE GESTISCE IL PARSING
 // //DOCUMENTAZIONE
 // // argc parametri del main. Da chiamare con 1
 // // argv parametri del main. Da chiamare con +1
-// // possibleFlags lista di char* contenente i valori ammissibili come argomenti. DEVONO NECESSARIAMENTE INIZIARE CON "-"
-// // flagsWithArguments vettore di booleani, settare a true la posizione in cui il corrispondente flag richiede un altro parametro
+// // possibleFlags lista di char* contenente i valori ammissibili come
+// argomenti. DEVONO NECESSARIAMENTE INIZIARE CON "-"
+// // flagsWithArguments vettore di booleani, settare a true la posizione in cui
+// il corrispondente flag richiede un altro parametro
 // // numberPossibleFlags lunghezza della lista dei possibili parametri
-// // settedFlags vettore di booleani, sono settati a true è presente l'argomento della corrispondente posizione. E' possibile inizializzarli a valori diversi da false per far finta che un argomento sia sempre implicito
-// // arguments lista dove in posizione i si trova l'altro parametro inserito dall'utente per l'argomento i. Dovete fare la free!. Nel caso di argomenti multipli "-i ciao patate" l'argomento viene concatenato con lo spazio. Dunque "ciao patate"
-// // invalid è la stringa di testo da mostrare in caso vi siano argomenti invalidi
-// // printOnFailure specifica se mostare la  stringa di testo invalid se un argomento è invalido
-// // return true se gli argomenti sono tutti validi, false altrimenti. Se gli argomenti sono invalidi, tutti i flag sono messi a false e i parametri degli argomenti sono disallocati
+// // settedFlags vettore di booleani, sono settati a true è presente
+// l'argomento della corrispondente posizione. E' possibile inizializzarli a
+// valori diversi da false per far finta che un argomento sia sempre implicito
+// // arguments lista dove in posizione i si trova l'altro parametro inserito
+// dall'utente per l'argomento i. Dovete fare la free!. Nel caso di argomenti
+// multipli "-i ciao patate" l'argomento viene concatenato con lo spazio. Dunque
+// "ciao patate"
+// // invalid è la stringa di testo da mostrare in caso vi siano argomenti
+// invalidi
+// // printOnFailure specifica se mostare la  stringa di testo invalid se un
+// argomento è invalido
+// // return true se gli argomenti sono tutti validi, false altrimenti. Se gli
+// argomenti sono invalidi, tutti i flag sono messi a false e i parametri degli
+// argomenti sono disallocati
 
 // Given a path to a file/folder it returns:
 // -1 : if it does not exist
 //  0 : if it is a file and it exists
 //  1 : if it is is a folder and it exists
-int inspectPath(const char *path){
-    struct stat path_stat;
-    int returnCode = -1;
-    if (path != NULL && stat(path, &path_stat) == 0){
-        if (S_ISREG(path_stat.st_mode)){
-            returnCode = 0;
-        } else if (S_ISDIR(path_stat.st_mode)){
-            returnCode = 1;
-        }
+int inspectPath(const char *path) {
+  struct stat path_stat;
+  int returnCode = -1;
+  if (path != NULL && stat(path, &path_stat) == 0) {
+    if (S_ISREG(path_stat.st_mode)) {
+      returnCode = 0;
+    } else if (S_ISDIR(path_stat.st_mode)) {
+      returnCode = 1;
     }
-    return returnCode;
+  }
+  return returnCode;
 }
 
-
-bool checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char ** arguments, char* invalid,bool printOnFailure){
-    bool validity = true;
-    int j=0;
-    int i=0;
-    while (i<argc ){
-        bool valid =false;
-        for(j=0;j<numberPossibleFlags && i<argc ;j++){
-            if(streq(argv[i],possibleFlags[j])){
-                if(flagsWithArguments[j]){
-                    bool serving = true;
-                    i++;
-                    while(i<argc && serving ){
-                        if(argv[i][0]!='-'){
-                            if(arguments[j]==NULL){
-                                arguments[j] = malloc(strlen(argv[i]+1));
-                                strcpy(arguments[j],argv[i]);
-                                settedFlags[j]=true;
-                                valid = true;
-                            }else{
-                                char* tmp = malloc(strlen(arguments[j])+strlen(argv[i])+2);
-                                strcpy(tmp,arguments[j]);
-                                strcat(tmp," ");
-                                strcat(tmp,argv[i]);
-                                free(arguments[j]);
-                                arguments[j]=tmp;
-                            }
-                            i++;
-                        }else{
-                            serving=false;
-                            i--;
-                        }
-                    }
-                }else{
-                    settedFlags[j]=true;
-                    valid=true;
-                }
-            }
-        }
-        if(!valid){
-            validity = false;
-        }
-        i++;
-    }   
-    if(printOnFailure && !validity)
-        printf("%s",invalid);
-    if(!validity){
-        for(j=0;j<numberPossibleFlags;j++){
-            settedFlags[j]=false;
-            if(arguments[j]!=NULL){
+bool checkArguments(int argc, char *argv[], char **possibleFlags,
+                    bool *flagsWithArguments, int numberPossibleFlags,
+                    bool *settedFlags, char **arguments, char *invalid,
+                    bool printOnFailure) {
+  bool validity = true;
+  int j = 0;
+  int i = 0;
+  while (i < argc) {
+    bool valid = false;
+    for (j = 0; j < numberPossibleFlags && i < argc; j++) {
+      if (streq(argv[i], possibleFlags[j])) {
+        if (flagsWithArguments[j]) {
+          bool serving = true;
+          i++;
+          while (i < argc && serving) {
+            if (argv[i][0] != '-') {
+              if (arguments[j] == NULL) {
+                arguments[j] = malloc(strlen(argv[i] + 1));
+                checkNotNull(arguments[j]);
+                strcpy(arguments[j], argv[i]);
+                settedFlags[j] = true;
+                valid = true;
+              } else {
+                char *tmp = malloc(strlen(arguments[j]) + strlen(argv[i]) + 2);
+                checkNotNull(tmp);
+                strcpy(tmp, arguments[j]);
+                strcat(tmp, " ");
+                strcat(tmp, argv[i]);
                 free(arguments[j]);
+                arguments[j] = tmp;
+              }
+              i++;
+            } else {
+              serving = false;
+              i--;
             }
+          }
+        } else {
+          settedFlags[j] = true;
+          valid = true;
         }
+      }
     }
-    return validity;
+    if (!valid) {
+      validity = false;
+    }
+    i++;
+  }
+  if (printOnFailure && !validity)
+    printf("%s", invalid);
+  if (!validity) {
+    for (j = 0; j < numberPossibleFlags; j++) {
+      settedFlags[j] = false;
+      if (arguments[j] != NULL) {
+        free(arguments[j]);
+      }
+    }
+  }
+  return validity;
 }
 
-
-void parser(char str[], int * no,char **out){
-    //char str[] ="- This, a sample string.";
-    char * pch;
-    pch = strtok (str," \t\r\n\f\v");
-    int i=0;
-    while (pch != NULL)
-    {
-        out[i] = strdup(pch);
-        pch = strtok (NULL, " \t\r\n\f\v");
-        i++;
-    }
-    *no=i;
+void parser(char str[], int *no, char **out) {
+  // char str[] ="- This, a sample string.";
+  char *pch;
+  pch = strtok(str, " \t\r\n\f\v");
+  int i = 0;
+  while (pch != NULL) {
+    out[i] = strdup(pch);
+    pch = strtok(NULL, " \t\r\n\f\v");
+    i++;
+  }
+  *no = i;
 }
 #endif

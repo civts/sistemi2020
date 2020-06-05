@@ -42,6 +42,7 @@ int reportReadOnePacket(int pipe, analyzerList *analyzers);
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  checkNotNull(dati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
@@ -58,6 +59,7 @@ void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers) {
 void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  checkNotNull(dati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
@@ -71,6 +73,7 @@ void gotErrorFilePacket(int pipe, byte *header, analyzerList *analyzers) {
 void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  checkNotNull(dati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
@@ -87,6 +90,7 @@ void got1stPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
 void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  checkNotNull(dati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
@@ -103,6 +107,7 @@ void got2ndPathPartPacket(int pipe, byte *header, analyzerList *analyzers) {
 void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  checkNotNull(dati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid = fromBytesToInt(dati);
@@ -115,6 +120,7 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
     //caratteri letti in questa porzione
     uint totCharsRead = fromBytesToInt(dati + 5 * INT_SIZE);
     uint *occurrences = malloc(sizeof(uint)*ASCII_LENGTH);
+    checkNotNull(occurrences);
     int j;
     for (j = 0; j < ASCII_LENGTH; j++) {
       occurrences[j] = fromBytesToInt(dati + (6+i)* INT_SIZE);
@@ -132,6 +138,7 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers) {
 void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  checkNotNull(dati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid;
@@ -147,6 +154,7 @@ void gotDeleteFilePacket(int pipe, byte *header, analyzerList *analyzers) {
 void gotDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  checkNotNull(dati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid;
@@ -162,6 +170,7 @@ void gotDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
 void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  checkNotNull(dati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid;
@@ -177,6 +186,7 @@ void got1stPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
 void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *analyzers) {
   int dimDati = fromBytesToInt(header + 1);
   byte *dati = (byte *)malloc(sizeof(byte) * dimDati);
+  checkNotNull(dati);
   int rdDati = read(pipe, dati, dimDati);
   if (rdDati == dimDati) {
     uint pid;

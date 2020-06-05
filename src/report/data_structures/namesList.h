@@ -35,7 +35,9 @@ void       emptyNameList(NamesList*a);
 
 NodeName *constructorNodeName(string fileName){
     NodeName *node = (NodeName*) malloc(sizeof(NodeName));
+    checkNotNull(node);
     node->name = (string) malloc(strlen(fileName) + 1);
+    checkNotNull(node->name);
     strcpy(node->name, fileName);
     node->next = node->prev = NULL;
 
@@ -56,6 +58,7 @@ void deleteNodeName(NodeName *node){
  */
 NamesList *constructorNamesList(){
     NamesList *list = (NamesList*) malloc(sizeof(NamesList));
+    checkNotNull(list);
     list->first   = NULL;
     list->last    = NULL;
     list->counter = 0;
@@ -186,6 +189,7 @@ bool isInFolder(string fileName, string folderName){
     bool ret = false;
     int folderLen = strlen(folderName);
     string toCompare = (string)malloc(folderLen+1);
+    checkNotNull(toCompare);
     memcpy(toCompare, fileName, folderLen);
     toCompare[folderLen]='\0';
     
@@ -243,6 +247,7 @@ string *getArgumentsList(char *arguments, int *numArgs, string *argumentsList){
             *numArgs = *numArgs+1;
             int argLength = pointer - oldPointer; 
             string argument = malloc(argLength+1);
+            checkNotNull(argument);
             memcpy(argument, arguments+offset, argLength);
             argument[argLength] = '\0';
             oldPointer = pointer;
@@ -254,16 +259,19 @@ string *getArgumentsList(char *arguments, int *numArgs, string *argumentsList){
         *numArgs = *numArgs+1;
         int argLength = strlen(arguments) - offset; 
         string argument = (string)malloc(argLength+1);
+        checkNotNull(argument);
         memcpy(argument, arguments+offset, argLength);
         argument[argLength] = '\0';
 
         appendNameToNamesList(list, argument);
 
         argumentsList = (string *)malloc(*numArgs);
+        checkNotNull(argumentsList);
         int i=0;
         NodeName *node = list->first;
         while(node != NULL){
             argumentsList[i] = (string)malloc(strlen(node->name)+1);
+            checkNotNull(argumentsList[i]);
             strcpy(argumentsList[i], node->name);
             argumentsList[i][strlen(node->name)] = '\0';
             node = node->next;

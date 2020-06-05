@@ -54,7 +54,9 @@ void fwsUpdateFilePath(fileWithStats *fs, char *path);
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
                               uint occorrenze[ASCII_LENGTH]) {
   fileWithStats *fs = (fileWithStats *)malloc(sizeof(fileWithStats));
+  checkNotNull(fs);
   fs->path = (char *)malloc(strlen(path)+1);
+  checkNotNull(fs->path);
   fs->id = id;
   strcpy(fs->path, path);
   fs->totalCharacters = totalCharacters;
@@ -101,6 +103,7 @@ void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsRead,
 void fwsUpdateFilePath(fileWithStats *fs, char *path) {
   char *oldPath = fs->path;
   char *tmp = (char *)malloc(strlen(oldPath) + strlen(path) + 1);
+  checkNotNull(tmp);
   strcpy(tmp, oldPath);
   strcat(tmp, path);
   fs->path = tmp;

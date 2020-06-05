@@ -86,6 +86,7 @@ void fwsListPrint(fwsList *l);
 
 fwsList *constructorFwsListEmpty() {
   fwsList *l = (fwsList *)malloc(sizeof(fwsList));
+  checkNotNull(l);
   l->count = 0;
   l->firstNode = NULL;
   return l;

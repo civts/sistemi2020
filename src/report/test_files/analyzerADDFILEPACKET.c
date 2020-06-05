@@ -15,12 +15,15 @@ int main(int argc, char **argv)
 
   printf("Write the PID\n");
   uint *pid = malloc(sizeof(uint));
+  checkNotNull(pid);
   scanf("%u", pid);
   printf("Write the FILEID\n");
   uint *idFile = malloc(sizeof(uint));
+  checkNotNull(idFile);
   scanf("%u", idFile);
   printf("Write the PATH\n");
   char *path = malloc(1024);
+  checkNotNull(path);
   scanf("%s", path);
 
   int fd;

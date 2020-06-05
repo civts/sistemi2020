@@ -93,6 +93,7 @@ void analyzerPrint(analyzer *a);
 // constructor for Analyzer
 analyzer *constructorAnalyzer(uint pid) {
   analyzer *a = (analyzer *)malloc(sizeof(analyzer));
+  checkNotNull(a);
   a->pid = pid;
   a->files = constructorFwsListEmpty();
   a->incompleteList = constructorFwsListEmpty();
@@ -194,12 +195,14 @@ void analyzerDeleteFolder(analyzer *a, char * path){
 
 void analyzerIncompleteFolderDelete(analyzer *a, char * path){
   a->incompletePathToDelete = malloc(sizeof(char)*strlen(path)+1);
+  checkNotNull(a->incompletePathToDelete);
   strcpy(a->incompletePathToDelete,path);
 }
 
 void analyzerCompletionFolderDelete(analyzer *a, char * path){
   char *oldPath = a->incompletePathToDelete;
   char *completePath = (char *)malloc(strlen(oldPath) + strlen(path) + 1);
+  checkNotNull(completePath);
   strcpy(completePath, oldPath);
   strcat(completePath, path);
   analyzerDeleteFolder(a,completePath);
