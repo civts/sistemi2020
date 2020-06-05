@@ -18,7 +18,7 @@ typedef struct{
     pid_t pid;
     int pipeCP[2];
     int pipePC[2];
-    // int numFilesProcessing;
+    int workload;
 } pInstance;
 
 typedef struct{

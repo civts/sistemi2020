@@ -22,9 +22,9 @@ int main(int argc, char *argv[]){
     sendNewMPacket(cInstance->pipeAC, m);
 
     sendNewFilePacket(cInstance->pipeAC, "file.txt");
-    sendNewFilePacket(cInstance->pipeAC, "file2.txt");
     sendStartAnalysisPacket(cInstance->pipeAC, -1);
-    sendNewMPacket(cInstance->pipeAC, 3);
+    sendNewFilePacket(cInstance->pipeAC, "file2.txt");
+    // sendNewMPacket(cInstance->pipeAC, 3);
     // removeFileByNamePacket(cInstance->pipeAC, "file.txt"); 
     
     sleep(4);
