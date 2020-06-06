@@ -1,4 +1,5 @@
 #include <stdlib.h> // malloc & free
+#include "../../utils.c"
 #ifndef INT_LIST_H
 #define INT_LIST_H
 // This files defines a list of integers

@@ -284,6 +284,7 @@ int main(int argc, char * argv[]){
                         currentFilesCount = tmpFilesCount;
                         for(i=0;i<currentFilesCount;i++){
                             resolvedPaths[i] = malloc(strlen(tmpResolvedPaths[i])+1);
+                            checkNotNull(resolvedPaths[i]);
                             strcpy(resolvedPaths[i],tmpResolvedPaths[i]);
                             //printf("%s ",resolvedPaths[i]);
                         }

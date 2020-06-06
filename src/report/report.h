@@ -118,6 +118,7 @@ void gotNewDataPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDa
     //caratteri letti in questa porzione
     uint totCharsRead = fromBytesToInt(dati + 5 * INT_SIZE);
     uint *occurrences = malloc(sizeof(uint)*ASCII_LENGTH);
+    checkNotNull(occurrences);
     int j;
     for (j = 0; j < ASCII_LENGTH; j++) {
       occurrences[j] = fromBytesToInt(dati + (6+j)* INT_SIZE);
