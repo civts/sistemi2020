@@ -33,6 +33,7 @@
 typedef struct {
   // pointer to the first node
   analyzer *firstNode;
+  bool dumps;
   // how many nodes are currently in the analyzerList
   int count;
 } analyzerList;
@@ -105,6 +106,7 @@ analyzerList *constructorAnalyzerListEmpty() {
   analyzerList *l = (analyzerList *)malloc(sizeof(analyzerList));
   checkNotNull(l);
   l->count = 0;
+  l->dumps = false;
   l->firstNode = NULL;
   return l;
 }
@@ -222,7 +224,7 @@ void analyzerListStart(analyzerList *l, uint pid){
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid);
+    a = constructorAnalyzer(pid, l->dumps);
     analyzerListAppend(l, a);
   }
   analyzerStart(a);
@@ -232,7 +234,7 @@ void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid);
+    a = constructorAnalyzer(pid, l->dumps);
     analyzerListAppend(l, a);
   }
   // function that adds the file to the mainList
@@ -242,7 +244,7 @@ void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile){
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid);
+    a = constructorAnalyzer(pid, l->dumps);
     analyzerListAppend(l, a);
   }
   // function that adds the file to the mainList
@@ -253,7 +255,7 @@ void analyzerListAddIncompleteFile(analyzerList *l, uint pid,
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
-    a = constructorAnalyzer(pid);
+    a = constructorAnalyzer(pid, l->dumps);
     analyzerListAppend(l, a);
   }
   // function that adds the file to the incompleteList

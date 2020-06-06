@@ -72,6 +72,13 @@ string path
 #define A_DELETE_FOLDER_INCOMPLETE_PART1 13
 // As A_NEW_FILE_COMPLETE but contains only second half of the path
 #define A_DELETE_FOLDER_INCOMPLETE_PART2 14
+//Log message
+// --header----
+// 1 byte code
+// INT_SIZE length (pid+message)
+// --body
+// INT_SIZE pid
+// message
 #define A_ERROR_LOG 18
 // #ifndef bool
 // typedef unsigned char bool;

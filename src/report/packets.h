@@ -241,6 +241,36 @@ int sendOccurencesPacketToReport(int fd[], int pidAnalyzer, int idFile, int m, i
     return returnCode;
 }
 
+int sendErrorMessage(const int *fd, int pid, const char *message) {
+  int returnCode = 0, i;
+  int headerSize = 1 + INT_SIZE;                 // packetcode + length
+  int bodySize = INT_SIZE + strlen(message) + 1; // pid + message
+  int packetSize = headerSize + bodySize;
+  //printf("bodysize= %d, packetSize=%d\n", bodySize, packetSize);
+  byte packet[packetSize];
+
+  // header: packet code and data section size
+  packet[0] = 18;
+  fromIntToBytes(bodySize, packet + 1);
+  // body
+  fromIntToBytes(pid, packet + headerSize);
+  for (i = 0; i < strlen(message); i++)
+    packet[headerSize + INT_SIZE + i * sizeof(char)] = message[i];
+  packet[packetSize - 1] = '\0';
+  //printf("%d ", packet[0]);
+  //printf("%d ", fromBytesToInt(packet + 1));
+  //printf("%d ", fromBytesToInt(packet + headerSize));
+  //for (i = headerSize + INT_SIZE; i < packetSize; i++) {
+  //  printf("%c", packet[i]);
+  //}
+  if (write(fd[WRITE], packet, packetSize) != packetSize) {
+    returnCode = 1;
+    fprintf(stderr, "Error with fd sending the occurences packet\n");
+  }
+  //printf("\n");
+}
+
+
 // Used to send a new file name to report in three cases:
 // - unique packet if data can fit
 // - packet pt1 and packet pt2 if file path can't fit in a single packet

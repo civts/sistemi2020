@@ -484,6 +484,6 @@ void printRecapTabela(analyzerList *aList) {
   }
 }
 void printHelp(){
-  printf(help);
+  printf("%s", help);
 }
 #endif

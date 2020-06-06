@@ -15,3 +15,5 @@ bin/
 
 #our fifo
 myfifo
+#dumps
+analyzer_*_dump.txt
