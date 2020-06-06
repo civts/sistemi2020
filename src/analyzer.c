@@ -5,8 +5,8 @@
 #include "utils.c"
 #include "crawler.c"
 #include "packets.h"
-#include "controller.c"
 #include "parser.c"
+#include "controller.c"
 
 #define BUFFER_SIZE 4096
 char buf[BUFFER_SIZE], command[BUFFER_SIZE];
@@ -16,18 +16,9 @@ char buf[BUFFER_SIZE], command[BUFFER_SIZE];
  * TODO: Insert possibility to remove an entire folder? (un casin)
  * NOTE: processExit() è dichiarata come funzione (invece che essere scritta all'interno del codice
  *       perché dovrà essere richiamata anche alla ricezione di SIGKILL)
- * TODO: Decidere cosa fare mentre l'analisi statica si sta completando (una mezza soluzione è
- *       già implementata, dai un'occhiata)
  */
 
-// da spostare in utils?
-int numberPossibleFlags = 10; 
-string possibleFlags[]  = {"-analyze", "-i",  "-s", "-h",  "-show", "-rem", "-add", "-n", "-m", "-quit"};
-bool   flagsWithArgs[]  = {false,      false, true, false, false,   true,   true,   true,  true, false};
-bool   settedFlags[]    = {false, false, false, false, false, false, false, false, false, false};
-string arguments[10];
-string invalidPhrase    = "Wrong command syntax\n"; 
-
+// Used for printing purposes
 string statuses[] = {"Still not started", "Analisys is running", "Analysis finished"};
 
 analyzerInstance instanceOfMySelf;
@@ -35,11 +26,11 @@ controllerInstance *cInstance;
 NamesList *filePaths;
 
 void initialize();
+void updateHistory(string);
+void updateMessages(string);
 void helpMode();
 void interactiveMode();
 void staticMode(NamesList*);
-bool isValidMode(string);
-int  getFilePathsFromArgv(string[], int);
 bool checkParameters();
 int  generateNewControllerInstance();
 void sendAllFiles();
@@ -51,96 +42,120 @@ void printState();
 void addFiles(int, string*);
 void removeFiles(int, string*);
 void clear();
+void sig_handler_A();
+void waitEnter();
+void cleanArguments();
+void staticAnalisysScreen();
+int  waitForMessagesInAFromC();
+void printMessages();
 
-// check if the mode is a two char string, with the
-// first char being '-'
-bool isValidMode(string mode){
-    return (strlen(mode) == 2) && (mode[0] == '-');
-}
 
+/**
+ * Function that initializes all the resources of the Analyzer.
+ */
 void initialize(){
     filePaths = constructorNamesList();
     instanceOfMySelf.completedFiles = 0;
     instanceOfMySelf.totalFiles = 0;
     instanceOfMySelf.statusAnalisys = 0;
     instanceOfMySelf.n = instanceOfMySelf.m = 0;
-    strcpy(instanceOfMySelf.lastCommand, "No commands yet");
-    int returnCode = generateNewControllerInstance();
-}
-
-// extract file paths from argv array. In case of folder,
-// it uses the crawler to inspect inner files and folders.
-// It returns the number of scanned files.
-int getFilePathsFromArgv(string argv[], int numPaths){
-    const int padding = 2;      // index inside argv from which filenames occur
-    unsigned long numFiles = 0; // number of files recognized
-    int out;
-    filePaths = constructorNamesList();
-
     int i;
-    for (i = 0; i < numPaths; i++){
-        if (isDirectory(argv[i + padding], '/', &out) && out == 0){
-            int outNewFiles = 0;
-            crawler(argv[i + padding], filePaths, &outNewFiles);
-            numFiles += outNewFiles;
-        } else if ( isValidFile(argv[i + padding]) && out == 0 ){
-            appendNameToNamesList(filePaths, argv[i + padding]);
-            numFiles++;
-        }
+    for(i=0; i<HISTORY; i++){
+        instanceOfMySelf.lastCommands[i] = (string)malloc(BUFFER_SIZE);
+        strcpy(instanceOfMySelf.lastCommands[i], "No command yet");
     }
-    return (int)numFiles;
+    for(i=0; i<MESSAGES; i++){
+        instanceOfMySelf.lastMessages[i] = (string)malloc(BUFFER_SIZE);
+        strcpy(instanceOfMySelf.lastMessages[i], "No message yet");
+    }
+    generateNewControllerInstance();
+    strcpy(instanceOfMySelf.mode, "Not set yet");
+    signal(SIGINT, sig_handler_A);
+    signal(SIGKILL, sig_handler_A);
 }
 
+/**
+ * Takes newCommand and puts it first in the history vector, moves previous commands down.
+ */
+void updateHistory(string newCommand){
+    int i;
+    for(i=HISTORY-1; i>0; i--){
+        strcpy(instanceOfMySelf.lastCommands[i], instanceOfMySelf.lastCommands[i-1]);
+    }
+    strcpy(instanceOfMySelf.lastCommands[0], newCommand);
+}
+
+/**
+ * Takes newMessage and puts it first in the history of messages vector, moves previous messages down.
+ */
+void updateMessages(string newMessage){
+    int i;
+    for(i=MESSAGES-1; i>0; i--){
+        strcpy(instanceOfMySelf.lastMessages[i], instanceOfMySelf.lastMessages[i-1]);
+    }
+    strcpy(instanceOfMySelf.lastMessages[0], newMessage);
+}
+
+/**
+ * Reads the first commands from the terminal, then switches to inputReader cycle.
+ * TODO: it violates the principle of the single point of exit.
+ */ 
 int main(int argc, char *argv[]){
     int returnCode = 0;
     initialize();
 
+    cleanArguments();
     bool validCall = checkArguments(argc-1, argv+1, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
+    bool validArguments = checkArgumentsValidity(arguments);
+    
     int i;
-    if(validCall && argc > 1){
+    if(validCall && argc > 1 && validArguments){
         for(i=numberPossibleFlags-1; i>=0; i--){
             if(settedFlags[i]){
-                strcpy(instanceOfMySelf.lastCommand, possibleFlags[i]);
-                int numArgs;
-                string *argumentList;
+                // If command is set, retrieve its arguments and then switch it 
+                char commandToPrint[BUFFER_SIZE];
+                strcpy(commandToPrint, possibleFlags[i]);
+                char *listOfArguments[BUFFER_SIZE];
+                char stringWithArguments[BUFFER_SIZE];
+                int  numArguments;
                 if(flagsWithArgs[i]){
-                    strcat(instanceOfMySelf.lastCommand, " "); 
-                    strcat(instanceOfMySelf.lastCommand, arguments[i]); 
-                    argumentList = getArgumentsList(arguments[i], &numArgs, argumentList);
+                    strcat(commandToPrint, " "); 
+                    strcat(commandToPrint, arguments[i]); 
+                    parser(arguments[i], &numArguments, listOfArguments);
                 } else {
-                    numArgs = 0;
-                    argumentList = NULL;
+                    numArguments = 0;
                 }
+                updateHistory(commandToPrint);
+                printf("Processing command: '%s' ", possibleFlags[i]);
+                int j;
+                for(j=0; j<numArguments; j++){
+                    printf("argument %d : '%s' ", j, listOfArguments[j]);
+                }
+                waitEnter();
                 settedFlags[i] = false;
-                switchCommand(i, numArgs, argumentList);
+                switchCommand(i, numArguments, listOfArguments);
             }
-        } 
-
-        for(i=0; i<numberPossibleFlags; i++){
-            free(arguments[i]);
-            arguments[i] = NULL;
         }
-        // printf("num args: %d\n", numArgs);
-        // for(i=0; i<numArgs; i++){
-        //     printf("argument #%d: %s\n", i, argumentList[i]);
-        // }
-        inputReader();
     } else {
         char invalidCommand[BUFFER_SIZE];
         strcpy(invalidCommand,"Invalid commnad '");
         for(i=1; i<argc; i++){
-            strcat(invalidCommand, argv[i]);
             strcat(invalidCommand, " ");
+            strcat(invalidCommand, argv[i]);
         }
-        strcat(invalidCommand, "'");
-        strcpy(instanceOfMySelf.lastCommand, invalidCommand);
-        inputReader(instanceOfMySelf);
+        strcat(invalidCommand, " '");
+        updateHistory(invalidCommand);
         returnCode = 1;
     }
-
+    
+    inputReader();
     return returnCode;
 }
 
+
+/**
+ * Prints the helpscreen.
+ */
 void helpMode(){
     clear();
     string help_message = "Help mode\n\n"
@@ -163,52 +178,57 @@ void helpMode(){
                           "3: usage mode not supported\n";
 
     printf("%s\n", help_message);
-    printf("\npress enter to continue...");
-    while(getchar()!='\n');
-    inputReader();
+    waitEnter();
 }
 
-// TODO - check all error codes from sys calls and from out functions
+
+/**
+ * Sets mode to interactive, sends all present files to the controller, then returns to readInput cycle. 
+ */
 void interactiveMode(){
+    strcpy(instanceOfMySelf.mode, "Interactive");
     sendAllFiles();
     inputReader();    
 }
 
+/**
+ * Starts the analisys in static mode. 
+ */
 void staticMode(NamesList *listFilePaths){
-    int returnCode = generateNewControllerInstance();
-    printf("Static mode\n");
+    strcpy(instanceOfMySelf.mode, "Static");
+    instanceOfMySelf.statusAnalisys = 1;
     sendNewNPacket(cInstance->pipeAC, instanceOfMySelf.n);
     sendNewMPacket(cInstance->pipeAC, instanceOfMySelf.m);
-    // Trick: to send all files in the list call sendNewFolder with oldNumberOfFiles=0
     sendAllFiles();
-    sendStartAnalysisPacket(cInstance->pipeAC);    
+    
+    pid_t myPid = getpid();
+    sendStartAnalysisPacket(cInstance->pipeAC, myPid);    
 
-    // TODO: what do we do when static analisys is started?
-    // da FRA: io direi niente... è statica per qualche motivo
-    // da Sam: e invece stampiamo l'avanzamento, infame! 
     waitAnalisysEnd();
 
     processExit();
 }
 
-// Returns true if n, m and at least one file/folder are set with valid values
+/**
+ * Returns true if n, m and at least one file/folder are set with valid values
+ * TODO: implement a smarter check for files
+ */
 bool checkParameters(){
     int returnValue = true;
     if (instanceOfMySelf.n <= 0){
-        fprintf(stderr, "Error: specify numeric non-zero positive values for n\n");
+        fprintf(stderr, "\nError: specify numeric non-zero positive values for n\n");
         returnValue = false;
-        printf("\npress enter to continue...");
-        while(getchar()!='\n');
-    } else if(instanceOfMySelf.m <=0 ) {
-        fprintf(stderr, "Error: specify numeric non-zero positive values for m\n");
+        waitEnter();
+    }
+    if(instanceOfMySelf.m <=0 ) {
+        fprintf(stderr, "\nError: specify numeric non-zero positive values for m\n");
         returnValue = false;
-        printf("\npress enter to continue...");
-        while(getchar()!='\n');
-    } else if (instanceOfMySelf.totalFiles == 0){
-        fprintf(stderr, "Error: all the files or folders specified are inexistent\n");
+        waitEnter();
+    }
+    if (instanceOfMySelf.totalFiles == 0){
+        fprintf(stderr, "\nError: all the files or folders specified are inexistent\n");
         returnValue = false;
-        printf("\npress enter to continue...");
-        while(getchar()!='\n');
+        waitEnter();
     }
 
     return returnValue;
@@ -228,6 +248,8 @@ int generateNewControllerInstance(){
         fcntl(cInstance->pipeAC[READ], F_SETFL, O_NONBLOCK);
         fcntl(cInstance->pipeCA[READ], F_SETFL, O_NONBLOCK);
 
+        controllerInstance newInstance = *cInstance;
+
         cInstance->pid = fork();
 
         if (cInstance->pid < 0){
@@ -235,11 +257,12 @@ int generateNewControllerInstance(){
             returnCode = 2;
         } else if (cInstance->pid == 0){
             // child: new instance of Controller
+
             fprintf(stderr, "controllerInstance created\n");
-            close(cInstance->pipeAC[WRITE]);
-            close(cInstance->pipeCA[READ]);
+            close(newInstance.pipeAC[WRITE]);
+            close(newInstance.pipeCA[READ]);
             // while(true);
-            controller(cInstance);
+            controller(&newInstance);
             exit(0);
         } else {
             // parent
@@ -259,12 +282,14 @@ int generateNewControllerInstance(){
  * Function called when the user adds a folder to the list of files.
  * It iterates trough the new files (last added in filePaths) and
  * sends each of them to the controller.
+ * At the end deletes the filePaths list and creates it from zero as empty list.
  */
 void sendAllFiles(){
     int numberOFfiles = filePaths->counter;
     NodeName *file = filePaths->first;
 
     int i;
+
     for (i = 0; i < numberOFfiles; i++){
         if (sendNewFilePacket(cInstance->pipeAC, file->name) != 0){
             fprintf(stderr, "Could not send file %s from A to C\n", file->name);
@@ -285,72 +310,75 @@ void sendAllFiles(){
 int processExit(){
     // Start the waterfall effect
     sendDeathPacket(cInstance->pipeAC);
-
+    kill(cInstance->pid, SIGKILL);
     // free occupied memory:
     free(cInstance);
     deleteNamesList(filePaths);
 
     clear();
     printf("Cleanup complete, see you next time!\n");
-    sleep(3);
+    sleep(1);
     exit(0); // to exit from infinite loop
 }
 
-// Function that animates the waiting for static analysis to end.
 /**
- * TODO: rewrite package reading
+ * Function that animates the waiting for static analysis to end.
+ * TODO: implement reading of controller messages.
  */
 void waitAnalisysEnd(){
-    int numBytesRead, dataSectionSize, offset;
-    byte packetCode[1];
-    byte packetData[INT_SIZE*2];
-
-    while(true){
-        numBytesRead = read(cInstance->pipeCA[READ], packetCode, 1);
-        if(numBytesRead > 0){
-            if(packetCode[0] == 16){
-                break;
-            } else if(packetCode[0] == 17){
-                // nuovo file completato
-                numBytesRead = read(cInstance->pipeCA[READ], packetData, 2*INT_SIZE);
-                if(numBytesRead == 2*INT_SIZE){
-                    int completed = fromBytesToInt(packetData + 0);
-                    int total     = fromBytesToInt(packetData + INT_SIZE);
-                    printf("Completed %d files over %d\n", completed, total);
-                } else {
-                    printf("Something has gone wrong with a completedFile packet!\n");
-                }
-            } else {
-                printf("Analyzer recieved wrong packet code from controller!\n");
-            }
-        }
+    int status = 3;
+    while(status!=0){
+        status = waitForMessagesInAFromC();
     }
-    printf("\nAnalisys ended\n");
+    // TODO declare analisys finished
+    printf("Analisys finished!\n");
+    waitEnter();
 }
 
 
+/**
+ * Function to print the header of the termios screen.
+ */
 void printScreen() {
     printf("================================================\n");
+    printf("Analisys mode: %s\n", instanceOfMySelf.mode);
     printf("Analisys status: %s\n", statuses[instanceOfMySelf.statusAnalisys]);
     printf("===================Processing===================\n");
-    printf("Last command: %s\n", instanceOfMySelf.lastCommand);
+    if(instanceOfMySelf.statusAnalisys == 1){
+        printf("Completed files: %2d over %2d\n", instanceOfMySelf.completedFiles, instanceOfMySelf.totalFiles);
+        printf("================================================\n");
+        printf("============Messages from controller============\n");
+        int i;
+        for(i=0; i<MESSAGES; i++){
+            printf("Previous message -%d: %s\n", i, instanceOfMySelf.lastMessages[i]);
+        }
+        printf("================================================\n");
+    }
+    int i;
+    for(i=0; i<HISTORY; i++){
+        printf("Previous command -%d: %s\n", i, instanceOfMySelf.lastCommands[i]);
+    }
     printf("================================================\n");
     printf("> %s", buf);
     fflush(stdout);
 }
 
+// Screen clear
 void clear(){
     system("clear");
-    // printf("\e[1;1H\e[2J");
 }
 
+// Reset input buffer
 void resetBuffer(char buffer[], int size){
     int i;
-    for (i = 0; i < BUFFER_SIZE; i++){
-        buffer[i] = 0;
+    for (i = 0; i < size; i++){
+        buffer[i] = '\0';
     }
 }
 
+/**
+ * Termios input and command parser.
+ */
 int inputReader(){
     int lenBuffer = 0, numReadCharacters = 0;
     char *endCommandPosition;
@@ -391,65 +419,80 @@ int inputReader(){
                 resetBuffer(buf, BUFFER_SIZE);
                 lenBuffer = 0;
 
-                
-                // make switch on command
-                string *argsList;
-                int numCommands;
-                argsList = getArgumentsList(command, &numCommands, argsList);
-                bool validCall = checkArguments(numCommands, argsList, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
-                // -s richiamata qui può essere invocata senza parametri
-                if(strcmp(argsList[0], "-s") == 0){
-                    validCall = true;
-                    settedFlags[2] = true;
-                    printf("special case\n");
-                    sleep(2);
-                }   
-                // lista con comandi e relativi argomenti
+
+                // printf("input read: %s\n", command);
+                char *listOfCommands[BUFFER_SIZE];
+                int  numCommands=0;
+                // Obtain list of commands
+                parser(command, &numCommands, listOfCommands);
                 int i;
-                if(validCall && numCommands > 0){
+                // printf("Num commands: %d\n", numCommands);
+                // for(i=0; i<numCommands; i++){
+                //     printf("List #%d  %s", i , listOfCommands[i]);
+                // }
+                // waitEnter();
+                // Clean arguments variables
+                cleanArguments();
+                // Obtain arguments if valid
+                bool validCall = checkArguments(numCommands, listOfCommands, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
+                // printf("validCall %d\n", validCall);
+                // Check contstraints on arguments
+                bool validArguments = checkArgumentsValidity(arguments);
+                // printf("validArguments %d\n", validArguments);
+            
+                // waitEnter();
+                if(validCall && numCommands > 0 && validArguments){
                     for(i=numberPossibleFlags-1; i>=0; i--){
+                        // If command is set, then execute it
                         if(settedFlags[i]){
-                            printf("Comando %s, flag settato a true\n", possibleFlags[i]);
-                            sleep(1);
-                            strcpy(instanceOfMySelf.lastCommand, possibleFlags[i]);
-                            int numArgs;
-                            string *argumentList;
+                            settedFlags[i] = false; 
+                            char commandToPrint[BUFFER_SIZE];
+                            strcpy(commandToPrint, possibleFlags[i]);
+                            int numArguments = 0;
+                            string listOfArguments[BUFFER_SIZE];
                             if(flagsWithArgs[i]){
                                 if(arguments[i]!=NULL){
-                                    strcat(instanceOfMySelf.lastCommand, " ");
-                                    strcat(instanceOfMySelf.lastCommand, arguments[i]); 
-                                } 
-                                argumentList = getArgumentsList(arguments[i], &numArgs, argumentList);
-                            } else {
-                                numArgs = 0;
-                                argumentList = NULL;
+                                    strcat(commandToPrint, " ");
+                                    strcat(commandToPrint, arguments[i]); 
+                                }
+                                parser(arguments[i], &numArguments, listOfArguments);
                             }
-                            switchCommand(i, numArgs, argumentList);
-                            settedFlags[i] = false; 
-                            free(argumentList);
+                            printf("Processing command: '%s' ", possibleFlags[i]);
+                            int j;
+                            for(j=0; j<numArguments; j++){
+                                printf("argument %d : '%s' ", j, listOfArguments[j]);
+                            }
+                            waitEnter();
+                            updateHistory(commandToPrint);
+                            switchCommand(i, numArguments, listOfArguments);
                         }
                     }
                 } else {
+                    // If command invalid, copy it on history and do nothing else
                     char invalidCommand[BUFFER_SIZE];
-                    strcpy(invalidCommand,"Invalid commnad '");
+                    strcpy(invalidCommand,"invalid command '");
                     strcat(invalidCommand, command);
                     strcat(invalidCommand, "'");
-                    strcpy(instanceOfMySelf.lastCommand, invalidCommand);
-                }
-                free(argsList);
-                for(i=0; i<numberPossibleFlags; i++){
-                    free(arguments[i]);
-                    arguments[i] = NULL;
+                    
+                    updateHistory(invalidCommand);
+                    
+                    // printf("Invalid command: %s \n", command);
+                    waitEnter();
                 }
             } else {
-                
+                // wait for user to end command
             }
         }
-        //lettura C->A
+        
+        // One round of checking for the messages
+        waitForMessagesInAFromC();
+
+
         clear();
         printScreen();
-        // sleep(1);
-    }                
+    }
+    resetBuffer(buf, BUFFER_SIZE);
+    resetBuffer(command, BUFFER_SIZE);                
 
     // restore the old settings
     tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
@@ -458,111 +501,283 @@ int inputReader(){
     return 0;
 }
 
+/**
+ * Function to switch the command code and execute it.
+ */
 void switchCommand(int commandCode, int numArgs, string *arguments){
-    printf("switching command %d with %d arguments\n", commandCode, numArgs);
-    sleep(2);
     switch(commandCode){
-        case 0:
+        case flag_analyze:
             if(checkParameters()){
-                sendStartAnalysisPacket(cInstance->pipeAC);
                 instanceOfMySelf.statusAnalisys = 1;
+                pid_t myPid = getpid();
+                sendStartAnalysisPacket(cInstance->pipeAC, myPid);
             }
             break;
-        case 1:
+        case flag_i:
             interactiveMode();
             break;
-        case 2:
+        case flag_s:
             if(checkParameters()){
                 staticMode(filePaths);
-                instanceOfMySelf.statusAnalisys = 1;
             }
             break;
-        case 3:
+        case flag_h:
             helpMode();
             break;
-        case 4:
+        case flag_show:
             printState();
             break;
-        case 5:
+        case flag_rem:
             removeFiles(numArgs, arguments);
             break;
-        case 6:
+        case flag_add:
             addFiles(numArgs, arguments);
             break;
-        case 7:
+        case flag_n:
             instanceOfMySelf.n = atoi(arguments[0]);
             break;
-        case 8:
+        case flag_m:
             instanceOfMySelf.m = atoi(arguments[0]);
             break;
-        case 9:
+        case flag_quit:
             processExit();
             break;
     }
     return;
 }
 
+/**
+ * Function that prints n, m and the number of files added 'till now.
+ */
 void printState(){
-    printf("number of files = %d\n", instanceOfMySelf.totalFiles);
-    printf("n = %d\n", instanceOfMySelf.n);
-    printf("m = %d\n", instanceOfMySelf.m);
-    printf("\npress enter to continue...");
-    while(getchar()!='\n');
+    clear();
+    printf("number of files wrote = %d\n\n", instanceOfMySelf.totalFiles);
+    printf("value of n = %d\n\n", instanceOfMySelf.n);
+    printf("value of m = %d\n\n", instanceOfMySelf.m);
+    waitEnter();
 }
 
+/**
+ * Function that adds all files/folders in fileNames to the filePaths list.
+ * fileNames can contain both a file name or a folder, in the second case
+ * all file of the folder will be added to filePaths.
+ * The files are sent to the controller at the end of the function.
+ */
 void addFiles(int numFiles, string *fileNames){
     int i;
     for(i=0; i<numFiles; i++){
-        int numOfFilesInFolder; // used in case it's a folder
+        int numOfFilesInFolder = 0; // used in case it's a folder
         int pathType = inspectPath(fileNames[i]);
         if (pathType == 0){
             // it's an existing file
-            strcpy( absolutePath, realpath(fileNames[i], absolutePath) );
-            int appended = appendNameToNamesList(filePaths, absolutePath);
-            if(appended == 0){
-                instanceOfMySelf.totalFiles+=1;
+            char *absolutePath;
+            absolutePath = realpath(fileNames[i], absolutePath);
+            if(absolutePath != NULL){
+                printf("Adding file %s\n", absolutePath);
+                int appended = appendNameToNamesList(filePaths, absolutePath);
+                if(appended == 0){
+                    instanceOfMySelf.totalFiles+=1;
+                    printf("File added\n");
+                }
             }
-            sendAllFiles();
-            printf("Added file %s\n", fileNames[i]);
         } else if (pathType == 1){
             // it's an existing folder
+            printf("Adding folder %s\n", fileNames[i]);
             crawler(fileNames[i], filePaths, &numOfFilesInFolder);
             instanceOfMySelf.totalFiles+=numOfFilesInFolder;
-            sendAllFiles();
-            printf("Added folder %s\n", fileNames[i]);
+            printf("Folder added\n");
         } else {
             // invalid file/folder
             fprintf(stderr, "File/folder %s doesn't exist!\n", fileNames[i]);
         }
+        
+        sendAllFiles();
     }
 }
 
+/**
+ * Function that removes files/folders contained in fileNames.
+ */
 void removeFiles(int numFiles, string *fileNames){
     int i;
     for(i=0; i<numFiles; i++){
         // Management of removal of file or folder
-        strcpy( absolutePath, realpath(fileNames[i], absolutePath) );
+        char *absolutePath;
+        absolutePath = realpath(fileNames[i], absolutePath);
 
-        int numOfFilesInFolder; // used in case it's a folder
-        int pathType = inspectPath(absolutePath);
+        if(absolutePath != NULL){
+            int numOfFilesInFolder; // used in case it's a folder
+            int pathType = inspectPath(absolutePath);
 
-        if (pathType == 0){
-            // it's an existing file
-            if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
-                printf("Remove file %s\n", absolutePath);
-                instanceOfMySelf.totalFiles-=1;
+            if (pathType == 0){
+                // it's an existing file
+                if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
+                    printf("Remove file %s\n", absolutePath);
+                    instanceOfMySelf.totalFiles-=1;
+                } else {
+                    fprintf(stderr, "?Error trying to remove %s\n", absolutePath);
+                }                
+            } else if (pathType == 1){
+                // it's an existing folder
+
+                /*
+                 * TODO: send remove folder packet to controller.
+                 * Functions to remove folder from namesList already exist.
+                 */
+                
+                // printf("Removed folder %s\n", absolutePath);
+                printf("Not still implemented\n");
             } else {
-                fprintf(stderr, "?Error trying to remove %s\n", absolutePath);
-            }                
-        } else if (pathType == 1){
-            // it's an existing folder
-            // crawler(fileNameBuffer, filePaths, &numOfFilesInFolder);
-            // sendAllFiles();
-            printf("Not implemented yet\n");
-            // printf("Removed folder %s\n", fileNameBuffer);
-        } else {
-            // invalid file/folder
-            fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");
+                // invalid file/folder
+                fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");
+            }
         }
     }
+}
+
+/**
+ * Updates numbers of completed and total files;
+ */
+void updateCompleted(int completed, int total){
+    instanceOfMySelf.completedFiles = completed;
+    instanceOfMySelf.totalFiles = total;
+    clear();
+    printScreen();
+}
+
+/**
+ * Handler for kill and interrupt signals.
+ */
+void sig_handler_A(){
+    processExit();
+}
+
+/**
+ * Checks if arguments for commands n and m are numbers.
+ */
+bool checkArgumentsValidity(char **arguments){
+    int j;
+    bool ret = true;
+    if(settedFlags[flag_n]){
+        if(arguments[flag_n]!=NULL){
+            for(j=0; j<strlen(arguments[flag_n]); j++){
+                if(!isdigit(arguments[flag_n][j])){
+                    // l'argomento non contiene solo cifre
+                    ret=false;
+                }
+            }
+        } else {
+            // flag settato senza argomenti
+            ret = false;
+        }
+    }
+    if(settedFlags[flag_m]){
+        if(arguments[flag_m]!=NULL){
+            for(j=0; j<strlen(arguments[flag_m]); j++){
+                if(!isdigit(arguments[flag_m][j])){
+                    // l'argomento non contiene solo cifre
+                    ret=false;
+                }
+            }
+        } else {
+            // flag settato senza argomenti
+            ret = false;
+        }
+    }
+    return ret;
+}
+
+/**
+ * Waits for user to press enter.
+ */
+void waitEnter(){
+    printf("\npress enter to continue...");
+    while(getchar()!='\n');
+}
+
+/**
+ * Function to clan variables arguments and settedFlags.
+ */
+void cleanArguments(){
+    int i;
+    for(i=0; i<numberPossibleFlags; i++){
+        free(arguments[i]);
+        settedFlags[i] = false;
+        arguments[i] = NULL;
+    }
+}
+
+/**
+ * Function that prints the current state for a static analisys.
+ */
+void staticAnalisysScreen(){
+    clear();
+    printf("========================Static analisys running========================\n");
+    printf("Files completed: %d\n", instanceOfMySelf.completedFiles);
+    printf("Total files: %d\n", instanceOfMySelf.totalFiles);
+    printMessages();
+}
+
+void printMessages(){
+    printf("========================Messages from controller=======================\n");
+    int i;
+    for(i=0; i<MESSAGES; i++){
+        printf("Previous message -%d: %s\n", i, instanceOfMySelf.lastMessages[i]);
+    }
+}
+
+/**
+ * Returns  0 if analisys ended
+ *          1 if message reciieved succesfully
+ *          2 if something went wrong with the message
+ */
+int waitForMessagesInAFromC(){
+    int numBytesRead, dataSectionSize, offset, ret;
+    byte packetCode[1];
+    numBytesRead = read(cInstance->pipeCA[READ], packetCode, 1);
+    if(numBytesRead > 0){
+        if(packetCode[0] == 16){
+            ret = 0;
+        } else if(packetCode[0] == 17){
+            // nuovo file completato
+            byte packetData[3*INT_SIZE];
+            numBytesRead = read(cInstance->pipeCA[READ], packetData, 3*INT_SIZE);
+            if(numBytesRead == 3*INT_SIZE){
+                int packetSize = fromBytesToInt(packetData + 0);
+                int completed  = fromBytesToInt(packetData + INT_SIZE);
+                int total      = fromBytesToInt(packetData + 2*INT_SIZE);
+                instanceOfMySelf.totalFiles = total;
+                instanceOfMySelf.completedFiles = completed;
+                staticAnalisysScreen();
+                ret = 1;
+            } else {
+                printf("Something has gone wrong with a completedFile packet!\n");
+                ret = 2;
+            }
+        } else if(packetCode[0] == 18) {
+            byte messageSize[INT_SIZE];
+            numBytesRead = read(cInstance->pipeCA[READ], messageSize, INT_SIZE);
+            if(numBytesRead == INT_SIZE){
+                int numericSize = fromBytesToInt(messageSize);
+                byte packetData[numericSize];
+
+                // TODO check if read has read all the bytes? (chek for non atomicity);
+
+                numBytesRead = read(cInstance->pipeCA[READ], packetData, INT_SIZE);
+                if(numBytesRead == numericSize){
+                    string message;
+                    strcpy(message, packetData);
+                    updateMessages(message);
+                    staticAnalisysScreen();
+                    ret = 1;
+                } else {
+                    ret = 2;
+                }
+            }
+        } else {
+            printf("Analyzer recieved wrong packet code from controller! %c\n", packetCode[0]);
+            ret = 2;
+        }
+    }   
+    return ret;
 }

@@ -43,7 +43,13 @@ NodeName *constructorNodeName(string fileName){
 }
 
 void printNodeName(NodeName *node){
-    printf("File: %s \n", node->name);
+    if(node == NULL){
+        printf("Node is null!\n");
+    } else if(node->name == NULL) {
+        printf("Node->name is null!\n");
+    } else {
+        printf("File: %s, next %p \n", node->name, (void *) node->next);
+    }
 }
 
 void deleteNodeName(NodeName *node){

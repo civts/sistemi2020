@@ -11,6 +11,8 @@
 #define READ 0
 #define WRITE 1
 #define MAX_STRING_SIZE 4096
+#define HISTORY 5
+#define MESSAGES 5
 
 // TODO: a lot of repeated code in packets 0-1 and 3-4
 
@@ -61,7 +63,9 @@ typedef struct{
     int  totalFiles;
     int  n;
     int  m;
-    char lastCommand[MAX_STRING_SIZE];
+    string lastCommands[HISTORY];
+    string lastMessages[MESSAGES];
+    char mode[50];
 } analyzerInstance;
 
 // forward a packet without looking inside it's content. Useful for new filepath
