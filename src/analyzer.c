@@ -13,9 +13,7 @@ char buf[BUFFER_SIZE], command[BUFFER_SIZE];
 
 
 /**
- * TODO: Insert possibility to remove an entire folder? (un casin)
- * NOTE: processExit() è dichiarata come funzione (invece che essere scritta all'interno del codice
- *       perché dovrà essere richiamata anche alla ricezione di SIGKILL)
+ * TODO: implementare rimozione cartella
  */
 
 // Used for printing purposes
@@ -161,21 +159,22 @@ void helpMode(){
     string help_message = "Help mode\n\n"
                           "Usages:\n"
                           "-i: interactive mode\n"
-                          "\tInteractive mode commands:\n\n"
-                          "\t+_name_fi/fo_ to add a file/folder to the list\n"
-                          "\t-_name_file_  to remove a file from the list\n"
-                          "\tn=_value_     to set the value of n\n"
-                          "\tm=_value_     to set the value of m\n"
-                          "\tshow          to see the list of files at the current moment\n"
-                          "\tanalyze       to start the analysis\n"
-                          "\texit          to exit from the process\n\n"
                           "-s: static mode\n"
-                          "\tmust insert arguments: n, m and at least one file/folder\n\n"
+                          "\tto start the analisys must insert arguments:\n"
+                          "\tn, m and at least one file/folder\n"
                           "-h: help mode\n\n"
-                          "Error codes:\n"
-                          "1: missing arguments\n"
-                          "2: n and m are not numeric non-zero values\n"
-                          "3: usage mode not supported\n";
+                          "-add _names_  to add a files/folders to the list\n"
+                          "-rem _names_  to remove a files/folders from the list\n"
+                          "-n   _value_  to set the value of n\n"
+                          "-m   _value_  to set the value of m\n"
+                          "-show         to see info of the current status of settings\n"
+                          "-analyze      to start the analysis if in interactive mode\n"
+                          "-quit: o quit from the process\n\n"
+                        //   "Error codes:\n"
+                        //   "1: missing arguments\n"
+                        //   "2: n and m are not numeric non-zero values\n"
+                        //   "3: usage mode not supported\n"
+                          ;
 
     printf("%s\n", help_message);
     waitEnter();
@@ -323,7 +322,6 @@ int processExit(){
 
 /**
  * Function that animates the waiting for static analysis to end.
- * TODO: implement reading of controller messages.
  */
 void waitAnalisysEnd(){
     int status = 3;
@@ -508,9 +506,14 @@ void switchCommand(int commandCode, int numArgs, string *arguments){
     switch(commandCode){
         case flag_analyze:
             if(checkParameters()){
-                instanceOfMySelf.statusAnalisys = 1;
-                pid_t myPid = getpid();
-                sendStartAnalysisPacket(cInstance->pipeAC, myPid);
+                if(strcmp(instanceOfMySelf.mode, "Interactive") != 0){
+                    printf("\nYou are not in interactive mode!");
+                    waitEnter();
+                } else {
+                    instanceOfMySelf.statusAnalisys = 1;
+                    pid_t myPid = getpid();
+                    sendStartAnalysisPacket(cInstance->pipeAC, myPid);
+                }
             }
             break;
         case flag_i:
@@ -733,19 +736,19 @@ void printMessages(){
  */
 int waitForMessagesInAFromC(){
     int numBytesRead, dataSectionSize, offset, ret;
-    byte packetCode[1];
-    numBytesRead = read(cInstance->pipeCA[READ], packetCode, 1);
+    byte packetHeader[1 + INT_SIZE];
+    numBytesRead = read(cInstance->pipeCA[READ], packetHeader, 1 + INT_SIZE);
     if(numBytesRead > 0){
-        if(packetCode[0] == 16){
+        if(packetHeader[0] == 16){
             ret = 0;
-        } else if(packetCode[0] == 17){
+        } else if(packetHeader[0] == 17){
             // nuovo file completato
-            byte packetData[3*INT_SIZE];
-            numBytesRead = read(cInstance->pipeCA[READ], packetData, 3*INT_SIZE);
-            if(numBytesRead == 3*INT_SIZE){
-                int packetSize = fromBytesToInt(packetData + 0);
-                int completed  = fromBytesToInt(packetData + INT_SIZE);
-                int total      = fromBytesToInt(packetData + 2*INT_SIZE);
+            int messageSize = fromBytesToInt(packetHeader+1); 
+            byte packetData[messageSize];
+            numBytesRead = read(cInstance->pipeCA[READ], packetData, messageSize);
+            if(numBytesRead == 2*INT_SIZE){
+                int completed  = fromBytesToInt(packetData );
+                int total      = fromBytesToInt(packetData + INT_SIZE);
                 instanceOfMySelf.totalFiles = total;
                 instanceOfMySelf.completedFiles = completed;
                 staticAnalisysScreen();
@@ -754,28 +757,23 @@ int waitForMessagesInAFromC(){
                 printf("Something has gone wrong with a completedFile packet!\n");
                 ret = 2;
             }
-        } else if(packetCode[0] == 18) {
-            byte messageSize[INT_SIZE];
-            numBytesRead = read(cInstance->pipeCA[READ], messageSize, INT_SIZE);
-            if(numBytesRead == INT_SIZE){
-                int numericSize = fromBytesToInt(messageSize);
-                byte packetData[numericSize];
-
+        } else if(packetHeader[0] == 18) {
+            int messageSize = fromBytesToInt(packetHeader+1); 
+            byte packetData[messageSize];
+            int bytesRead = read(cInstance->pipeCA[READ], packetData, messageSize);
+            if(bytesRead == messageSize){
                 // TODO check if read has read all the bytes? (chek for non atomicity);
-
-                numBytesRead = read(cInstance->pipeCA[READ], packetData, INT_SIZE);
-                if(numBytesRead == numericSize){
-                    string message;
-                    strcpy(message, packetData);
-                    updateMessages(message);
-                    staticAnalisysScreen();
-                    ret = 1;
-                } else {
-                    ret = 2;
-                }
+                char message[messageSize+1];
+                strcpy(message, packetData);
+                message[messageSize] = '\0';
+                updateMessages(message);
+                staticAnalisysScreen();
+                ret = 1;
+            } else {
+                ret = 2;
             }
         } else {
-            printf("Analyzer recieved wrong packet code from controller! %c\n", packetCode[0]);
+            printf("Analyzer recieved wrong packet code from controller! %c\n", packetHeader[0]);
             ret = 2;
         }
     }   
