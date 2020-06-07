@@ -299,27 +299,62 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerIn
     char buffer[packetDataSize + 1];
     memcpy(buffer, packetData, packetDataSize);
     buffer[packetDataSize] = '\0';
+
+    // 0 if file 1 if foder
+    int pathType = inspectPath(buffer);
     
     if (!instanceOfMySelf->isAnalysing){
-        // add the file to the removed files
-        appendNameToNamesList(instanceOfMySelf->removedFileNames, buffer);
-        // remove the file from the list of added files
-        removeNodeNameByName(instanceOfMySelf->fileNameList, buffer);
+        if(pathType == 0){
+            // It's a file
+            // add the file to the removed files
+            appendNameToNamesList(instanceOfMySelf->removedFileNames, buffer);
+            // remove the file from the list of added files
+            removeNodeNameByName(instanceOfMySelf->fileNameList, buffer);
+        } else {
+            // It's a folder
+            deleteFolderNamesList(buffer, instanceOfMySelf->fileNameList, instanceOfMySelf->removedFileNames);
+        }
     } else {
-        // dynamic removal of a file
-        NodeFileState *node = getNodeByName(instanceOfMySelf->fileList, buffer);
-        removeFileByIdPacket(instanceOfMySelf->pInstances[node->data->pIndex]->pipeCP,
-                             instanceOfMySelf->pidAnalyzer,
-                             node->data->idFile);
-                             
-        #ifdef REPORT
-        removeFileByIdPacket(instanceOfMySelf->pipeToReport,
-                             instanceOfMySelf->pidAnalyzer,
-                             node->data->idFile);
-        #endif
+        if(pathType == 0){
+            // Dynamic removal of a file
+            NodeFileState *node = getNodeByName(instanceOfMySelf->fileList, buffer);
+            removeFileByIdPacket(instanceOfMySelf->pInstances[node->data->pIndex]->pipeCP,
+                                instanceOfMySelf->pidAnalyzer,
+                                node->data->idFile);
+                                
+            #ifdef REPORT
+            removeFileByIdPacket(instanceOfMySelf->pipeToReport,
+                                instanceOfMySelf->pidAnalyzer,
+                                node->data->idFile);
+            #endif
 
-        instanceOfMySelf->pInstances[node->data->pIndex]->workload--;
-        removeNode(instanceOfMySelf->fileList, node->data->fileName);
+            instanceOfMySelf->pInstances[node->data->pIndex]->workload--;
+            removeNode(instanceOfMySelf->fileList, node->data->fileName);
+        } else {
+            // Dynamic removal of folder
+            NamesList *filesToRemove = constructorNamesList();
+            deleteFolderNamesList(buffer, instanceOfMySelf->fileNameList, filesToRemove);
+            NodeName *nameNode = filesToRemove->first;
+            while(nameNode!=NULL){
+                // Same as dynamic removal of file
+
+                NodeFileState *node = getNodeByName(instanceOfMySelf->fileList, nameNode->name);
+                removeFileByIdPacket(instanceOfMySelf->pInstances[node->data->pIndex]->pipeCP,
+                                    instanceOfMySelf->pidAnalyzer,
+                                    node->data->idFile);
+                                    
+                #ifdef REPORT
+                removeFileByIdPacket(instanceOfMySelf->pipeToReport,
+                                    instanceOfMySelf->pidAnalyzer,
+                                    node->data->idFile);
+                #endif
+
+                instanceOfMySelf->pInstances[node->data->pIndex]->workload--;
+                removeNode(instanceOfMySelf->fileList, node->data->fileName);
+
+                nameNode = nameNode->next;
+            } 
+        }
     }
 
     return returnCode;
