@@ -8,7 +8,7 @@
 // #include "datastructures/namesList.c"
 // #include "datastructures/fileList.c"
 
-#define REPORT 1
+// #define REPORT 1
 
 string REPORT_FIFO = "/tmp/fifo";
 
@@ -27,6 +27,7 @@ int  processCStartAnalysis(controllerInstance*);
 int  processCNewValueForM(byte[], controllerInstance*);
 int  processCNewValueForN(byte[], controllerInstance*);
 int  processCNewFileOccurrences(byte[], int, controllerInstance *);
+int  processCErrorOnFilePacket(byte[], int, controllerInstance *);
 int  processMessageInControllerFromAnalyzer(byte, byte*, int, controllerInstance*);
 int  processMessageInControllerFromP(byte, byte*, int, controllerInstance*);
 int  openFifoToReport(controllerInstance*);
@@ -239,8 +240,11 @@ int processMessageInControllerFromP(byte packetCode, byte *packetData, int packe
         case 6:
             returnCode = processCNewFileOccurrences(packetData, packetDataSize, instanceOfMySelf);
             break;
+        case 11:
+            returnCode = processCErrorOnFilePacket(packetData, packetDataSize, instanceOfMySelf);
+            break;
         default:
-            fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
+            fprintf(stderr, "Error, C received from P an unknown packet type %d\n", packetCode);
             returnCode = 1;
     }
 
@@ -590,6 +594,42 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
         printf("Got file with old m\n");
         returnCode = 2;
     }
+    
+    return returnCode;
+}
+
+// Notify A and R that we found a problem accessing to a certain file
+int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
+    char messageBuffer[SIZE_OF_BUFFER_TO_READ_PIPE];
+    int returnCode = 0;
+    int fileID = fromBytesToInt(packetData + INT_SIZE);
+    sprintf(messageBuffer, "Error processing file %d\n", fileID);
+
+    printf("test\n");
+    
+    NodeFileState *node = instanceOfMySelf->fileList->first;
+    int i;
+    for (i = 0; i < instanceOfMySelf->fileList->number_of_nodes; i++){
+        if (node->data->idFile == fileID){
+            break;
+        }
+        node = node->next;
+    }
+
+    if (node->data->numOfRemainingPortionsToRead > 0){
+        node->data->numOfRemainingPortionsToRead = -1;
+        #ifdef REPORT
+        if (sendTextMessageToReport(instanceOfMySelf->pipeCA, messageBuffer) < 0){
+            returnCode += 1;
+        }
+        #endif
+
+        if (reportErrorOnFilePacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer, fileID)){
+            returnCode += 2;
+        }
+    }
+    
+    printf("C - got error on file packet\n");
     
     return returnCode;
 }

@@ -178,12 +178,11 @@ NodeFileState *getNodeByName(FileList *list, char *nodeName){
  * returns the only first NodeFileState if more nodes have that id
  */
 NodeFileState *getNodeById(FileList *list, int id){
-    struct NodeFileState *node = list->first;
+    NodeFileState *node = list->first;
     int i;
-    
-    for(i=0; i<list->number_of_nodes; i++) {
+    for (i = 0; i < list->number_of_nodes; i++) {
         
-        if(node->data->idFile == id){
+        if (node->data->idFile == id){
             return node;
         }
         node = node->next;
@@ -231,11 +230,11 @@ int removeNode(FileList *list, char *name){
 int decrementRemainingPortionsById(FileList *list, int idFile){
     int newValue=-1;
     NodeFileState *node = getNodeById(list, idFile);
-    if(node==NULL){
+    if (node == NULL){
         printf("Cannot decrement, idFile not found\n");
     } else {
         newValue = --node->data->numOfRemainingPortionsToRead;
-        if(newValue < 0){
+        if (newValue < 0){
             printf("ATTENZIONE! numOfRemainingPortionsToRead del file: \"%s\"", node->data->fileName);
             printf(" e sceso sotto zero!!!\n");
         } 

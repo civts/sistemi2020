@@ -21,6 +21,7 @@ int  processPRemoveFilePacket(byte[], int);
 int  processPDeathPacket();
 int  processPNewValueForM(byte[], pInstance*);
 int  processPFileResults(byte[], int, pInstance*);
+int  processPErrorOnFilePacket(byte[], int, pInstance*);
 void sig_handler_P();
 
 qInstance *qInstances = NULL; // Q processes associated to this P
@@ -153,6 +154,9 @@ int processMessageInPFromQ(byte packetCode, byte *packetData, int packetDataSize
         case 6:
             returnCode = processPFileResults(packetData, packetDataSize, instanceOfMySelf);
             break;
+        case 11:
+            returnCode = processPErrorOnFilePacket(packetData, packetDataSize, instanceOfMySelf);
+            break;
         default:
             fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
             returnCode = 1;
@@ -243,6 +247,16 @@ int processPFileResults(byte packetData[], int packetDataSize, pInstance *instan
     } else {
         returnCode = 2;
     }   
+
+    return returnCode;
+}
+
+int processPErrorOnFilePacket(byte packetData[], int packetDataSize, pInstance *instanceOfMySelf){
+    int returnCode = 0;
+
+    if (forwardPacket(instanceOfMySelf->pipePC, 11, packetDataSize, packetData) < 0){
+        returnCode = 1;
+    }
 
     return returnCode;
 }
