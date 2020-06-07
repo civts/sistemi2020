@@ -582,13 +582,19 @@ void addFiles(int numFiles, string *fileNames){
                     instanceOfMySelf.totalFiles+=1;
                     printf("File added\n");
                 }
+            } else {
+                printf("Well, this is embarrassing... it seems we had problems checking file %s\n", fileNames[i]);
             }
         } else if (pathType == 1){
             // it's an existing folder
             printf("Adding folder %s\n", fileNames[i]);
-            crawler(fileNames[i], filePaths, &numOfFilesInFolder);
-            instanceOfMySelf.totalFiles+=numOfFilesInFolder;
-            printf("Folder added\n");
+            int check = crawler(fileNames[i], filePaths, &numOfFilesInFolder);
+            if(check!=0){
+                printf("Well, this is embarrassing... it seems we had problems checking folder %s\n", fileNames[i]);
+            } else {
+                instanceOfMySelf.totalFiles+=numOfFilesInFolder;
+                printf("Folder added\n");
+            }
         } else {
             // invalid file/folder
             fprintf(stderr, "File/folder %s doesn't exist!\n", fileNames[i]);
