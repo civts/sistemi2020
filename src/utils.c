@@ -24,6 +24,8 @@ long min_l(long, long);
 long max_l(long, long);
 int  min_i(int, int);
 int  max_i(int, int);
+bool isInFolder(string, string);
+
 
 // convert 4 bytes in unsigned int (little endian)
 uint fromBytesToInt(byte *bytes){
@@ -92,6 +94,27 @@ int min_i(int a, int b){
 
 int max_i(int a, int b){
     return a > b ? a : b;
+}
+
+/**
+ * Controlla se la parte iniziale della stringa fileName corrisponde con 
+ * la stringa folderName. Se sì ritrona true.
+ */
+bool isInFolder(string fileName, string folderName){
+    printf("Comparing file '%s' with folder '%s'\n", fileName, folderName);
+    bool ret = false;
+    int folderLen = strlen(folderName);
+    string toCompare = (string)malloc(folderLen+1);
+    memcpy(toCompare, fileName, folderLen);
+    toCompare[folderLen]='\0';
+    
+    string result = strstr(toCompare, folderName);
+    
+    
+    if(result != NULL){
+        ret = true;
+    }
+    return ret;
 }
 
 #endif
