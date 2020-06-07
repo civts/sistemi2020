@@ -1,4 +1,0 @@
-1. Report
-2. Processo Q (conteggio del file)
-3. Conflitti?
-4. Schermata di welcome

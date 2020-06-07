@@ -50,7 +50,7 @@ long min_l(long, long);
 long max_l(long, long);
 int  min_i(int, int);
 int  max_i(int, int);
-
+void clear();
 // convert 4 bytes in unsigned int (little endian)
 uint fromBytesToInt(byte *bytes) {
   uint result = 0, base = 1;
@@ -291,5 +291,7 @@ int min_i(int a, int b){
 int max_i(int a, int b){
     return a > b ? a : b;
 }
-
+void clear(){
+    system("clear");
+}
 #endif
