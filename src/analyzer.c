@@ -615,21 +615,17 @@ void removeFiles(int numFiles, string *fileNames){
             if (pathType == 0){
                 // it's an existing file
                 if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
-                    printf("Remove file %s\n", absolutePath);
+                    printf("Removing file %s\n", absolutePath);
                     instanceOfMySelf.totalFiles-=1;
                 } else {
                     fprintf(stderr, "?Error trying to remove %s\n", absolutePath);
                 }                
             } else if (pathType == 1){
                 // it's an existing folder
-
-                /*
-                 * TODO: send remove folder packet to controller.
-                 * Functions to remove folder from namesList already exist.
-                 */
-                
-                // printf("Removed folder %s\n", absolutePath);
-                printf("Not still implemented\n");
+                if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
+                    printf("Removing folder %s\n", absolutePath);
+                    instanceOfMySelf.totalFiles-=1;
+                }
             } else {
                 // invalid file/folder
                 fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");

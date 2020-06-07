@@ -182,26 +182,6 @@ int removeNodeNameByName(NamesList *list, string fileName){
 }
 
 /**
- * Controlla se la parte iniziale della stringa fileName corrisponde con 
- * la stringa folderName. Se sì ritrona true.
- */
-bool isInFolder(string fileName, string folderName){
-    bool ret = false;
-    int folderLen = strlen(folderName);
-    string toCompare = (string)malloc(folderLen+1);
-    memcpy(toCompare, fileName, folderLen);
-    toCompare[folderLen]='\0';
-    
-    string result = strstr(toCompare, folderName);
-    
-    
-    if(result != NULL){
-        ret = true;
-    }
-    return ret;
-}
-
-/**
  * Prende in input il nome di una cartella e due NamesList, toglie dalla prima tutti i 
  * nodi che contengono file che si trovano nella cartella e li aggiunge alla seconda.
  * Il nome della cartella deve essere in percorso assoluto.
@@ -209,6 +189,9 @@ bool isInFolder(string fileName, string folderName){
 void deleteFolderNamesList(string folder, NamesList *existentList, NamesList *deletedList){
     NodeName *tempNode = existentList->first;
     NodeName *nextNode;
+    if(deletedList == NULL){
+        deletedList = constructorNamesList();
+    }
     while(tempNode != NULL){
         nextNode = tempNode->next;
         if(isInFolder(tempNode->name, folder)){

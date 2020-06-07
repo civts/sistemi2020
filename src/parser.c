@@ -20,9 +20,10 @@ char* rand_string_alloc(int);
 int numberPossibleFlags = 10; 
 string possibleFlags[]  = {"-analyze", "-i",  "-s", "-h",  "-show", "-rem", "-add", "-n", "-m", "-quit"};
 bool   flagsWithArgs[]  = {false,      false, false, false, false,   true,   true,   true,  true, false};
+
 bool   settedFlags[]    = {false, false, false, false, false, false, false, false, false, false};
 string arguments[10];
-string invalidPhrase    = "Wrong command syntax\n"; 
+string invalidPhrase    = "Wrong command syntax, try command '-h' for help.\n"; 
 
 bool checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char **arguments, char* invalid,bool printOnFailure){
     bool validity = true;
@@ -173,18 +174,18 @@ char* rand_string_alloc(int size)
      return s;
 }
 
+// void wait_a_bit(){
+//     long long int i;
+//     for (i=0; i<999999; i++){}
+// }
 
 // int main(){
 
-//     int numero;
-//     strcpy(str,"la casa del vicino puzza di   vino  ");
-//     parser(str, &numero, out);
-
-//     int i;
-//     for(i=0; i<numero; i++){
-//         printf("%s||\n", out[i]);
+//     while(1){
+//         wait_a_bit();
+//         char *str = rand_string_alloc(10);
+//         printf("String: %s\n", str);
 //     }
-
 
 //     return 0;
 // }
