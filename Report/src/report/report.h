@@ -1,5 +1,5 @@
 #include "../packet_codes.h"
-#include "../utils.c"
+#include "../../../src/utils.c"
 #include "./data_structures/analyzer_list.h"
 #include "./data_structures/file_with_stats_list.h"
 #include "report_print_functions.h"
@@ -11,7 +11,7 @@
 const char *PATH_TO_PIPE = "./myfifo";
 
 // How many bytes to read every time from the pipe
-const int BATCH_SIZE = 128;
+const int BATCH_SIZE = 10;
 
 // analyzer (eventually creating the fws if needed)
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
@@ -39,10 +39,12 @@ void got2ndPathPartDeleteFolderPacket(int pipe, byte *header, analyzerList *anal
 void gotErrorLogPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // restart the analyzer, resetting all data in it
 void gotStartPacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
-
-
 // This is the function that implements report buisiness logic. READS 1 PACKET AT THE TIME
 int reportReadOnePacket(int pipe, analyzerList *analyzers);
+
+
+
+
 
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
   byte dati [dimDati];

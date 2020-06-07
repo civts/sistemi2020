@@ -124,7 +124,7 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     // }
     return valid;
 }
-int main(int argc, char * argv[]){
+int report_main(int argc, char * argv[]){
     int i=0;
     int retCode = 0;
     char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag, dumpFlag};

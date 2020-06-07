@@ -5,7 +5,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 // #include <limits.h>
-#include "utils.c"
+// #include "utils.c"
+#include "../../src/utils.c"
 #include "datastructures/namesList.c"
 
 // maximum file name length: 255

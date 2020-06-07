@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <termios.h>    //termios, TCSANOW, ECHO, ICANON
-#include "utils.c"
+#include "../../src/utils.c"
 #include "crawler.c"
 #include "packets.h"
 #include "parser.c"
@@ -98,7 +98,7 @@ void updateMessages(string newMessage){
  * Reads the first commands from the terminal, then switches to inputReader cycle.
  * TODO: it violates the principle of the single point of exit.
  */ 
-int main(int argc, char *argv[]){
+int analyzer_main(int argc, char *argv[]){
     int returnCode = 0;
     initialize();
 

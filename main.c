@@ -5,12 +5,17 @@
 #include <unistd.h>     //STDIN_FILENO
 #include <stdlib.h>
 #include <string.h>
-
+#include <limits.h>
+#include "Analyzer/src/analyzer.c" 
+#include "Report/src/report/report_input.c"
 #define BUFFER_SIZE 4096
+#define READ  0
+#define WRITE 1
+
 char buf[BUFFER_SIZE], command[BUFFER_SIZE];
 int counter = 0;
 
-void printScreen(int carattere) {
+void printScreenMain(int carattere) {
     printf("================================================\n");
     printf("%d\n", counter++);
     printf("===================Processing===================\n");
@@ -20,18 +25,61 @@ void printScreen(int carattere) {
     fflush(stdout);
 }
 
-void clear(){
-    system("clear");
-}
-
-void resetBuffer(char buffer[], int size){
-    int i;
-    for (i = 0; i < BUFFER_SIZE; i++){
-        buffer[i] = 0;
-    }
-}
-
 int main(void){
+    int returnCode;
+
+    char analyzerPath[PATH_MAX]="./Analyzer/src/";
+    char reportPath[PATH_MAX]="./Report/src/report/";
+
+    int daughter;
+    int pipeToDaughter[2];
+    int pipeFromDaughter[2];
+
+    int son;
+    int pipeToSon[2];
+    int pipeFromSon[2];
+
+    int parent;
+    
+    daughter = fork();
+
+    if (daughter < 0){
+        fprintf(stderr, "Found an error creating the Report\n");
+        returnCode = 2;
+    } else if (daughter == 0){
+        // child: new instance of Controller;
+        char reportExecutablePath[PATH_MAX];
+        strcpy(reportExecutablePath, reportPath);
+        strcat(reportExecutablePath, "r");
+        close(pipeToDaughter[WRITE]);
+        close(pipeFromDaughter[READ]);
+        // Inserire metodo report() qui
+        int numArgs=0;
+        string args[3] = {"-add ./", "-n 2", "-m 3"};
+        report_main(numArgs, args);
+    } else {
+        // parent;
+        son = fork();
+        if(son < 0){
+            fprintf(stderr, "Found an error creating the Analyzer\n");
+            returnCode = 2;
+        } else if (son == 0){
+            // child: new instance of Controller;
+            char analyzerExecutablePath[PATH_MAX];
+            strcpy(analyzerExecutablePath, analyzerPath);
+            strcat(analyzerExecutablePath, "a");
+            fprintf(stderr, "analyzer created\n");
+            close(pipeToSon[WRITE]);
+            close(pipeFromSon[READ]);
+            int numArgs=0;
+            string args[3] = {"-add ./", "-n 2", "-m 3"};
+            analyzer_main(numArgs, args);
+        }
+    }
+    close(pipeToSon[READ]);
+    close(pipeFromSon[WRITE]);
+
+
     int lenBuffer = 0, numReadCharacters = 0;
     char *endCommandPosition;
     resetBuffer(buf, BUFFER_SIZE);
@@ -81,7 +129,7 @@ int main(void){
         }
          
         clear();
-        printScreen('a');
+        printScreenMain('a');
         sleep(1);
     }                
 
