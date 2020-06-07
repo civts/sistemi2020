@@ -1,0 +1,22 @@
+Il modello docker verrà inviato a posteriori (riga di comando)
+Non usare mai il filesystem (salvare su file dei risultati intermedi)
+Fare sempre tutti i controlli sulle chiamate di sistema, gestendo gli errori
+Come gestire l'errore? Almeno avvisare l'utente. Dove possibile sarebbe carino gestirlo. es. riprovare se l'errore può essere temporaneo o chiedere all'utente di riprovare
+
+Per analizzare il contenuto della cartella: usare il comando ls.
+
+Domande:
+1)  A e R devono comunicare fra di loro anche se sono eseguiti da shell diverse
+2)  Se cambio n ed m mantenendo gli stessi file il risultato è lo stesso -> riavviare da capo il programma non è la soluzione migliore
+3)  Se aggiungo un file basta analizzare solo quello o devo analizzare anche gli altri?
+4)  L'ideale è mantenere in piedi tutte le strutture senza doverle ritirare su da zero
+5)  Utilizziamo normali file ASCII -> se c'è un file sbagliato non dà errore (es. jpeg) deve dare solo statistiche sbagliate e non crashare
+6)  A deve sia accettare comandi da tastiera in modalità interattiva che no (quando viene chiamato da M)
+7)  Teoricamente si potrebbero modificare i parametri anche durante l'esecuzione.
+8)  Quando si analizza una cartella: almeno il primo livello, eventualmente anche nelle sottocartelle
+9)  Q si arrangia da solo a capire a capire quale parte di file deve leggere. P NON DEVE LEGGERE I DATI del file -> usa wc da shell
+10) M è un eseguibile (oltre ad A e R)
+11) Possiamo gestire anche caratteri in più...
+12) Quando R viene lanciato singolarmente deve cercare gli ultimi dati lasciati da A.
+13) Oltre ai primi 3 eseguibili possiamo crearne anche altri... bisogna comunque gestire se l'utente li chiama da shell senza dire niente.
+14) Il report può mostrare i dati mentre vengono calcolati.
