@@ -1,16 +1,13 @@
-#include "../common/utils.h"
+#ifndef PACKET_HANDLER_H
+#define PACKET_HANDLER_H
+// #include "../common/utils.h"
 #include "../common/packets.h"
 #include "./data_structures/analyzer_list.h"
-#include "./data_structures/file_with_stats_list.h"
+// #include "./data_structures/file_with_stats_list.h"
+
 #include <fcntl.h>
 #include <unistd.h>
 
-#ifndef PACKET_HANDLER_H
-#define PACKET_HANDLER_H
-// Path to the named pipe
-const char *PATH_TO_PIPE = "./myfifo";
-// How many bytes to read every time from the pipe
-const int BATCH_SIZE = 10;
 // analyzer (eventually creating the fws if needed)
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati);
 // callback for error packets

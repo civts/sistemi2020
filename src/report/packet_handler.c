@@ -1,5 +1,9 @@
 #include "packet_handler.h"
 
+
+// How many bytes to read every time from the pipe
+const int BATCH_SIZE = 10;
+
 void gotAddFilePacket(int pipe, byte *header, analyzerList *analyzers,uint dimDati) {
   byte dati [dimDati];
   int rdDati = read(pipe, dati, dimDati);

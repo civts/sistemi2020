@@ -1,4 +1,10 @@
 #include "./report.h"
+// Path to the named pipe
+const char *PATH_TO_PIPE = "./myfifo";
+
+void clear(){
+    system("clear");
+}
 void resetBuffer(char buffer[], int size){
     int i;
     for (i = 0; i < BUFFER_SIZE; i++){
@@ -149,7 +155,7 @@ bool checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithA
 }
 
 
-int report_main(int argc, char * argv[]){
+int main(int argc, char * argv[]){
     int i=0;
     int retCode = 0;
     char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag, dumpFlag};

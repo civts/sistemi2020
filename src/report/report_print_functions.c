@@ -1,7 +1,10 @@
 #include "./report_print_functions.h"
 #include "./help.h"
-#include <fcntl.h>
 
+const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
+const char punctuationChars[] = {
+    ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
+};
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
   int totAnalyzers = 0;

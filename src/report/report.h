@@ -1,9 +1,3 @@
-#include "../common/utils.h"
-#include "./data_structures/file_with_stats_data_structure.h"
-#include "./data_structures/file_with_stats_list.h"
-#include "./data_structures/analyzer_data_structure.h"
-#include "./data_structures/analyzer_list.h"
-#include "../common/datastructures/namesList.h"
 #include "./packet_handler.h"
 #include "./report_print_functions.h"
 

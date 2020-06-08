@@ -1,4 +1,3 @@
-#include "../../common/utils.h"
 #include "./analyzer_data_structure.h"
 #ifndef ANALYZER_LIST_H
 #define ANALYZER_LIST_H

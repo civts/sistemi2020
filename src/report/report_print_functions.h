@@ -1,21 +1,19 @@
-#include "../common/utils.c"
-#include "./data_structures/file_with_stats_list.h"
-#include "./data_structures/analyzer_list.h"
+
 #ifndef PRINT_FUNCTIONS_H
 #define PRINT_FUNCTIONS_H
-const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
-const char punctuationChars[] = {
-    ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
-};
+// #include "../common/utils.h"
+#include "./data_structures/analyzer_list.h"
+// #include "./help.h"
+#include <fcntl.h>
 
-// Prints the line "Analyzed X files [in Y folders] [w/ Z analyzers]:\n"
+// Prints the line "Analyzed X filehs [in Y folders] [w/ Z analyzers]:\n"
 // AGGIORNATA CON LE FOLDER
 void printFirstInfoLine(analyzerList *aList);
 // Prints a progress bar with the percentage of a/b*100 [###    ]
 void printPercentage(uint done, uint total, int barWidth,bool gotData);
 
 // Default print function (no additional argv). Should look ilke this:
-//  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
+//  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:s
 //  a-z: 2109
 //  A-Z: 42
 //  ....

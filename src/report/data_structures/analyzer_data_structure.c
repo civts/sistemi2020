@@ -1,6 +1,5 @@
 #include "./analyzer_data_structure.h"
 #include <time.h>
-
 analyzer *constructorAnalyzer(uint pid, bool dumps) {
   analyzer *a = (analyzer *)malloc(sizeof(analyzer));
   checkNotNull(a);
@@ -173,7 +172,7 @@ void analyzerAddError(analyzer *a, char *error) {
 void analyzerPrintErrorMessages(const analyzer *a) {
   NodeName *n = a->errorMessages->last;
   if(a->errorMessages->counter!=0)
-    printf("Ultimi 3 messaggi di errore provenienti dall'analyzer PID:%d\n",a->pid);
+    printf("Ultimi 3 messaggi provenienti dall'analyzer PID:%d\n",a->pid);
   if(n==NULL) return;
   int i;
   // go back 2 steps

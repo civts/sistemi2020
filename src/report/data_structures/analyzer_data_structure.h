@@ -1,7 +1,8 @@
-#include "./file_with_stats_list.h"
-#include "../../common/datastructures/namesList.h"
+
 #ifndef ANALYZER_DATA_STRUCTURE_H
 #define ANALYZER_DATA_STRUCTURE_H
+#include "./file_with_stats_list.h"
+#include "../../common/datastructures/namesList.h"
 /*  File where we define the structure of an Analyzer and the functions that
  * enable us to work with it. The analyzer has a pid of its process, a list of
  * the files it has analyzed complete w/ their stats and a second list which we

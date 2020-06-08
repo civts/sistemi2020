@@ -1,8 +1,6 @@
-#include "../../common/utils.h"
-#include "./file_with_stats_data_structure.h"
 #ifndef FILE_WITH_STATS_LIST_H
 #define FILE_WITH_STATS_LIST_H
-
+#include "./file_with_stats_data_structure.h"
 /*  File where we define the structure of the fwsList with all the fileWithStats
  *  nodes
 */
