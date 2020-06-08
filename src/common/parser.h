@@ -17,13 +17,6 @@
 #define flag_quit 9
 #define flag_main 10
 
-/*** Parameter for parser ****/
-string argumentsAnalyzer[10];
-int numberPossibleFlagsAnalyzer = 10; 
-string invalidPhraseAnalyzer    = "Wrong command syntax, try command '-h' for help.\n";
-string possibleFlagsAnalyzer[]  = {"-analyze", "-i",  "-s", "-h",  "-show", "-rem", "-add", "-n", "-m", "-quit", "-main"};
-bool   flagsWithArgsAnalyzer[]  = {false,      false, false, false, false,   true,   true,   true,  true, false,  false};
-bool   settedFlagsAnalyzer[]    = {false,      false, false, false, false,   false,  false,  false, false,false,  false};
 
 
 bool checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char **arguments, char* invalid,bool printOnFailure);

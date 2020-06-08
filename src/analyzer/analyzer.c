@@ -1,9 +1,12 @@
 #include <termios.h>    //termios, TCSANOW, ECHO, ICANON
+#include <unistd.h>
+#include <fcntl.h>
+#include  <ctype.h>
 #include "../common/utils.h"
 #include "../common/parser.h"
 #include "../common/packets.h"
-#include "crawler.c"
-#include "controller.c"
+#include "crawler.h"
+#include "controller.h"
 #include "instances.h"
 
 #define BUFFER_SIZE 4096
@@ -22,8 +25,15 @@ controllerInstance *cInstance;
 NamesList *filePaths;
 
 // Used for printing purposes
-string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"};  
+string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"}; 
 
+/*** Parameter for parser ****/
+string argumentsAnalyzer[10];
+int    numberPossibleFlagsAnalyzer = 10; 
+string invalidPhraseAnalyzer    = "Wrong command syntax, try command '-h' for help.\n";
+string possibleFlagsAnalyzer[]  = {"-analyze", "-i",  "-s", "-h",  "-show", "-rem", "-add", "-n", "-m", "-quit", "-main"};
+bool   flagsWithArgsAnalyzer[]  = {false,      false, false, false, false,   true,   true,   true,  true, false,  false};
+bool   settedFlagsAnalyzer[]    = {false,      false, false, false, false,   false,  false,  false, false,false,  false};
 
 
 void initialize();
@@ -48,6 +58,7 @@ void cleanArguments();
 void staticAnalisysScreen();
 int  waitForMessagesInAFromC();
 void printMessages();
+bool checkArgumentsValidity(char **arguments);
 
 
 /**
@@ -114,18 +125,24 @@ int main(int argc, char *argv[]){
     bool validCall = checkArguments(argc-1, argv+1, possibleFlagsAnalyzer, flagsWithArgsAnalyzer, numberPossibleFlagsAnalyzer +1, settedFlagsAnalyzer, argumentsAnalyzer, invalidPhraseAnalyzer, true);
     bool validArguments = checkArgumentsValidity(argumentsAnalyzer);
     
+    if (settedFlagsAnalyzer[10]){
+        cInstance->hasMainOption = true;
+    }
+
+    returnCode = generateNewControllerInstance();
+
     int i;
-    if(validCall && argc > 1 && validArguments){
+    if (validCall && argc > 1 && validArguments){
         // For the first call we check all flags (which means also "-main" flag)
-        for(i=numberPossibleFlagsAnalyzer; i>=0; i--){
-            if(settedFlagsAnalyzer[i]){
+        for (i = numberPossibleFlagsAnalyzer - 1; i>=0; i--){
+            if (settedFlagsAnalyzer[i]){
                 // If command is set, retrieve its arguments and then switch it 
                 char commandToPrint[BUFFER_SIZE];
                 strcpy(commandToPrint, possibleFlagsAnalyzer[i]);
                 char *listOfArguments[BUFFER_SIZE];
-                char stringWithArguments[BUFFER_SIZE];
+                // char stringWithArguments[BUFFER_SIZE];
                 int  numArguments;
-                if(flagsWithArgsAnalyzer[i]){
+                if (flagsWithArgsAnalyzer[i]){
                     strcat(commandToPrint, " "); 
                     strcat(commandToPrint, argumentsAnalyzer[i]); 
                     parser(argumentsAnalyzer[i], &numArguments, listOfArguments);
@@ -133,19 +150,20 @@ int main(int argc, char *argv[]){
                     numArguments = 0;
                 }
                 updateHistory(commandToPrint);
-                if(!instanceOfMySelf.hasMainOption ){
+                if (!instanceOfMySelf.hasMainOption ){
                     printf("Processing command: '%s' ", possibleFlagsAnalyzer[i]);
                 }
                 int j;
-                for(j=0; j<numArguments; j++){
-                    if(!instanceOfMySelf.hasMainOption ){
+                for (j=0; j<numArguments; j++){
+                    if (!instanceOfMySelf.hasMainOption ){
                         printf("argument %d : '%s' ", j, listOfArguments[j]);
                     }
                 }
-                if(!instanceOfMySelf.hasMainOption ){
+                if (!instanceOfMySelf.hasMainOption ){
                     waitEnter();
                 }
                 settedFlagsAnalyzer[i] = false;
+                
                 switchCommand(i, numArguments, listOfArguments);
             }
         }
@@ -160,9 +178,8 @@ int main(int argc, char *argv[]){
         updateHistory(invalidCommand);
     }
     
-    returnCode = generateNewControllerInstance();
     
-    if(returnCode == 0){
+    if (returnCode == 0){
         inputReader();
     }
     
@@ -233,9 +250,9 @@ int staticMode(NamesList *listFilePaths){
 bool checkParameters(){
     int returnValue = true;
     if (instanceOfMySelf.n <= 0){
-        char mess1[BUFFER_SIZE] = "\nError: specify numeric non-zero positive values for n\n";
+        char mess1[] = "\nError: specify numeric non-zero positive values for n\n";
         if(!instanceOfMySelf.hasMainOption){
-            fprintf(stderr, mess1);
+            fprintf(stderr, "%s", mess1);
             waitEnter();
         } else {
             sendTextMessageToReport(cInstance->pipeAC, mess1);
@@ -243,9 +260,9 @@ bool checkParameters(){
         returnValue = false;
     }
     if(instanceOfMySelf.m <=0 ) {
-        char mess2[BUFFER_SIZE] = "\nError: specify numeric non-zero positive values for m\n";
+        char mess2[] = "\nError: specify numeric non-zero positive values for m\n";
         if(!instanceOfMySelf.hasMainOption){
-            fprintf(stderr, mess2);
+            fprintf(stderr, "%s", mess2);
             waitEnter();
         } else {
             sendTextMessageToReport(cInstance->pipeAC, mess2);
@@ -253,12 +270,12 @@ bool checkParameters(){
         returnValue = false;
     }
     if(instanceOfMySelf.totalFiles == 0){
-        char mess2[BUFFER_SIZE] = "\nError: Cannot start analisys without a file or folder\n";
+        char mess3[] = "\nError: Cannot start analisys without a file or folder\n";
         if(!instanceOfMySelf.hasMainOption){
-            fprintf(stderr, mess2);
+            fprintf(stderr, "%s", mess3);
             waitEnter();
         } else {
-            sendTextMessageToReport(cInstance->pipeAC, mess2);
+            sendTextMessageToReport(cInstance->pipeAC, mess3);
         }
         returnValue = false;
     }
@@ -640,7 +657,7 @@ void addFiles(int numFiles, string *fileNames){
                 int appended = appendNameToNamesList(filePaths, absolutePath);
                 if(appended == 0){
                     char message[BUFFER_SIZE] = "File ";
-                    string copy;
+                    char copy[BUFFER_SIZE];
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, absolutePath);
@@ -668,7 +685,7 @@ void addFiles(int numFiles, string *fileNames){
                 }
             } else {
                 char message[BUFFER_SIZE] = "Folder ";
-                string copy;
+                char copy[BUFFER_SIZE];
                 strcpy(copy, fileNames[i]);
                 trimStringToLength(copy, 50);
                 strcat(message, copy);
@@ -682,7 +699,7 @@ void addFiles(int numFiles, string *fileNames){
         } else {
             // invalid file/folder
             char message[BUFFER_SIZE] = "File/folder ";
-            string copy;
+            char copy[BUFFER_SIZE];
             strcpy(copy, fileNames[i]);
             trimStringToLength(copy, 50);
             strcat(message, "  doesn't exist!\n");
@@ -708,14 +725,14 @@ void removeFiles(int numFiles, string *fileNames){
         absolutePath = realpath(fileNames[i], absolutePath);
 
         if(absolutePath != NULL){
-            int numOfFilesInFolder; // used in case it's a folder
+            // int numOfFilesInFolder; // used in case it's a folder
             int pathType = inspectPath(absolutePath);
 
             if (pathType == 0){
                 // it's an existing file
                 if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
                     char message[BUFFER_SIZE] = "Removing file ";
-                    string copy;
+                    char copy[BUFFER_SIZE];
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, copy);
@@ -727,7 +744,7 @@ void removeFiles(int numFiles, string *fileNames){
                     }
                 } else {
                     char message[BUFFER_SIZE] = "Error trying to remove ";
-                    string copy;
+                    char copy[BUFFER_SIZE];
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, copy);
@@ -740,7 +757,7 @@ void removeFiles(int numFiles, string *fileNames){
                 // it's an existing folder
                 if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
                     char message[BUFFER_SIZE] = "Removing folder ";
-                    string copy;
+                    char copy[BUFFER_SIZE];
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, copy);
@@ -757,7 +774,7 @@ void removeFiles(int numFiles, string *fileNames){
                     fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");
                 } else {
                     char message[BUFFER_SIZE] = "File/folder ";
-                    string copy;
+                    char copy[BUFFER_SIZE];;
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, copy);
@@ -868,7 +885,7 @@ void printMessages(){
  *          2 if something went wrong with the message
  */
 int waitForMessagesInAFromC(){
-    int numBytesRead, dataSectionSize, offset, ret;
+    int numBytesRead, ret;
     byte packetHeader[1 + INT_SIZE];
     numBytesRead = read(cInstance->pipeCA[READ], packetHeader, 1 + INT_SIZE);
     if(numBytesRead > 0){
@@ -898,10 +915,10 @@ int waitForMessagesInAFromC(){
             int messageSize = fromBytesToInt(packetHeader+1); 
             byte packetData[messageSize];
             int bytesRead = read(cInstance->pipeCA[READ], packetData, messageSize);
-            if(bytesRead == messageSize){
-                // TODO check if read has read all the bytes? (chek for non atomicity);
-                char message[messageSize+1];
-                strcpy(message, packetData);
+            if (bytesRead == messageSize){
+                
+                char message[messageSize];
+                memcpy(message, packetData, messageSize);
                 message[messageSize] = '\0';
                 updateMessages(message);
                 if(!instanceOfMySelf.hasMainOption){

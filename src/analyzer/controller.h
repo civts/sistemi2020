@@ -10,7 +10,6 @@
 #include "../common/datastructures/namesList.h"
 #include "../common/datastructures/fileList.h"
 #include "instances.h"
-// #include "p.c"
 
 // #define REPORT 1
 
@@ -75,5 +74,8 @@ int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerI
 
 // Creates the named pipe to the report
 int openFifoToReport(controllerInstance *instanceOfMySelf);
+
+// During an analysis get the number of files already completed
+int getNumOfCompletedFiles(controllerInstance *instanceOfMySelf);
 
 #endif
