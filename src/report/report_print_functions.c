@@ -1,6 +1,7 @@
 #include "./report_print_functions.h"
 #include "./help.h"
 #include <fcntl.h>
+
 void printFirstInfoLine(analyzerList *aList) {
   uint totFiles = 0;
   int totAnalyzers = 0;

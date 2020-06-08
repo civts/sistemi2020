@@ -1,6 +1,5 @@
-#include "../../utils.c" 
 #include "./file_with_stats_list.h"
-#include "./namesList.h"
+#include "../../common/data_structures/namesList.h"
 #ifndef ANALYZER_DATA_STRUCTURE_H
 #define ANALYZER_DATA_STRUCTURE_H
 /*  File where we define the structure of an Analyzer and the functions that
@@ -15,18 +14,6 @@
  *    the same file)
 */
 
-// The representation of a file and its stats
-// Props:
-// - id: Analyzer process pid
-// - mainList: List of the files with stats relative to this analyzer
-// - deletedList: ids of the files that have been removed from this analyzer
-// which we
-// should not include in the final stats (blacklist)
-//
-// Methods for this:
-// constructorAnalyzer       -> constructor
-// deleteAnalyzer            -> destructor
-// analyzer list node
 typedef struct analyzer_t {
   // The analyzer of this node
   // Analyzer process pid
@@ -54,6 +41,7 @@ typedef struct analyzer_t {
 
 // constructor for Analyzer
 analyzer *constructorAnalyzer(uint pid, bool dumps);
+
 // Destructor for Analyzer
 void destructorAnalyzer(analyzer *a);
 
@@ -81,12 +69,9 @@ void analyzerDeleteFolder(analyzer *a, char * path);
 void analyzerIncompleteFolderDelete(analyzer *a, char * path);
 // appends the partial path and proceed for deletion
 void analyzerCompletionFolderDelete(analyzer *a, char * path);
-// // add a filter to that specific name
-// void analyzerAddFilter(analyzer * a, char* path);
-// // add remove filter
-// void analyzerRemoveFilter(analyzer * a, char* path);
 // adds an error to the analyzer log and prints it to file if necessary
 void analyzerAddError(analyzer * a, char* error);
 // stampa debug
 void analyzerPrint(analyzer *a);
+
 #endif

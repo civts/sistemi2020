@@ -12,14 +12,6 @@
 */
 
 // The representation of a file and its stats
-// Props:
-// -
-//
-// Methods for this:
-// constructorFWS       -> constructor
-// addStatsToFWS        -> add new data (from the other parts of this file)
-// deleteFWS            -> destructor
-// FileWithStats list node
 typedef struct fwsNode_t {
   // path to the file
   char *path;
@@ -50,6 +42,11 @@ void fwsUpdateFileData(fileWithStats *fs, uint totChars, uint totCharsToAdd,
 void fwsUpdateFilePath(fileWithStats *fs, char *path);
 // resets
 void fwsResetData(fileWithStats * fs);
+
+// Prints the fileWithStats, just fore testing for now - TESTED
+void fwsPrint(fileWithStats *fs);
+
 // counts  by group
 charGroupStats statsForFile(fileWithStats *fws);
+
 #endif

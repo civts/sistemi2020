@@ -1,4 +1,5 @@
 #include "./file_with_stats_data_structure.h"
+
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
                               uint occorrenze[ASCII_LENGTH]) {
   fileWithStats *fs = (fileWithStats *)malloc(sizeof(fileWithStats));

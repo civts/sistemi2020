@@ -2,6 +2,7 @@
 #include "./file_with_stats_data_structure.h"
 #ifndef FILE_WITH_STATS_LIST_H
 #define FILE_WITH_STATS_LIST_H
+
 /*  File where we define the structure of the fwsList with all the fileWithStats
  *  nodes
 */
@@ -85,4 +86,5 @@ void fwsListDeleteFolder(fwsList * l, char* path);
 // resets all data in the list
 void fwsListResetData(fwsList * l);
 void fwsListPrint(fwsList *l);
+
 #endif

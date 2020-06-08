@@ -1,6 +1,7 @@
 #include "./analyzer_data_structure.h"
+#include "./file_with_stats_data_structure.h"
 #include <time.h>
-// constructor for Analyzer
+
 analyzer *constructorAnalyzer(uint pid, bool dumps) {
   analyzer *a = (analyzer *)malloc(sizeof(analyzer));
   checkNotNull(a);
@@ -22,8 +23,6 @@ analyzer *constructorAnalyzer(uint pid, bool dumps) {
   return a;
 }
 
-// Destructor for Analyzer
-// TODO: seems ok but we need to test for memory leaks
 void destructorAnalyzer(analyzer *a) {
   if (DEBUGGING)
     printf("Deleting Analyzer instance @%p for Analyzer with pid %u\n", a,

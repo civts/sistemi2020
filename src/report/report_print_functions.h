@@ -3,6 +3,7 @@
 #include "./data_structures/analyzer_list.h"
 #ifndef PRINT_FUNCTIONS_H
 #define PRINT_FUNCTIONS_H
+
 const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
 const char punctuationChars[] = {
     ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',

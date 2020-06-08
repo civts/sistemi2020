@@ -2,6 +2,8 @@
 #include "./data_structures/analyzer_list.h"
 #include "./data_structures/file_with_stats_list.h"
 #include <fcntl.h>
+#include <unistd.h>
+
 #ifndef REPORT_H
 #define REPORT_H
 // Path to the named pipe

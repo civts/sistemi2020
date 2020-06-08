@@ -1,4 +1,5 @@
 #include "./file_with_stats_list.h"
+
 fwsList *constructorFwsListEmpty() {
   fwsList *l = (fwsList *)malloc(sizeof(fwsList));
     checkNotNull(l);
