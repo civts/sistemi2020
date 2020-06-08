@@ -8,7 +8,7 @@
 // #include "datastructures/namesList.c"
 // #include "datastructures/fileList.c"
 
-// #define REPORT 1
+#define REPORT 1
 
 string REPORT_FIFO = "/tmp/fifo";
 
