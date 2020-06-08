@@ -1,8 +1,19 @@
 .vscode/
 .vsCode/
-build/
+.directory
 
+#Build folders
+build/
+bin/
+
+#binaries
 *.exe
 *.o
 *.a
 *.s
+*.out
+
+#our fifo
+myfifo
+#dumps
+analyzer_*_dump.txt
