@@ -112,7 +112,7 @@ int main(int argc, char *argv[]){
     initialize();
 
     cleanArguments();
-    bool validCall = checkArguments(argc-1, argv+1, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
+    bool validCall = checkArguments(argc-1, argv+1, possibleFlags, flagsWithArgs, numberPossibleFlags+1, settedFlags, arguments, invalidPhrase, true);
     bool validArguments = checkArgumentsValidity(arguments);
     
     int i;
