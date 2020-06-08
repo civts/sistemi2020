@@ -15,7 +15,7 @@ char buf[BUFFER_SIZE], command[BUFFER_SIZE];
 /**
  * Command:
  
- ../common/mymath.c ../common/packets.c ../common/datastructures/fileList.c ../common/datastructures/miniQlist.c ../common/datastructures/namesList.c ../common/utils.c -o main -lm
+ gcc -Wall -std=gnu90 analyzer.c ../common/parser.c ../common/mymath.c ../common/packets.c ../common/datastructures/fileList.c ../common/datastructures/miniQlist.c ../common/datastructures/namesList.c ../common/utils.c q.c p.c crawler.c miniQ.c controller.c  -o main -lm
  
  */
 
@@ -23,6 +23,8 @@ char buf[BUFFER_SIZE], command[BUFFER_SIZE];
 analyzerInstance instanceOfMySelf;
 controllerInstance *cInstance;
 NamesList *filePaths;
+
+static struct termios oldt, newt;
 
 // Used for printing purposes
 string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"}; 
@@ -120,6 +122,13 @@ void updateMessages(string newMessage){
 int main(int argc, char *argv[]){
     int returnCode = 0;
     initialize();
+
+    /*tcgetattr gets the parameters of the current terminal
+    STDIN_FILENO will tell tcgetattr that it should write the settings
+    of stdin to oldt*/
+    tcgetattr( STDIN_FILENO, &oldt);
+    /*now the settings will be copied*/
+    newt = oldt;
 
     cleanArguments();
     bool validCall = checkArguments(argc-1, argv+1, possibleFlagsAnalyzer, flagsWithArgsAnalyzer, numberPossibleFlagsAnalyzer +1, settedFlagsAnalyzer, argumentsAnalyzer, invalidPhraseAnalyzer, true);
@@ -369,6 +378,8 @@ void sendAllFiles(){
  * Provokes a waterfall effect tht kills every process.
  */
 int processExit(){
+    // restore termios
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     // Start the waterfall effect
     sendDeathPacket(cInstance->pipeAC);
     kill(cInstance->pid, SIGKILL);
@@ -376,7 +387,7 @@ int processExit(){
     free(cInstance);
     deleteNamesList(filePaths);
 
-    if(!instanceOfMySelf.hasMainOption){
+    if (!instanceOfMySelf.hasMainOption){
         clear();
         printf("Cleanup complete, see you next time!\n");
     }
@@ -445,15 +456,6 @@ int inputReader(){
     char *endCommandPosition;
     resetBuffer(buf, BUFFER_SIZE);
     resetBuffer(command, BUFFER_SIZE);
-
-    static struct termios oldt, newt;
-
-    /*tcgetattr gets the parameters of the current terminal
-    STDIN_FILENO will tell tcgetattr that it should write the settings
-    of stdin to oldt*/
-    tcgetattr( STDIN_FILENO, &oldt);
-    /*now the settings will be copied*/
-    newt = oldt;
 
     /*ICANON normally takes care that one line at a time will be processed
     that means it will return if it sees a "\n" or an EOF or an EOL*/
@@ -844,8 +846,13 @@ bool checkArgumentsValidity(char **arguments){
  * Waits for user to press enter.
  */
 void waitEnter(){
+
+    static struct termios enter;
+    tcgetattr(STDIN_FILENO, &enter);
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     printf("\npress enter to continue...");
-    while(getchar()!='\n');
+    while (getchar() != '\n');
+    tcsetattr(STDIN_FILENO, TCSANOW, &enter);
 }
 
 /**
