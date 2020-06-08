@@ -102,7 +102,13 @@ void analyzerUpdateFileData(analyzer *a, uint idFile,
                                 uint occurrences[INT_SIZE],uint m) {
   fileWithStats * searched = fwsListGetElementByID(a->files,idFile);
   if(searched!=NULL){
-    fwsUpdateFileData(searched,totChars,readChars,occurrences,m);
+    // caso in cui il file è stato modificato
+    if(searched->totalCharacters!=totChars && searched->gotData ){
+      fwsListRemoveElementByID(a->files,idFile,false);
+      fwsListAppend(a->errors,searched);
+    }else{
+      fwsUpdateFileData(searched,totChars,readChars,occurrences,m);
+    }
   }
 }
 
@@ -166,6 +172,8 @@ void analyzerAddError(analyzer *a, char *error) {
 
 void analyzerPrintErrorMessages(const analyzer *a) {
   NodeName *n = a->errorMessages->last;
+  if(a->errorMessages->counter!=0)
+    printf("Ultimi 3 messaggi di errore provenienti dall'analyzer PID:%d\n",a->pid);
   if(n==NULL) return;
   int i;
   // go back 2 steps

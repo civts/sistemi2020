@@ -8,7 +8,7 @@
 #include "./report_print_functions.c"
 
 #include <fcntl.h>
-#include <limits.h>
+#include <limits.h> //PATH_MAX
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -81,6 +81,9 @@ bool optionCombinationValid(bool *settedFlags){
         valid = false;
     // non posso avere -e e help
     if( settedFlags[extended] && settedFlags[help] )
+        valid = false;
+    // non posso avere -e e -c
+    if( settedFlags[extended] && settedFlags[compact] )
         valid = false;
     return valid;
 }
@@ -212,7 +215,7 @@ int main(int argc, char * argv[]){
         that means it will return if it sees a "\n" or an EOF or an EOL*/
         newt.c_lflag &= ~(ICANON);          
         newt.c_cc[VMIN] = 0;
-        newt.c_cc[VTIME] = 0;
+        newt.c_cc[VTIME] = 1;
 
         /*Those new settings will be set to STDIN
         TCSANOW tells tcsetattr to change attributes immediately. */
@@ -267,7 +270,7 @@ int main(int argc, char * argv[]){
                     //controllo se siano validi
                     if(checkArguments(numCommands,spliced,possibleFlags,flagsWithArguments,numberPossibleFlags,copyFlags,arguments,NULL,false)){
                         //controllo se la specifica combinazione sia valida
-                        if(optionCombinationValid(copyFlags)){
+                        if(optionCombinationValid(copyFlags) && numCommands>0){
                             //faccio ulteriore parsing solo se devo lavorare col flag --only
                            if(copyFlags[only]){
                                 // provo ad effettuare il parsing
@@ -280,6 +283,10 @@ int main(int argc, char * argv[]){
                                 }
                             }else{
                                 valid=true;
+                            }
+                            // se ho un dump o un force, non cambio la modalità di visualizzazione
+                            if(copyFlags[dumps_idx] || copyFlags[force] && (copyFlags[help] + copyFlags[tab]+ copyFlags[compact]+ copyFlags[only] + copyFlags[verbose] ==0 )){
+                                copyFlags[help] = settedFlags[help]; copyFlags[tab] = settedFlags[tab] , copyFlags[compact] = settedFlags[compact]; copyFlags[only] = settedFlags[only];copyFlags[verbose ] = settedFlags[verbose], copyFlags[extended] = settedFlags[extended];
                             }
                         }
                     }
@@ -309,7 +316,8 @@ int main(int argc, char * argv[]){
                 perror("No pipe");
                 pipe = open(PATH_TO_PIPE, O_RDONLY);
             }else{
-                //lettura di 1 pacchetto
+                //lettura di 1 batch di pacchetti
+                //reportReadBatch(pipe, analyzers,BATCH_SIZE);
                 reportReadOnePacket(pipe, analyzers);
             }
             clear();
@@ -341,17 +349,19 @@ int main(int argc, char * argv[]){
             if(settedFlags[force]){
                 destructoraAnalyzerList(analyzers);
                 analyzers = constructorAnalyzerListEmpty();
+                settedFlags[force]=false;
             }
             if(!pathValid)
                 printf("Path non valido\n");
             if(!valid && pathValid)
                 printf("Comando non valido, -h per vedere la sintassi\n");
-
+            if(analyzers->dumps)
+                printf("Scrittura su file degli errori abilitata per tutte le nuove analisi\n");
 
             //NON ELIMINARE QUESTE DUE STAMPE BUF E FFLUSH, SONO FONDAMENTALI PER IL CORRETTO FUNZIONAMENTO
             printf("> %s", buf);
             fflush(stdout);
-            sleep(1);   
+            //sleep(1);   
         }
         // restore the old settings
         tcsetattr( STDIN_FILENO, TCSANOW, &oldt);

@@ -73,5 +73,6 @@ void analyzerCompletionFolderDelete(analyzer *a, char * path);
 void analyzerAddError(analyzer * a, char* error);
 // stampa debug
 void analyzerPrint(analyzer *a);
-
+//stampa degli errori
+void analyzerPrintErrorMessages(const analyzer *a) ;
 #endif

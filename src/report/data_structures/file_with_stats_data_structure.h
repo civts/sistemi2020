@@ -25,6 +25,8 @@ typedef struct fwsNode_t {
   uint occorrenze[ASCII_LENGTH];
   // number of parts
   uint m;
+  // bool that checks if a file got some data
+  bool gotData;
   struct fwsNode_t *nextNode;
   struct fwsNode_t *previousNode;
 } fileWithStats;

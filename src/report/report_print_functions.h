@@ -3,7 +3,7 @@
 #include "./data_structures/analyzer_list.h"
 #ifndef PRINT_FUNCTIONS_H
 #define PRINT_FUNCTIONS_H
-
+#define MESSAGES_TO_DISPLAY 3
 const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
 const char punctuationChars[] = {
     ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
@@ -13,7 +13,7 @@ const char punctuationChars[] = {
 // AGGIORNATA CON LE FOLDER
 void printFirstInfoLine(analyzerList *aList);
 // Prints a progress bar with the percentage of a/b*100 [###    ]
-void printPercentage(uint done, uint total, int barWidth);
+void printPercentage(uint done, uint total, int barWidth,bool gotData);
 
 // Default print function (no additional argv). Should look ilke this:
 //  Analyzed 50 files [in 2 folders] [w/ 6 analyzers]:
@@ -78,4 +78,7 @@ void printHelp();
 
 void printRecapTabela(analyzerList *analyzers);
 
+//prints the lasts Error Messages
+void printLastErrorMessages(analyzer* a,int qty);
+void printErrorMessages(analyzer* a);
 #endif

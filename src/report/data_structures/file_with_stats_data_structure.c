@@ -22,6 +22,7 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
     }
   }
   fs->m = -1;
+  fs->gotData=false;
   fs->previousNode = NULL;
   fs->nextNode = NULL;
   if (DEBUGGING)
@@ -42,6 +43,7 @@ void fwsResetData(fileWithStats * fs){
     fs->occorrenze[i]  = 0;
   }
   fs->readCharacters=0;
+  fs->gotData=false;
 }
 void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsRead,
                        uint occorrenze[ASCII_LENGTH],uint m) {
@@ -59,6 +61,7 @@ void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsRead,
     fs->occorrenze[i] += occorrenze[i];
   }
   fs->m=m;
+  fs->gotData = true;
 }
 
 void fwsUpdateFilePath(fileWithStats *fs, char *path) {

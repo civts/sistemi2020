@@ -16,8 +16,14 @@ void printFirstInfoLine(analyzerList *aList) {
   }
   printf(":\n");
 }
-void printPercentage(uint done, uint total, int barWidth) {
-  float percentage = total == 0 ? 0 : done / (float)total;
+void printPercentage(uint done, uint total, int barWidth,bool gotData) {
+  float percentage;
+  if(total == 0 && gotData)
+    percentage=1;
+  if(total == 0 && !gotData)
+    percentage=0;
+  if(total!=0)
+    percentage = done/(float)total;
   printf("\n[");
   int i, pos = barWidth * percentage;
   for (i = 0; i < barWidth; i++) {
@@ -51,8 +57,8 @@ void printRecapCompact(analyzerList *aList) {
       totalChars;
   az = AZ = digits = spaces = punctuation = otherChars = totalChars =
       totalCharsRead = 0;
+  bool gotData = false;
   while (current != NULL) {
-    printErrors(current);
     fileWithStats *cursor = current->files->firstNode;
     while(cursor!=NULL){
       charGroupStats fileStats = statsForFile(cursor);
@@ -64,6 +70,7 @@ void printRecapCompact(analyzerList *aList) {
       otherChars += fileStats.otherChars;
       totalCharsRead += fileStats.totalCharsRead;
       totalChars += fileStats.totalChars;
+      gotData = cursor->gotData || gotData;
       cursor = cursor->nextNode;
     }
     current = current->nextNode;
@@ -72,7 +79,14 @@ void printRecapCompact(analyzerList *aList) {
          "%u\n\nTotal characters read: %u over %u\n",
          az, AZ, digits, punctuation, spaces, otherChars, totalCharsRead,
          totalChars);
-  printPercentage(totalCharsRead, totalChars, 30);
+  printPercentage(totalCharsRead, totalChars, 30,gotData);
+  current = aList->firstNode;
+   while (current != NULL) {
+    fileWithStats *cursor = current->files->firstNode;
+    printErrors(current);
+     analyzerPrintErrorMessages(current);
+    current=current->nextNode;
+   }
 }
 
 void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
@@ -96,6 +110,7 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
       printSingleFile(fNode, shouldGroup);
       fNode = fNode->nextNode;
     }
+     analyzerPrintErrorMessages(current);
     current = current->nextNode;
   }
 }
@@ -149,7 +164,7 @@ void printSingleFile(fileWithStats *f, bool group) {
   }
   printf("others: %d\n", otherChars);
   printf("\nTotal characters read: %u over %u\n", totalCharsRead, totalChars);
-  printPercentage(totalCharsRead, totalChars, 30);
+  printPercentage(totalCharsRead, totalChars, 30,f->gotData);
 }
 
 // void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
@@ -280,8 +295,14 @@ void printFilesOrFolder(analyzerList *analyzers,int pathsLen, char *paths[], boo
 //   }
 // };
 
-void printProgressBar(uint done, uint total, int barWidth) {
-  float percentage = total == 0 ? 0 : done / (float)total;
+void printProgressBar(uint done, uint total, int barWidth, bool gotData) {
+  float percentage;
+  if(total == 0 && gotData)
+    percentage=1;
+  if(total == 0 && !gotData)
+    percentage=0;
+  if(total!=0)
+    percentage = done/(float)total;
   int i, pos = (barWidth - 3) * percentage;
   for (i = 0; i < barWidth - 3; i++) {
     if (i < pos)
@@ -299,6 +320,9 @@ void printRecapTabela(analyzerList *aList) {
   const int totWidth = 120;
   const int groupWidth = 6;
   const int barWidth = 15;
+  if(aList->count==0){
+    printf("Nessun dato al momento\n");
+  }
   while (a != NULL) {        // forEach analyzer
     printErrors(a);
     char msg[totWidth + 1];  // table header text
@@ -322,7 +346,7 @@ void printRecapTabela(analyzerList *aList) {
     // la lunghezza di ogni pezzo dev'essere groupWidth-1:
     // strlen("|az  ") = 6 = groupWidth
     // si termini con |
-    const string beforeBar = "|az   |AZ   |num  |puntg|spazi|altri|letti|total|";
+    const string beforeBar = " |az   |AZ   |num  |puntg|spazi|altri|letti|total|";
     sprintf(msg + firstColWidth, beforeBar);
     const string barTxt = "progress bar";
     int positionNow = firstColWidth + strlen(beforeBar);
@@ -356,16 +380,38 @@ void printRecapTabela(analyzerList *aList) {
       for (j = 0; j < firstColWidth - strlen(trimmedPath); j++) {
         line[strlen(trimmedPath) + j] = ' ';
       }
-      sprintf(line + firstColWidth, "|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
+      sprintf(line + firstColWidth, " |%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
               stats.az, stats.AZ, stats.digits, stats.punctuation, stats.spaces,
               stats.otherChars, stats.totalCharsRead, stats.totalChars);
       printf("%s",line);
-      printProgressBar(f->readCharacters, f->totalCharacters, barWidth);
+      printProgressBar(f->readCharacters, f->totalCharacters, barWidth,f->gotData);
       f = f->nextNode;
     }
+    analyzerPrintErrorMessages(a);
     a = a->nextNode;
   }
 }
 void printHelp(){
   printf("%s", help);
+}
+void printLastErrorMessages(analyzer* a,int qty){
+  int i=0;
+  NodeName * current = a->errorMessages->last;
+  if(a->errorMessages->counter!=0){
+    printf("Ultimi %d messaggi di errore provenienti dall'analyzer PID:%d\n",qty,a->pid);
+  }
+  while(i<qty && current!=NULL){
+    printf("%s\n",current->name);
+    current = current->prev;
+    i++;
+  }
+
+}
+void printErrorMessages(analyzer* a){
+  NodeName * current = a->errorMessages->last;
+  while(current!=NULL){
+    printf("%s\n",current->name);
+    current = current->prev;
+  }
+
 }
