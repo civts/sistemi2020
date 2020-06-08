@@ -181,6 +181,7 @@ void deleteFolderNamesList(string folder, NamesList *existentList, NamesList *de
             // aggiorno contatore nodi
             existentList->counter--;
             // sposto il nodo nella lista degli eliminati
+            tempNode->next = tempNode->prev = NULL;
             appendToNamesList(deletedList, tempNode);
         }
         tempNode = nextNode;
