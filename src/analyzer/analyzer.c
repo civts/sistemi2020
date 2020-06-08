@@ -133,14 +133,19 @@ int main(int argc, char *argv[]){
     cleanArguments();
     bool validCall = checkArguments(argc-1, argv+1, possibleFlagsAnalyzer, flagsWithArgsAnalyzer, numberPossibleFlagsAnalyzer +1, settedFlagsAnalyzer, argumentsAnalyzer, invalidPhraseAnalyzer, true);
     bool validArguments = checkArgumentsValidity(argumentsAnalyzer);
-    
+    bool modeSet = false;
+
+
     if (settedFlagsAnalyzer[10]){
         cInstance->hasMainOption = true;
+    }
+    if(settedFlagsAnalyzer[flag_i]||settedFlagsAnalyzer[flag_s]){
+        modeSet = true;
     }
 
     returnCode = generateNewControllerInstance();
 
-    int i;
+    int i;      
     if (validCall && argc > 1 && validArguments){
         // For the first call we check all flags (which means also "-main" flag)
         for (i = numberPossibleFlagsAnalyzer - 1; i>=0; i--){
@@ -188,8 +193,8 @@ int main(int argc, char *argv[]){
     }
     
     
-    if (returnCode == 0){
-        inputReader();
+    if (returnCode == 0 && !modeSet){
+        returnCode = inputReader();
     }
     
     return returnCode;

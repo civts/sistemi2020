@@ -72,6 +72,7 @@ void waitForMessagesInCFromA(controllerInstance *instanceOfMySelf){
             }
         }
         printf("Got packet %d in C from A\n", packetHeader[0]);
+        sendTextMessageToReport(instanceOfMySelf->pipeCA, "Arrivato un pacchetto\n");
         processMessageInControllerFromAnalyzer(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
     }
 }
@@ -638,7 +639,8 @@ int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerI
     }
     
     printf("C - got error on file packet\n");
-    
+    sendFinishedFilePacket(instanceOfMySelf->pipeCA, getNumOfCompletedFiles(instanceOfMySelf), instanceOfMySelf->fileList->number_of_nodes);
+
     return returnCode;
 }
 
