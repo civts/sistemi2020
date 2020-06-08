@@ -1,5 +1,4 @@
 #include "./analyzer_data_structure.h"
-#include "./file_with_stats_data_structure.h"
 #include <time.h>
 
 analyzer *constructorAnalyzer(uint pid, bool dumps) {
@@ -42,6 +41,7 @@ void destructorAnalyzer(analyzer *a) {
 void analyzerStart(analyzer *a){
   fwsListResetData(a->files);
 }
+
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs) {
   if(DEBUGGING) {printf("ADD file calle for %s\n", fs->path);
   fwsPrint(fs);}

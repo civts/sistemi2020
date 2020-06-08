@@ -1,5 +1,5 @@
 #include "./file_with_stats_list.h"
-#include "../../common/data_structures/namesList.h"
+#include "../../common/datastructures/namesList.h"
 #ifndef ANALYZER_DATA_STRUCTURE_H
 #define ANALYZER_DATA_STRUCTURE_H
 /*  File where we define the structure of an Analyzer and the functions that
@@ -46,6 +46,8 @@ analyzer *constructorAnalyzer(uint pid, bool dumps);
 void destructorAnalyzer(analyzer *a);
 
 // funzioni che gestiscono i pacchetti
+
+void analyzerStart(analyzer *l);
 
 // function that adds new file to the mainList. If already present, it is ignored. It automatically manages the tree
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs);
