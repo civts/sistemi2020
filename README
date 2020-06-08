@@ -2,9 +2,40 @@
 
 samuele.conti@studenti.unitn.it
 
-Samuele Conti, samuele.conti@studenti.unitn.it 202535
-Francesco Bozzo, francesco.bozzo@studenti.unitn.it 201675
-Michele Yin, michele.yin@studenti.unitn.it 202453
-Giacomo Zanolli, giacomo.zanolli@studenti.unitn.it 202363
+Samuele Conti, 202535 samuele.conti@studenti.unitn.it
+Francesco Bozzo, 201675 francesco.bozzo@studenti.unitn.it
+Michele Yin, 202453 michele.yin@studenti.unitn.it
+Giacomo Zanolli, 202363 giacomo.zanolli@studenti.unitn.it
 
 ------------------------Descrizione------------------------
+Il progetto è costituito da tre componenti principali:
+
+- Analyzer:
+  //TODO
+- Report:
+  Programma che permette all'utente di visualizzare lo stato dell'analisi e i suoi risultati.
+- Main:
+  Permette all'utente di interagire con Analyzer e Report tramite comandi testuali
+
+------------------------Peculiarità------------------------
+
+- Report
+  1. È offerta la possibilità di specificare con vari flag la modalità di visualizzazione dei dati che si preferisce tra quelle disponibili. Questo è possibile anche durante l'esecuzione.
+  2. Report è in grado di gestire anche più analisi eseguite in modo concorrente mostrando i dati di ciascuna (e distinguendole in base al rispettivo process id).
+  3. Report è in grado di mostrare, in alcune visualizzazioni, il progresso delle analisi dei vari files che stanno venendo analizzati correntemente (es README.md analizzato al 36%).
+  4. Specificando il flag --dump ogni analisi iniziata da quel momento in poi scriverà su un file di log eventuali messaggi provenienti dall'analyzer
+
+------------------------Limitazioni------------------------
+
+- Il sistema analyzer e il report necessitano di una FIFO per comunicare; Se qualche altro porcesso scrive sulla FIFO o l'utente crea situazioni per cui analyzer o report non possono accedervi il corretto funzionamento del programma viene precluso.
+- È supportata solamente la codifica extended ASCII.
+
+
+---------------------Istruzioni rapide---------------------
+Uso:
+	1. Eseguire il main
+	2. Digitare i comandi
+	3. Se crasha riaprire e digitare comandi diversi
+	4. Cancellare questi 4 punti e riscriverlo serio
+Test:
+	Vorresti anche che ti dicessimo come testarlo? Sei un folle Naimoli
