@@ -1,11 +1,8 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <termios.h>    //termios, TCSANOW, ECHO, ICANON
 #include "../common/utils.h"
+#include "../common/parser.h"
 #include "../common/packets.h"
 #include "crawler.c"
-#include "parser.c"
 #include "controller.c"
 #include "instances.h"
 
@@ -19,13 +16,15 @@ char buf[BUFFER_SIZE], command[BUFFER_SIZE];
  
  */
 
-
-// Used for printing purposes
-string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"};
-
+/**** Globals ****/
 analyzerInstance instanceOfMySelf;
 controllerInstance *cInstance;
 NamesList *filePaths;
+
+// Used for printing purposes
+string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"};  
+
+
 
 void initialize();
 void updateHistory(string);
@@ -112,30 +111,30 @@ int main(int argc, char *argv[]){
     initialize();
 
     cleanArguments();
-    bool validCall = checkArguments(argc-1, argv+1, possibleFlags, flagsWithArgs, numberPossibleFlags+1, settedFlags, arguments, invalidPhrase, true);
-    bool validArguments = checkArgumentsValidity(arguments);
+    bool validCall = checkArguments(argc-1, argv+1, possibleFlagsAnalyzer, flagsWithArgsAnalyzer, numberPossibleFlagsAnalyzer +1, settedFlagsAnalyzer, argumentsAnalyzer, invalidPhraseAnalyzer, true);
+    bool validArguments = checkArgumentsValidity(argumentsAnalyzer);
     
     int i;
     if(validCall && argc > 1 && validArguments){
         // For the first call we check all flags (which means also "-main" flag)
-        for(i=numberPossibleFlags; i>=0; i--){
-            if(settedFlags[i]){
+        for(i=numberPossibleFlagsAnalyzer; i>=0; i--){
+            if(settedFlagsAnalyzer[i]){
                 // If command is set, retrieve its arguments and then switch it 
                 char commandToPrint[BUFFER_SIZE];
-                strcpy(commandToPrint, possibleFlags[i]);
+                strcpy(commandToPrint, possibleFlagsAnalyzer[i]);
                 char *listOfArguments[BUFFER_SIZE];
                 char stringWithArguments[BUFFER_SIZE];
                 int  numArguments;
-                if(flagsWithArgs[i]){
+                if(flagsWithArgsAnalyzer[i]){
                     strcat(commandToPrint, " "); 
-                    strcat(commandToPrint, arguments[i]); 
-                    parser(arguments[i], &numArguments, listOfArguments);
+                    strcat(commandToPrint, argumentsAnalyzer[i]); 
+                    parser(argumentsAnalyzer[i], &numArguments, listOfArguments);
                 } else {
                     numArguments = 0;
                 }
                 updateHistory(commandToPrint);
                 if(!instanceOfMySelf.hasMainOption ){
-                    printf("Processing command: '%s' ", possibleFlags[i]);
+                    printf("Processing command: '%s' ", possibleFlagsAnalyzer[i]);
                 }
                 int j;
                 for(j=0; j<numArguments; j++){
@@ -146,7 +145,7 @@ int main(int argc, char *argv[]){
                 if(!instanceOfMySelf.hasMainOption ){
                     waitEnter();
                 }
-                settedFlags[i] = false;
+                settedFlagsAnalyzer[i] = false;
                 switchCommand(i, numArguments, listOfArguments);
             }
         }
@@ -189,12 +188,7 @@ void helpMode(){
                           "-m   _value_  to set the value of m\n"
                           "-show         to see info of the current status of settings\n"
                           "-analyze      to start the analysis if in interactive mode\n"
-                          "-quit: o quit from the process\n\n"
-                        //   "Error codes:\n"
-                        //   "1: missing arguments\n"
-                        //   "2: n and m are not numeric non-zero values\n"
-                        //   "3: usage mode not supported\n"
-                          ;
+                          "-quit: o quit from the process\n\n";
 
     printf("%s\n", help_message);
     waitEnter();
@@ -476,28 +470,28 @@ int inputReader(){
                 int i;
                 cleanArguments();
                 // Obtain arguments if valid
-                bool validCall = checkArguments(numCommands, listOfCommands, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
+                bool validCall = checkArguments(numCommands, listOfCommands, possibleFlagsAnalyzer, flagsWithArgsAnalyzer, numberPossibleFlagsAnalyzer, settedFlagsAnalyzer, argumentsAnalyzer, invalidPhraseAnalyzer, true);
                 // Check contstraints on arguments
-                bool validArguments = checkArgumentsValidity(arguments);
+                bool validArguments = checkArgumentsValidity(argumentsAnalyzer);
 
                 if(validCall && numCommands > 0 && validArguments){
-                    for(i=numberPossibleFlags-1; i>=0; i--){
+                    for(i=numberPossibleFlagsAnalyzer-1; i>=0; i--){
                         // If command is set, then execute it
-                        if(settedFlags[i]){
-                            settedFlags[i] = false; 
+                        if(settedFlagsAnalyzer[i]){
+                            settedFlagsAnalyzer[i] = false; 
                             char commandToPrint[BUFFER_SIZE];
-                            strcpy(commandToPrint, possibleFlags[i]);
+                            strcpy(commandToPrint, possibleFlagsAnalyzer[i]);
                             int numArguments = 0;
                             string listOfArguments[BUFFER_SIZE];
-                            if(flagsWithArgs[i]){
-                                if(arguments[i]!=NULL){
+                            if(flagsWithArgsAnalyzer[i]){
+                                if(argumentsAnalyzer[i]!=NULL){
                                     strcat(commandToPrint, " ");
-                                    strcat(commandToPrint, arguments[i]); 
+                                    strcat(commandToPrint, argumentsAnalyzer[i]); 
                                 }
-                                parser(arguments[i], &numArguments, listOfArguments);
+                                parser(argumentsAnalyzer[i], &numArguments, listOfArguments);
                             }
                             if(!instanceOfMySelf.hasMainOption){
-                                printf("Processing command: '%s' ", possibleFlags[i]);
+                                printf("Processing command: '%s' ", possibleFlagsAnalyzer[i]);
                             }
                             int j;
                             if(!instanceOfMySelf.hasMainOption){
@@ -800,7 +794,7 @@ void sig_handler_A(){
 bool checkArgumentsValidity(char **arguments){
     int j;
     bool ret = true;
-    if(settedFlags[flag_n]){
+    if(settedFlagsAnalyzer[flag_n]){
         if(arguments[flag_n]!=NULL){
             for(j=0; j<strlen(arguments[flag_n]); j++){
                 if(!isdigit(arguments[flag_n][j])){
@@ -813,7 +807,7 @@ bool checkArgumentsValidity(char **arguments){
             ret = false;
         }
     }
-    if(settedFlags[flag_m]){
+    if(settedFlagsAnalyzer[flag_m]){
         if(arguments[flag_m]!=NULL){
             for(j=0; j<strlen(arguments[flag_m]); j++){
                 if(!isdigit(arguments[flag_m][j])){
@@ -838,14 +832,14 @@ void waitEnter(){
 }
 
 /**
- * Function to clan variables arguments and settedFlags.
+ * Function to clan variables arguments and settedFlagsAnalyzer.
  */
 void cleanArguments(){
     int i;
-    for(i=0; i<numberPossibleFlags; i++){
-        free(arguments[i]);
-        settedFlags[i] = false;
-        arguments[i] = NULL;
+    for(i=0; i<numberPossibleFlagsAnalyzer; i++){
+        free(argumentsAnalyzer[i]);
+        settedFlagsAnalyzer[i] = false;
+        argumentsAnalyzer[i] = NULL;
     }
 }
 
