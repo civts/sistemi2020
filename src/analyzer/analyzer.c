@@ -12,6 +12,14 @@
 #define BUFFER_SIZE 4096
 char buf[BUFFER_SIZE], command[BUFFER_SIZE];
 
+/**
+ * Command:
+ 
+ ../common/mymath.c ../common/packets.c ../common/datastructures/fileList.c ../common/datastructures/miniQlist.c ../common/datastructures/namesList.c ../common/utils.c -o main -lm
+ 
+ */
+
+
 // Used for printing purposes
 string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"};
 
@@ -35,39 +43,12 @@ int  switchCommand(int, int, string*);
 void printState();
 void addFiles(int, string*);
 void removeFiles(int, string*);
-void clear();
 void sig_handler_A();
 void waitEnter();
 void cleanArguments();
 void staticAnalisysScreen();
 int  waitForMessagesInAFromC();
 void printMessages();
-
-
-// Ensures the given string is long at most maxLen. If it is longer the middle
-// part is cut out and three dots are inserted instead.
-// MODIFIES the original string
-// Please use maxLen >= 6 (else it returns src). TESTED✔️
-void trimStringToLength(char *src, int maxLen) {
-  int pathLen = strlen(src);
-  if (pathLen > maxLen && maxLen >= 6) {
-    char tp[maxLen + 1];
-    int i, split = maxLen / 2 - 3;
-    for (i = 0; i < split; i++) {
-      tp[i] = src[i];
-    }
-    for (i = split; i < split + 3; i++) {
-      tp[i] = '.';
-    }
-    for (i = split + 3; i < maxLen; i++) {
-      tp[i] = src[pathLen - (maxLen - i)];
-    }
-    tp[maxLen] = '\0';
-    strcpy(src, tp);
-  }
-}
-
-
 
 
 /**
@@ -435,10 +416,6 @@ void printScreen() {
     fflush(stdout);
 }
 
-// Screen clear
-void clear(){
-    system("clear");
-}
 
 // Reset input buffer
 void resetBuffer(char buffer[], int size){
