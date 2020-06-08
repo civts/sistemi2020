@@ -12,10 +12,6 @@
 #define BUFFER_SIZE 4096
 char buf[BUFFER_SIZE], command[BUFFER_SIZE];
 
-/**
- * TODO: implementare rimozione cartella
- */
-
 // Used for printing purposes
 string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"};
 
@@ -27,15 +23,15 @@ void initialize();
 void updateHistory(string);
 void updateMessages(string);
 void helpMode();
-void interactiveMode();
-void staticMode(NamesList*);
+int  interactiveMode();
+int  staticMode(NamesList*);
 bool checkParameters();
 int  generateNewControllerInstance();
 void sendAllFiles();
 int  processExit();
 void waitAnalisysEnd();
 int  inputReader();
-void switchCommand(int, int, string*);
+int  switchCommand(int, int, string*);
 void printState();
 void addFiles(int, string*);
 void removeFiles(int, string*);
@@ -76,6 +72,7 @@ void trimStringToLength(char *src, int maxLen) {
 
 /**
  * Function that initializes all the resources of the Analyzer.
+ * No returns.
  */
 void initialize(){
     filePaths = constructorNamesList();
@@ -100,6 +97,7 @@ void initialize(){
 
 /**
  * Takes newCommand and puts it first in the history vector, moves previous commands down.
+ * No returns.
  */
 void updateHistory(string newCommand){
     int i;
@@ -111,6 +109,7 @@ void updateHistory(string newCommand){
 
 /**
  * Takes newMessage and puts it first in the history of messages vector, moves previous messages down.
+ * No returns
  */
 void updateMessages(string newMessage){
     int i;
@@ -122,7 +121,10 @@ void updateMessages(string newMessage){
 
 /**
  * Reads the first commands from the terminal, then switches to inputReader cycle.
- * TODO: it violates the principle of the single point of exit.
+ * Return values:
+ * 9 -> all good
+ * 1 -> error generating Controller
+ * 2 -> errors with messages in pipes
  */ 
 int main(int argc, char *argv[]){
     int returnCode = 0;
@@ -160,7 +162,9 @@ int main(int argc, char *argv[]){
                         printf("argument %d : '%s' ", j, listOfArguments[j]);
                     }
                 }
-                waitEnter();
+                if(!instanceOfMySelf.hasMainOption ){
+                    waitEnter();
+                }
                 settedFlags[i] = false;
                 switchCommand(i, numArguments, listOfArguments);
             }
@@ -174,11 +178,14 @@ int main(int argc, char *argv[]){
         }
         strcat(invalidCommand, " '");
         updateHistory(invalidCommand);
-        returnCode = 1;
     }
     
-    generateNewControllerInstance();
-    inputReader();
+    returnCode = generateNewControllerInstance();
+    
+    if(returnCode == 0){
+        inputReader();
+    }
+    
     return returnCode;
 }
 
@@ -216,16 +223,19 @@ void helpMode(){
 /**
  * Sets mode to interactive, sends all present files to the controller, then returns to readInput cycle. 
  */
-void interactiveMode(){
+int interactiveMode(){
+    int returnCode = 0;
     strcpy(instanceOfMySelf.mode, "Interactive");
     sendAllFiles();
-    inputReader();    
+    returnCode = inputReader();
+    return returnCode;    
 }
 
 /**
  * Starts the analisys in static mode. 
  */
-void staticMode(NamesList *listFilePaths){
+int staticMode(NamesList *listFilePaths){
+    int returnCode = 0;
     strcpy(instanceOfMySelf.mode, "Static");
     instanceOfMySelf.statusAnalisys = 1;
     sendNewNPacket(cInstance->pipeAC, instanceOfMySelf.n);
@@ -237,12 +247,13 @@ void staticMode(NamesList *listFilePaths){
 
     waitAnalisysEnd();
 
-    processExit();
+    returnCode = processExit();
+
+    return returnCode;
 }
 
 /**
  * Returns true if n, m and at least one file/folder are set with valid values
- * TODO: implement a smarter check for files
  */
 bool checkParameters(){
     int returnValue = true;
@@ -250,21 +261,31 @@ bool checkParameters(){
         char mess1[BUFFER_SIZE] = "\nError: specify numeric non-zero positive values for n\n";
         if(!instanceOfMySelf.hasMainOption){
             fprintf(stderr, mess1);
+            waitEnter();
         } else {
             sendTextMessageToReport(cInstance->pipeAC, mess1);
         }
         returnValue = false;
-        waitEnter();
     }
     if(instanceOfMySelf.m <=0 ) {
         char mess2[BUFFER_SIZE] = "\nError: specify numeric non-zero positive values for m\n";
         if(!instanceOfMySelf.hasMainOption){
             fprintf(stderr, mess2);
+            waitEnter();
         } else {
             sendTextMessageToReport(cInstance->pipeAC, mess2);
         }
         returnValue = false;
-        waitEnter();
+    }
+    if(instanceOfMySelf.totalFiles == 0){
+        char mess2[BUFFER_SIZE] = "\nError: Cannot start analisys without a file or folder\n";
+        if(!instanceOfMySelf.hasMainOption){
+            fprintf(stderr, mess2);
+            waitEnter();
+        } else {
+            sendTextMessageToReport(cInstance->pipeAC, mess2);
+        }
+        returnValue = false;
     }
 
     return returnValue;
@@ -298,7 +319,7 @@ int generateNewControllerInstance(){
             if(!instanceOfMySelf.hasMainOption){
                 fprintf(stderr, "Found an error creating the controllerInstance\n");
             }
-            returnCode = 2;
+            returnCode = 1;
         } else if (cInstance->pid == 0){
             // child: new instance of Controller
             if(!instanceOfMySelf.hasMainOption){
@@ -363,12 +384,12 @@ int processExit(){
     free(cInstance);
     deleteNamesList(filePaths);
 
-    clear();
     if(!instanceOfMySelf.hasMainOption){
+        clear();
         printf("Cleanup complete, see you next time!\n");
     }
     sleep(1);
-    exit(0); // to exit from infinite loop
+    return 9; // to exit from infinite loop
 }
 
 /**
@@ -431,6 +452,7 @@ void resetBuffer(char buffer[], int size){
  * Termios input and command parser.
  */
 int inputReader(){
+    int returnCode = 0;
     int lenBuffer = 0, numReadCharacters = 0;
     char *endCommandPosition;
     resetBuffer(buf, BUFFER_SIZE);
@@ -508,7 +530,7 @@ int inputReader(){
                                 waitEnter();
                             }
                             updateHistory(commandToPrint);
-                            switchCommand(i, numArguments, listOfArguments);
+                            returnCode = switchCommand(i, numArguments, listOfArguments);
                         }
                     }
                 } else {
@@ -532,9 +554,14 @@ int inputReader(){
         // One round of checking for the messages
         waitForMessagesInAFromC();
 
-
-        clear();
-        printScreen();
+        if(!instanceOfMySelf.hasMainOption){
+            clear();
+            printScreen();
+        }
+        
+        if(returnCode == 9){
+                break;
+        }
     }
     resetBuffer(buf, BUFFER_SIZE);
     resetBuffer(command, BUFFER_SIZE);                
@@ -543,13 +570,14 @@ int inputReader(){
     tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
 
 
-    return 0;
+    return returnCode;
 }
 
 /**
  * Function to switch the command code and execute it.
  */
-void switchCommand(int commandCode, int numArgs, string *arguments){
+int switchCommand(int commandCode, int numArgs, string *arguments){
+    int returnCode = 0;
     switch(commandCode){
         case flag_analyze:
             if(checkParameters()){
@@ -569,11 +597,11 @@ void switchCommand(int commandCode, int numArgs, string *arguments){
             }
             break;
         case flag_i:
-            interactiveMode();
+            returnCode = interactiveMode();
             break;
         case flag_s:
             if(checkParameters()){
-                staticMode(filePaths);
+                returnCode = staticMode(filePaths);
             }
             break;
         case flag_h:
@@ -582,7 +610,9 @@ void switchCommand(int commandCode, int numArgs, string *arguments){
             }
             break;
         case flag_show:
-            printState();
+            if(!instanceOfMySelf.hasMainOption){
+                printState();
+            }
             break;
         case flag_rem:
             removeFiles(numArgs, arguments);
@@ -597,13 +627,13 @@ void switchCommand(int commandCode, int numArgs, string *arguments){
             instanceOfMySelf.m = atoi(arguments[0]);
             break;
         case flag_quit:
-            processExit();
+            returnCode = processExit();
             break;
         case flag_main:
             instanceOfMySelf.hasMainOption = true;
             break;
     }
-    return;
+    return returnCode;
 }
 
 /**
@@ -639,6 +669,9 @@ void addFiles(int numFiles, string *fileNames){
                 int appended = appendNameToNamesList(filePaths, absolutePath);
                 if(appended == 0){
                     char message[BUFFER_SIZE] = "File ";
+                    string copy;
+                    strcpy(copy, absolutePath);
+                    trimStringToLength(copy, 50);
                     strcat(message, absolutePath);
                     strcat(message, " added\n");
                     if(!instanceOfMySelf.hasMainOption){
@@ -664,7 +697,10 @@ void addFiles(int numFiles, string *fileNames){
                 }
             } else {
                 char message[BUFFER_SIZE] = "Folder ";
-                strcat(message, fileNames[i]);
+                string copy;
+                strcpy(copy, fileNames[i]);
+                trimStringToLength(copy, 50);
+                strcat(message, copy);
                 strcat(message, "  added\n");
                 if(!instanceOfMySelf.hasMainOption){
                     printf("%s", message);
@@ -675,7 +711,9 @@ void addFiles(int numFiles, string *fileNames){
         } else {
             // invalid file/folder
             char message[BUFFER_SIZE] = "File/folder ";
-            strcat(message, fileNames[i]);
+            string copy;
+            strcpy(copy, fileNames[i]);
+            trimStringToLength(copy, 50);
             strcat(message, "  doesn't exist!\n");
             if(!instanceOfMySelf.hasMainOption){
                 fprintf(stderr, "%s", message);
@@ -687,8 +725,6 @@ void addFiles(int numFiles, string *fileNames){
         sendAllFiles();
     }
 }
-
-// SAM SEI ARRIVATO QUI
 
 /**
  * Function that removes files/folders contained in fileNames.
@@ -707,20 +743,56 @@ void removeFiles(int numFiles, string *fileNames){
             if (pathType == 0){
                 // it's an existing file
                 if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
-                    printf("Removing file %s\n", absolutePath);
-                    instanceOfMySelf.totalFiles-=1;
+                    char message[BUFFER_SIZE] = "Removing file ";
+                    string copy;
+                    strcpy(copy, absolutePath);
+                    trimStringToLength(copy, 50);
+                    strcat(message, copy);
+                    strcat(message, "\n");
+                    if(!instanceOfMySelf.hasMainOption){
+                        printf("%s", message);
+                    } else {
+                        sendTextMessageToReport(cInstance->pipeAC, message);
+                    }
                 } else {
-                    fprintf(stderr, "?Error trying to remove %s\n", absolutePath);
+                    char message[BUFFER_SIZE] = "Error trying to remove ";
+                    string copy;
+                    strcpy(copy, absolutePath);
+                    trimStringToLength(copy, 50);
+                    strcat(message, copy);
+                    strcat(message, "\n");
+                    if(!instanceOfMySelf.hasMainOption){
+                        fprintf(stderr, "%s", message);
+                    }
                 }                
             } else if (pathType == 1){
                 // it's an existing folder
                 if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
-                    printf("Removing folder %s\n", absolutePath);
-                    instanceOfMySelf.totalFiles-=1;
+                    char message[BUFFER_SIZE] = "Removing folder ";
+                    string copy;
+                    strcpy(copy, absolutePath);
+                    trimStringToLength(copy, 50);
+                    strcat(message, copy);
+                    strcat(message, "\n");
+                    if(!instanceOfMySelf.hasMainOption){
+                        printf("%s", message);
+                    } else {
+                        sendTextMessageToReport(cInstance->pipeAC, message);
+                    }
                 }
             } else {
                 // invalid file/folder
-                fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");
+                if(!instanceOfMySelf.hasMainOption){
+                    fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");
+                } else {
+                    char message[BUFFER_SIZE] = "File/folder ";
+                    string copy;
+                    strcpy(copy, absolutePath);
+                    trimStringToLength(copy, 50);
+                    strcat(message, copy);
+                    strcat(message,"inserted to remove doesn't exist!\n");
+                    sendTextMessageToReport(cInstance->pipeAC, message);
+                }
             }
         }
     }
@@ -732,8 +804,10 @@ void removeFiles(int numFiles, string *fileNames){
 void updateCompleted(int completed, int total){
     instanceOfMySelf.completedFiles = completed;
     instanceOfMySelf.totalFiles = total;
-    clear();
-    printScreen();
+    if(!instanceOfMySelf.hasMainOption){
+        clear();
+        printScreen();
+    }
 }
 
 /**
@@ -839,10 +913,14 @@ int waitForMessagesInAFromC(){
                 int total      = fromBytesToInt(packetData + INT_SIZE);
                 instanceOfMySelf.totalFiles = total;
                 instanceOfMySelf.completedFiles = completed;
-                staticAnalisysScreen();
+                if(!instanceOfMySelf.hasMainOption){
+                    staticAnalisysScreen();
+                }
                 ret = 1;
             } else {
-                printf("Something has gone wrong with a completedFile packet!\n");
+                if(!instanceOfMySelf.hasMainOption){
+                    printf("Something has gone wrong with a completedFile packet!\n");
+                }
                 ret = 2;
             }
         } else if(packetHeader[0] == 18) {
@@ -855,13 +933,17 @@ int waitForMessagesInAFromC(){
                 strcpy(message, packetData);
                 message[messageSize] = '\0';
                 updateMessages(message);
-                staticAnalisysScreen();
+                if(!instanceOfMySelf.hasMainOption){
+                    staticAnalisysScreen();
+                }
                 ret = 1;
             } else {
                 ret = 2;
             }
         } else {
-            printf("Analyzer recieved wrong packet code from controller! %c\n", packetHeader[0]);
+            if(!instanceOfMySelf.hasMainOption){
+                printf("Analyzer recieved wrong packet code from controller! %c\n", packetHeader[0]);
+            }
             ret = 2;
         }
     }   
