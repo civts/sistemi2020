@@ -113,10 +113,10 @@ charGroupStats statsForFile(fileWithStats *fws) {
     result.digits += oc[i];
   }
   for (i = 0; i < 6; i++) {
-    result.spaces += oc[spaceChars[i]];
+    result.spaces += oc[(int)spaceChars[i]];
   }
   for (i = 0; i < 14; i++) {
-    result.punctuation += oc[punctuationChars[i]];
+    result.punctuation += oc[(int)punctuationChars[i]];
   }
   result.totalCharsRead += fws->readCharacters;
   result.totalChars += fws->totalCharacters;

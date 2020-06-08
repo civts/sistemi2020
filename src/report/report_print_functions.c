@@ -82,9 +82,8 @@ void printRecapCompact(analyzerList *aList) {
   printPercentage(totalCharsRead, totalChars, 30,gotData);
   current = aList->firstNode;
    while (current != NULL) {
-    fileWithStats *cursor = current->files->firstNode;
     printErrors(current);
-     analyzerPrintErrorMessages(current);
+    analyzerPrintErrorMessages(current);
     current=current->nextNode;
    }
 }
@@ -144,15 +143,15 @@ void printSingleFile(fileWithStats *f, bool group) {
   }
   for (i = 0; i < 6; i++) {
     if (!group) {
-      printf("%c: %d\n", spaceChars[i], oc[spaceChars[i]]);
+      printf("%c: %d\n", spaceChars[i], oc[(int)spaceChars[i]]);
     }
-    thisSpaces += oc[spaceChars[i]];
+    thisSpaces += oc[(int)spaceChars[i]];
   }
   for (i = 0; i < 14; i++) {
     if (!group) {
-      printf("%c: %d\n", punctuationChars[i], oc[punctuationChars[i]]);
+      printf("%c: %d\n", punctuationChars[i], oc[(int)punctuationChars[i]]);
     }
-    thisPunct += oc[punctuationChars[i]];
+    thisPunct += oc[(int)punctuationChars[i]];
   }
   uint totalCharsRead = f->readCharacters;
   uint totalChars = f->totalCharacters;

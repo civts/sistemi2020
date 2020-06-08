@@ -1,4 +1,4 @@
-#include "../../utils.c"
+#include "../../common/utils.h"
 #ifndef FILE_DATA_STRUCTURE_H
 #define FILE_DATA_STRUCTURE_H
 /*  File where we define the structure of a fileWithStats and the functions that

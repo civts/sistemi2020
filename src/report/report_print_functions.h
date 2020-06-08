@@ -1,9 +1,8 @@
-#include "../utils.c"
+#include "../common/utils.c"
 #include "./data_structures/file_with_stats_list.h"
 #include "./data_structures/analyzer_list.h"
 #ifndef PRINT_FUNCTIONS_H
 #define PRINT_FUNCTIONS_H
-#define MESSAGES_TO_DISPLAY 3
 const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
 const char punctuationChars[] = {
     ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',

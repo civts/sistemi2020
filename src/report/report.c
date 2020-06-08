@@ -1,68 +1,25 @@
-#include "../utils.c"
-#include "./data_structures/analyzer_data_structure.c"
-#include "./data_structures/analyzer_list.c"
-#include "./data_structures/file_with_stats_data_structure.c"
-#include "./data_structures/file_with_stats_list.c"
-#include "../common/data_structures/namesList.c"
-#include "./packet_handler.c"
-#include "./report_print_functions.c"
-
-#include <fcntl.h>
-#include <limits.h> //PATH_MAX
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <termios.h> //termios, TCSANOW, ECHO, ICANON
-#include <unistd.h> //STDIN_FILENO
-
-#define BUFFER_SIZE 4096
-char buf[BUFFER_SIZE], command[BUFFER_SIZE];
-int counter = 0;
-
-
-#define help 0
-#define verbose 1
-#define tab 2
-#define compact 3
-#define only 4
-#define extended 5
-#define force 6
-#define quit 7
-#define dumps_idx 8
-
-
-// Flag for telling the report to show help dialog
-char helpFlag[] = "-h";
-// Flag for telling the report to show verbose stats
-char verboseFlag[] = "-v";
-// Flag for tab mode
-char tabFlag[] = "-t";
-// Flag for telling the report to show compact
-char compactFlag[] = "-c";
-// Flag for telling the report to give you only the stats for a given file, after that specify le list of arguments "--only /home/a.txt  /home/abac/ ", ? MAYBE THIS PART if a pid is specified in the same line, it will appied only to an analyzer with that pid
-char onlyFlag[] = "--only";
-// Flag for telling the report to show extended stats (a,b,c... instead of a-z)
-char extendedFlag[] = "-e";
-// Flag for telling the report to force another analysis. Discards all previous data
-char forceReAnalysisFlag[] = "-r";
-// Flag for telling the report to quit
-char quitFlag[] = "-q";
-// Flag for telling analyzers to start dumping to files
-char dumpFlag[] = "--dump";
-
-// void clearScreen(){
-// //  const char *CLEAR_SCREEN_ANSI = "\e[1;1H\e[2J";
-// //  write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 12);
-//     printf("\e[1;1H\e[2J");
-// }
-// void clear(){
-//     system("clear");
-// }
+#include "./report.h"
 void resetBuffer(char buffer[], int size){
     int i;
     for (i = 0; i < BUFFER_SIZE; i++){
         buffer[i] = 0;
     }
+}
+void parser(char real[], int * no,char **out){
+    char *str = strdup(real);
+
+    char * pch;
+    pch = strtok (str," \t\r\n\f\v");
+    int i=0;
+    while (pch != NULL)
+    {
+        out[i] = strdup(pch);
+        pch = strtok (NULL, " \t\r\n\f\v");
+        i++;
+    }
+    *no=i;
+
+    free(str);
 }
 
 //controlla se la combinazione di argomenti è valid
@@ -135,7 +92,64 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     return valid;
 }
 
-int main(int argc, char * argv[]){
+bool checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char **arguments, char* invalid,bool printOnFailure){
+    bool validity = true;
+    int j=0;
+    int i=0;
+    while (i<argc ){
+        bool valid =false;
+        for(j=0;j<numberPossibleFlags && i<argc ;j++){
+            if(strcmp(argv[i],possibleFlags[j])==0){
+                if(flagsWithArguments[j]){
+                    bool serving = true;
+                    i++;
+                    while(i<argc && serving ){
+                        if(argv[i][0]!='-'){
+                            if(arguments[j]==NULL){
+                                arguments[j] = malloc(strlen(argv[i]+1));
+                                strcpy(arguments[j],argv[i]);
+                                settedFlags[j]=true;
+                                valid = true;
+                            }else{
+                                char* tmp = malloc(strlen(arguments[j])+strlen(argv[i])+2);
+                                strcpy(tmp,arguments[j]);
+                                strcat(tmp," ");
+                                strcat(tmp,argv[i]);
+                                free(arguments[j]);
+                                arguments[j]=tmp;
+                            }
+                            i++;
+                        }else{
+                            serving=false;
+                            i--;
+                        }
+                    }
+                }else{
+                    settedFlags[j]=true;
+                    valid=true;
+                }
+            }
+        }
+        if(!valid){
+            validity = false;
+        }
+        i++;
+    }   
+    if(printOnFailure && !validity)
+        printf("%s",invalid);
+    if(!validity){
+        for(j=0;j<numberPossibleFlags;j++){
+            settedFlags[j]=false;
+            if(arguments[j]!=NULL){
+                free(arguments[j]);
+            }
+        }
+    }
+    return validity;
+}
+
+
+int report_main(int argc, char * argv[]){
     int i=0;
     int retCode = 0;
     char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag, dumpFlag};
@@ -285,7 +299,7 @@ int main(int argc, char * argv[]){
                                 valid=true;
                             }
                             // se ho un dump o un force, non cambio la modalità di visualizzazione
-                            if(copyFlags[dumps_idx] || copyFlags[force] && (copyFlags[help] + copyFlags[tab]+ copyFlags[compact]+ copyFlags[only] + copyFlags[verbose] ==0 )){
+                            if((copyFlags[dumps_idx] || copyFlags[force]) && (copyFlags[help] + copyFlags[tab]+ copyFlags[compact]+ copyFlags[only] + copyFlags[verbose] ==0 )){
                                 copyFlags[help] = settedFlags[help]; copyFlags[tab] = settedFlags[tab] , copyFlags[compact] = settedFlags[compact]; copyFlags[only] = settedFlags[only];copyFlags[verbose ] = settedFlags[verbose], copyFlags[extended] = settedFlags[extended];
                             }
                         }
@@ -370,5 +384,5 @@ int main(int argc, char * argv[]){
     }
 
 
-    return 0;
+    return retCode;
 }
