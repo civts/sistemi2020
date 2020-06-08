@@ -48,6 +48,7 @@ typedef struct{
     pInstance **pInstances; // P processes associated to C
     NamesList *fileNameList;
     NamesList *removedFileNames;
+    NamesList *foldersToRemove;
     FileList  *fileList;
 } controllerInstance;
 

@@ -12,6 +12,10 @@
 #include "../common/datastructures/namesList.h"
 #include "../common/datastructures/fileList.h"
 
+// TODO cosa succede se elimino una cartella e poi l'utente inserisce un nuovo file?
+// Quando ottengo una cartella da eliminare devo eliminare tutti i file che iniziano con quel nome nei file da aggiungere
+// 
+
 // Initialization of controller fields
 void controller(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->pInstances = NULL;
@@ -24,6 +28,7 @@ void controller(controllerInstance *instanceOfMySelf){
     instanceOfMySelf->isAnalysing = false;
     instanceOfMySelf->fileNameList = constructorNamesList();
     instanceOfMySelf->removedFileNames = constructorNamesList();
+    instanceOfMySelf->foldersToRemove = constructorNamesList();
     instanceOfMySelf->fileList = constructorFileNameList();
 
     // wait until a report process has been opened
@@ -44,7 +49,7 @@ void waitForMessagesInController(controllerInstance *instanceOfMySelf){
     }
 }
 
-// wait until a whole message from A arrives
+// Wait until a whole message from A arrives
 void waitForMessagesInCFromA(controllerInstance *instanceOfMySelf){
     int numBytesRead, dataSectionSize, offset;
     byte packetHeader[1 + INT_SIZE];
@@ -243,6 +248,8 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInsta
         appendNameToNamesList(instanceOfMySelf->fileNameList, buffer);
         // remove the file from the list of removed files (in case it has been removed first and readded then)
         removeNodeNameByName(instanceOfMySelf->removedFileNames, buffer);
+
+        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 0, instanceOfMySelf->fileNameList->counter);
     } else {
         // assign the new file to the P process with less worload
         int minPindex = 0;
@@ -268,6 +275,9 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInsta
             pWithMinWorkload->workload++;
             instanceOfMySelf->nextFileID++;
         }
+
+        int numberOfFilesCompleted = getNumOfCompletedFiles(instanceOfMySelf);
+        sendFinishedFilePacket(instanceOfMySelf->pipeCA, numberOfFilesCompleted, instanceOfMySelf->fileList->number_of_nodes);
     }
 
     return returnCode;
@@ -282,61 +292,62 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerIn
     memcpy(buffer, packetData, packetDataSize);
     buffer[packetDataSize] = '\0';
 
-    // 0 if file 1 if foder
+    // 0 if file; 1 if folder
     int pathType = inspectPath(buffer);
     
     if (!instanceOfMySelf->isAnalysing){
-        if(pathType == 0){
-            // It's a file
-            // add the file to the removed files
+        if (pathType == 0){
+            // it's a file: add it to the removed files
             appendNameToNamesList(instanceOfMySelf->removedFileNames, buffer);
             // remove the file from the list of added files
             removeNodeNameByName(instanceOfMySelf->fileNameList, buffer);
         } else {
-            // It's a folder
-            deleteFolderNamesList(buffer, instanceOfMySelf->fileNameList, instanceOfMySelf->removedFileNames);
+            // it's a folder
+            deleteFolderNamesList(buffer, instanceOfMySelf->fileNameList, instanceOfMySelf->fileNameList);
+            appendNameToNamesList(instanceOfMySelf->foldersToRemove, buffer);
         }
+
+        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 0, instanceOfMySelf->fileNameList->counter);
     } else {
-        if(pathType == 0){
-            // Dynamic removal of a file
+        if (pathType == 0){
+            // dynamic removal of a file
             NodeFileState *node = getNodeByName(instanceOfMySelf->fileList, buffer);
             removeFileByIdPacket(instanceOfMySelf->pInstances[node->data->pIndex]->pipeCP,
-                                instanceOfMySelf->pidAnalyzer,
-                                node->data->idFile);
+                                 instanceOfMySelf->pidAnalyzer, node->data->idFile);
                                 
             #ifdef REPORT
-            removeFileByIdPacket(instanceOfMySelf->pipeToReport,
-                                instanceOfMySelf->pidAnalyzer,
-                                node->data->idFile);
+            removeFileByIdPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer,
+                                 node->data->idFile);
             #endif
 
             instanceOfMySelf->pInstances[node->data->pIndex]->workload--;
             removeNode(instanceOfMySelf->fileList, node->data->fileName);
         } else {
-            // Dynamic removal of folder
-            NamesList *filesToRemove = constructorNamesList();
-            deleteFolderNamesList(buffer, instanceOfMySelf->fileNameList, filesToRemove);
-            NodeName *nameNode = filesToRemove->first;
-            while(nameNode!=NULL){
-                // Same as dynamic removal of file
+            // dynamic removal of folder
+            // TODO ================================ Wait for Sam
+            FileList *filesToRemove = constructorFileNameList();
+            deleteFolderFileList(buffer, instanceOfMySelf->fileList, filesToRemove);
 
-                NodeFileState *node = getNodeByName(instanceOfMySelf->fileList, nameNode->name);
+            NodeFileState *node = filesToRemove->first;
+            while (node != NULL){
+                // same as dynamic removal of file
                 removeFileByIdPacket(instanceOfMySelf->pInstances[node->data->pIndex]->pipeCP,
-                                    instanceOfMySelf->pidAnalyzer,
-                                    node->data->idFile);
+                                     instanceOfMySelf->pidAnalyzer, node->data->idFile);
                                     
                 #ifdef REPORT
-                removeFileByIdPacket(instanceOfMySelf->pipeToReport,
-                                    instanceOfMySelf->pidAnalyzer,
-                                    node->data->idFile);
+                removeFileByIdPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer,
+                                     node->data->idFile);
                 #endif
 
                 instanceOfMySelf->pInstances[node->data->pIndex]->workload--;
-                removeNode(instanceOfMySelf->fileList, node->data->fileName);
-
-                nameNode = nameNode->next;
+                node = node->next;
             } 
+
+            deleteList(filesToRemove);
         }
+
+        int numberOfFilesCompleted = getNumOfCompletedFiles(instanceOfMySelf);
+        sendFinishedFilePacket(instanceOfMySelf->pipeCA, numberOfFilesCompleted, instanceOfMySelf->fileList->number_of_nodes);
     }
 
     return returnCode;
@@ -354,6 +365,7 @@ int processCDeathPacket(controllerInstance *instanceOfMySelf){
     deleteList(instanceOfMySelf->fileList);
     deleteNamesList(instanceOfMySelf->fileNameList);
     deleteNamesList(instanceOfMySelf->removedFileNames);
+    deleteNamesList(instanceOfMySelf->foldersToRemove);
     free(instanceOfMySelf->pInstances);
 
     printf("Controller is dead\n");
@@ -465,7 +477,7 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     sendStartAnalysisPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer);
     #endif
 
-    // 1) remove the files inside instanceOfMySelf->removedFileNames from the file list
+    // 1a) remove the files inside instanceOfMySelf->removedFileNames from the file list
     int idRemovedFile = -1;
     NodeName *deleteFileNamePointer = instanceOfMySelf->removedFileNames->first;
     for (i = 0; i < instanceOfMySelf->removedFileNames->counter; i++){
@@ -482,6 +494,26 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     // remove all elements from removedFileNames list
     deleteNamesList(instanceOfMySelf->removedFileNames);
     constructorFileNameList(instanceOfMySelf->removedFileNames);
+
+    // 1b) remove the files inside instanceOfMySelf->foldersToRemove from the file list
+    NodeName *nodeFolderToRemove = instanceOfMySelf->foldersToRemove->first;
+    NamesList *filesNewToRemoveInsideFolder = NULL;
+    FileList *filesOldToRemoveInsideFolder = NULL;
+
+    for (i = 0; i < instanceOfMySelf->foldersToRemove->counter; i++){
+        constructorNamesList(filesNewToRemoveInsideFolder);
+        deleteFolderNamesList(nodeFolderToRemove->name, instanceOfMySelf->fileNameList, filesNewToRemoveInsideFolder);
+        deleteNamesList(filesNewToRemoveInsideFolder);
+
+        constructorFileNameList(filesOldToRemoveInsideFolder);
+        deleteFolderFileList(nodeFolderToRemove->name, instanceOfMySelf->fileList, filesOldToRemoveInsideFolder);
+        deleteList(filesOldToRemoveInsideFolder);
+
+        nodeFolderToRemove = nodeFolderToRemove->next;
+    }
+
+    deleteNamesList(instanceOfMySelf->foldersToRemove);
+    constructorNamesList(instanceOfMySelf->foldersToRemove);
 
     // 2) insert the files inside instanceOfMySelf->fileNameList inside the file list
     NodeName *newFileNamePointer = instanceOfMySelf->fileNameList->first;
@@ -629,30 +661,16 @@ int openFifoToReport(controllerInstance *instanceOfMySelf){
     return returnCode;
 }
 
-// only for debug... wait a certain amount of time
-void wait_a_bit(){
-    long long int i;
-    for (i=0; i<99999999; i++){}
+int getNumOfCompletedFiles(controllerInstance *instanceOfMySelf){
+    int i, numFilesCompleted = 0;
+    NodeFileState *nodo = instanceOfMySelf->fileList->first;
+    for (i = 0; i < instanceOfMySelf->fileList->number_of_nodes; i++){
+        if (nodo->data->numOfRemainingPortionsToRead == 0){
+            numFilesCompleted++;
+        }
+
+        nodo = nodo->next;
+    }
+
+    return numFilesCompleted;
 }
-
-// int main(){
-//     string files[3] = {"prova1.txt", "prova2.txt", "p.c"};
-//     controller(2, 2, files, 3);
-//     fflush(stdout);
-//     wait_a_bit(); 
-
-//     shapeTree(4, 2);
-//     wait_a_bit(); 
-
-//     int y;
-//     for (y = 0; y < currN; y++){
-//         killInstanceOfP(y);
-//     }
-
-//     fflush(stdout);
-//     wait_a_bit();
-    
-//     printf("Fine\n");
-//     free(pInstances);
-//     return 0;
-// }

@@ -1,12 +1,12 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <termios.h>    //termios, TCSANOW, ECHO, ICANON
+#include <unistd.h>
+#include <fcntl.h>
+#include  <ctype.h>
 #include "../common/utils.h"
+#include "../common/parser.h"
 #include "../common/packets.h"
-#include "crawler.c"
-#include "parser.c"
-#include "controller.c"
+#include "crawler.h"
+#include "controller.h"
 #include "instances.h"
 
 #define BUFFER_SIZE 4096
@@ -19,13 +19,22 @@ char buf[BUFFER_SIZE], command[BUFFER_SIZE];
  
  */
 
-
-// Used for printing purposes
-string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"};
-
+/**** Globals ****/
 analyzerInstance instanceOfMySelf;
 controllerInstance *cInstance;
 NamesList *filePaths;
+
+// Used for printing purposes
+string statuses[] = {"Still not started", "Analysis is running", "Analysis finished"}; 
+
+/*** Parameter for parser ****/
+string argumentsAnalyzer[10];
+int    numberPossibleFlagsAnalyzer = 10; 
+string invalidPhraseAnalyzer    = "Wrong command syntax, try command '-h' for help.\n";
+string possibleFlagsAnalyzer[]  = {"-analyze", "-i",  "-s", "-h",  "-show", "-rem", "-add", "-n", "-m", "-quit", "-main"};
+bool   flagsWithArgsAnalyzer[]  = {false,      false, false, false, false,   true,   true,   true,  true, false,  false};
+bool   settedFlagsAnalyzer[]    = {false,      false, false, false, false,   false,  false,  false, false,false,  false};
+
 
 void initialize();
 void updateHistory(string);
@@ -49,6 +58,7 @@ void cleanArguments();
 void staticAnalisysScreen();
 int  waitForMessagesInAFromC();
 void printMessages();
+bool checkArgumentsValidity(char **arguments);
 
 
 /**
@@ -112,41 +122,48 @@ int main(int argc, char *argv[]){
     initialize();
 
     cleanArguments();
-    bool validCall = checkArguments(argc-1, argv+1, possibleFlags, flagsWithArgs, numberPossibleFlags+1, settedFlags, arguments, invalidPhrase, true);
-    bool validArguments = checkArgumentsValidity(arguments);
+    bool validCall = checkArguments(argc-1, argv+1, possibleFlagsAnalyzer, flagsWithArgsAnalyzer, numberPossibleFlagsAnalyzer +1, settedFlagsAnalyzer, argumentsAnalyzer, invalidPhraseAnalyzer, true);
+    bool validArguments = checkArgumentsValidity(argumentsAnalyzer);
     
+    if (settedFlagsAnalyzer[10]){
+        cInstance->hasMainOption = true;
+    }
+
+    returnCode = generateNewControllerInstance();
+
     int i;
-    if(validCall && argc > 1 && validArguments){
+    if (validCall && argc > 1 && validArguments){
         // For the first call we check all flags (which means also "-main" flag)
-        for(i=numberPossibleFlags; i>=0; i--){
-            if(settedFlags[i]){
+        for (i = numberPossibleFlagsAnalyzer - 1; i>=0; i--){
+            if (settedFlagsAnalyzer[i]){
                 // If command is set, retrieve its arguments and then switch it 
                 char commandToPrint[BUFFER_SIZE];
-                strcpy(commandToPrint, possibleFlags[i]);
+                strcpy(commandToPrint, possibleFlagsAnalyzer[i]);
                 char *listOfArguments[BUFFER_SIZE];
-                char stringWithArguments[BUFFER_SIZE];
+                // char stringWithArguments[BUFFER_SIZE];
                 int  numArguments;
-                if(flagsWithArgs[i]){
+                if (flagsWithArgsAnalyzer[i]){
                     strcat(commandToPrint, " "); 
-                    strcat(commandToPrint, arguments[i]); 
-                    parser(arguments[i], &numArguments, listOfArguments);
+                    strcat(commandToPrint, argumentsAnalyzer[i]); 
+                    parser(argumentsAnalyzer[i], &numArguments, listOfArguments);
                 } else {
                     numArguments = 0;
                 }
                 updateHistory(commandToPrint);
-                if(!instanceOfMySelf.hasMainOption ){
-                    printf("Processing command: '%s' ", possibleFlags[i]);
+                if (!instanceOfMySelf.hasMainOption ){
+                    printf("Processing command: '%s' ", possibleFlagsAnalyzer[i]);
                 }
                 int j;
-                for(j=0; j<numArguments; j++){
-                    if(!instanceOfMySelf.hasMainOption ){
+                for (j=0; j<numArguments; j++){
+                    if (!instanceOfMySelf.hasMainOption ){
                         printf("argument %d : '%s' ", j, listOfArguments[j]);
                     }
                 }
-                if(!instanceOfMySelf.hasMainOption ){
+                if (!instanceOfMySelf.hasMainOption ){
                     waitEnter();
                 }
-                settedFlags[i] = false;
+                settedFlagsAnalyzer[i] = false;
+                
                 switchCommand(i, numArguments, listOfArguments);
             }
         }
@@ -161,9 +178,8 @@ int main(int argc, char *argv[]){
         updateHistory(invalidCommand);
     }
     
-    returnCode = generateNewControllerInstance();
     
-    if(returnCode == 0){
+    if (returnCode == 0){
         inputReader();
     }
     
@@ -189,12 +205,7 @@ void helpMode(){
                           "-m   _value_  to set the value of m\n"
                           "-show         to see info of the current status of settings\n"
                           "-analyze      to start the analysis if in interactive mode\n"
-                          "-quit: o quit from the process\n\n"
-                        //   "Error codes:\n"
-                        //   "1: missing arguments\n"
-                        //   "2: n and m are not numeric non-zero values\n"
-                        //   "3: usage mode not supported\n"
-                          ;
+                          "-quit: o quit from the process\n\n";
 
     printf("%s\n", help_message);
     waitEnter();
@@ -239,9 +250,9 @@ int staticMode(NamesList *listFilePaths){
 bool checkParameters(){
     int returnValue = true;
     if (instanceOfMySelf.n <= 0){
-        char mess1[BUFFER_SIZE] = "\nError: specify numeric non-zero positive values for n\n";
+        char mess1[] = "\nError: specify numeric non-zero positive values for n\n";
         if(!instanceOfMySelf.hasMainOption){
-            fprintf(stderr, mess1);
+            fprintf(stderr, "%s", mess1);
             waitEnter();
         } else {
             sendTextMessageToReport(cInstance->pipeAC, mess1);
@@ -249,9 +260,9 @@ bool checkParameters(){
         returnValue = false;
     }
     if(instanceOfMySelf.m <=0 ) {
-        char mess2[BUFFER_SIZE] = "\nError: specify numeric non-zero positive values for m\n";
+        char mess2[] = "\nError: specify numeric non-zero positive values for m\n";
         if(!instanceOfMySelf.hasMainOption){
-            fprintf(stderr, mess2);
+            fprintf(stderr, "%s", mess2);
             waitEnter();
         } else {
             sendTextMessageToReport(cInstance->pipeAC, mess2);
@@ -259,12 +270,12 @@ bool checkParameters(){
         returnValue = false;
     }
     if(instanceOfMySelf.totalFiles == 0){
-        char mess2[BUFFER_SIZE] = "\nError: Cannot start analisys without a file or folder\n";
+        char mess3[] = "\nError: Cannot start analisys without a file or folder\n";
         if(!instanceOfMySelf.hasMainOption){
-            fprintf(stderr, mess2);
+            fprintf(stderr, "%s", mess3);
             waitEnter();
         } else {
-            sendTextMessageToReport(cInstance->pipeAC, mess2);
+            sendTextMessageToReport(cInstance->pipeAC, mess3);
         }
         returnValue = false;
     }
@@ -476,28 +487,28 @@ int inputReader(){
                 int i;
                 cleanArguments();
                 // Obtain arguments if valid
-                bool validCall = checkArguments(numCommands, listOfCommands, possibleFlags, flagsWithArgs, numberPossibleFlags, settedFlags, arguments, invalidPhrase, true);
+                bool validCall = checkArguments(numCommands, listOfCommands, possibleFlagsAnalyzer, flagsWithArgsAnalyzer, numberPossibleFlagsAnalyzer, settedFlagsAnalyzer, argumentsAnalyzer, invalidPhraseAnalyzer, true);
                 // Check contstraints on arguments
-                bool validArguments = checkArgumentsValidity(arguments);
+                bool validArguments = checkArgumentsValidity(argumentsAnalyzer);
 
                 if(validCall && numCommands > 0 && validArguments){
-                    for(i=numberPossibleFlags-1; i>=0; i--){
+                    for(i=numberPossibleFlagsAnalyzer-1; i>=0; i--){
                         // If command is set, then execute it
-                        if(settedFlags[i]){
-                            settedFlags[i] = false; 
+                        if(settedFlagsAnalyzer[i]){
+                            settedFlagsAnalyzer[i] = false; 
                             char commandToPrint[BUFFER_SIZE];
-                            strcpy(commandToPrint, possibleFlags[i]);
+                            strcpy(commandToPrint, possibleFlagsAnalyzer[i]);
                             int numArguments = 0;
                             string listOfArguments[BUFFER_SIZE];
-                            if(flagsWithArgs[i]){
-                                if(arguments[i]!=NULL){
+                            if(flagsWithArgsAnalyzer[i]){
+                                if(argumentsAnalyzer[i]!=NULL){
                                     strcat(commandToPrint, " ");
-                                    strcat(commandToPrint, arguments[i]); 
+                                    strcat(commandToPrint, argumentsAnalyzer[i]); 
                                 }
-                                parser(arguments[i], &numArguments, listOfArguments);
+                                parser(argumentsAnalyzer[i], &numArguments, listOfArguments);
                             }
                             if(!instanceOfMySelf.hasMainOption){
-                                printf("Processing command: '%s' ", possibleFlags[i]);
+                                printf("Processing command: '%s' ", possibleFlagsAnalyzer[i]);
                             }
                             int j;
                             if(!instanceOfMySelf.hasMainOption){
@@ -646,7 +657,7 @@ void addFiles(int numFiles, string *fileNames){
                 int appended = appendNameToNamesList(filePaths, absolutePath);
                 if(appended == 0){
                     char message[BUFFER_SIZE] = "File ";
-                    string copy;
+                    char copy[BUFFER_SIZE];
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, absolutePath);
@@ -674,7 +685,7 @@ void addFiles(int numFiles, string *fileNames){
                 }
             } else {
                 char message[BUFFER_SIZE] = "Folder ";
-                string copy;
+                char copy[BUFFER_SIZE];
                 strcpy(copy, fileNames[i]);
                 trimStringToLength(copy, 50);
                 strcat(message, copy);
@@ -688,7 +699,7 @@ void addFiles(int numFiles, string *fileNames){
         } else {
             // invalid file/folder
             char message[BUFFER_SIZE] = "File/folder ";
-            string copy;
+            char copy[BUFFER_SIZE];
             strcpy(copy, fileNames[i]);
             trimStringToLength(copy, 50);
             strcat(message, "  doesn't exist!\n");
@@ -714,14 +725,14 @@ void removeFiles(int numFiles, string *fileNames){
         absolutePath = realpath(fileNames[i], absolutePath);
 
         if(absolutePath != NULL){
-            int numOfFilesInFolder; // used in case it's a folder
+            // int numOfFilesInFolder; // used in case it's a folder
             int pathType = inspectPath(absolutePath);
 
             if (pathType == 0){
                 // it's an existing file
                 if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
                     char message[BUFFER_SIZE] = "Removing file ";
-                    string copy;
+                    char copy[BUFFER_SIZE];
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, copy);
@@ -733,7 +744,7 @@ void removeFiles(int numFiles, string *fileNames){
                     }
                 } else {
                     char message[BUFFER_SIZE] = "Error trying to remove ";
-                    string copy;
+                    char copy[BUFFER_SIZE];
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, copy);
@@ -746,7 +757,7 @@ void removeFiles(int numFiles, string *fileNames){
                 // it's an existing folder
                 if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
                     char message[BUFFER_SIZE] = "Removing folder ";
-                    string copy;
+                    char copy[BUFFER_SIZE];
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, copy);
@@ -763,7 +774,7 @@ void removeFiles(int numFiles, string *fileNames){
                     fprintf(stderr, "File/folder inserted to remove doesn't exist!\n");
                 } else {
                     char message[BUFFER_SIZE] = "File/folder ";
-                    string copy;
+                    char copy[BUFFER_SIZE];;
                     strcpy(copy, absolutePath);
                     trimStringToLength(copy, 50);
                     strcat(message, copy);
@@ -800,7 +811,7 @@ void sig_handler_A(){
 bool checkArgumentsValidity(char **arguments){
     int j;
     bool ret = true;
-    if(settedFlags[flag_n]){
+    if(settedFlagsAnalyzer[flag_n]){
         if(arguments[flag_n]!=NULL){
             for(j=0; j<strlen(arguments[flag_n]); j++){
                 if(!isdigit(arguments[flag_n][j])){
@@ -813,7 +824,7 @@ bool checkArgumentsValidity(char **arguments){
             ret = false;
         }
     }
-    if(settedFlags[flag_m]){
+    if(settedFlagsAnalyzer[flag_m]){
         if(arguments[flag_m]!=NULL){
             for(j=0; j<strlen(arguments[flag_m]); j++){
                 if(!isdigit(arguments[flag_m][j])){
@@ -838,14 +849,14 @@ void waitEnter(){
 }
 
 /**
- * Function to clan variables arguments and settedFlags.
+ * Function to clan variables arguments and settedFlagsAnalyzer.
  */
 void cleanArguments(){
     int i;
-    for(i=0; i<numberPossibleFlags; i++){
-        free(arguments[i]);
-        settedFlags[i] = false;
-        arguments[i] = NULL;
+    for(i=0; i<numberPossibleFlagsAnalyzer; i++){
+        free(argumentsAnalyzer[i]);
+        settedFlagsAnalyzer[i] = false;
+        argumentsAnalyzer[i] = NULL;
     }
 }
 
@@ -874,7 +885,7 @@ void printMessages(){
  *          2 if something went wrong with the message
  */
 int waitForMessagesInAFromC(){
-    int numBytesRead, dataSectionSize, offset, ret;
+    int numBytesRead, ret;
     byte packetHeader[1 + INT_SIZE];
     numBytesRead = read(cInstance->pipeCA[READ], packetHeader, 1 + INT_SIZE);
     if(numBytesRead > 0){
@@ -904,10 +915,10 @@ int waitForMessagesInAFromC(){
             int messageSize = fromBytesToInt(packetHeader+1); 
             byte packetData[messageSize];
             int bytesRead = read(cInstance->pipeCA[READ], packetData, messageSize);
-            if(bytesRead == messageSize){
-                // TODO check if read has read all the bytes? (chek for non atomicity);
-                char message[messageSize+1];
-                strcpy(message, packetData);
+            if (bytesRead == messageSize){
+                
+                char message[messageSize];
+                memcpy(message, packetData, messageSize);
                 message[messageSize] = '\0';
                 updateMessages(message);
                 if(!instanceOfMySelf.hasMainOption){

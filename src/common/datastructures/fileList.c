@@ -223,8 +223,11 @@ bool isAnalisiFinita(FileList *list){
  * nodi che contengono file che si trovano nella cartella e li aggiunge alla seconda.
  * Il nome della cartella deve essere in percorso assoluto.
  */
-void deleteFolderFileList(string folder, FileList *fileList){
-    NodeFileState *tempNode = fileList->first;
+void deleteFolderFileList(string folder, FileList *previousList, FileList *deletedList){
+    if(deletedList == NULL){
+        deletedList = constructorFileNameList();
+    }
+    NodeFileState *tempNode = previousList->first;
     NodeFileState *nextNode;
     while(tempNode != NULL){
         nextNode = tempNode->next;
@@ -235,16 +238,20 @@ void deleteFolderFileList(string folder, FileList *fileList){
             if(tempNode->prev!=NULL){
                 tempNode->prev->next = tempNode->next;
             } else {
-                fileList->first = tempNode->next;
+                previousList->first = tempNode->next;
             }
             // aggiorno nodo successivo
             if(tempNode->next != NULL){
                 tempNode->next->prev = tempNode->prev;
             } else {
-                fileList->last = tempNode->prev;
+                previousList->last = tempNode->prev;
             }
             // aggiorno contatore nodi
-            fileList->number_of_nodes--;
+            previousList->number_of_nodes--;
+
+            // Aggiungo il nodo alla lista cancellati 
+            tempNode->next = tempNode->prev = NULL;
+            appendFileState(deletedList, tempNode);
         } else {
             printf("not in folder\n");
         }

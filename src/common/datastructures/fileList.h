@@ -99,6 +99,6 @@ bool isAnalisiFinita(FileList *list);
  * nodi che contengono file che si trovano nella cartella e li aggiunge alla seconda.
  * Il nome della cartella deve essere in percorso assoluto.
  */
-void deleteFolderFileList(string folder, FileList *fileList);
+void deleteFolderFileList(string folder, FileList *previousList, FileList *deletedList);
 
 #endif
