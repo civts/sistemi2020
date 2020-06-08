@@ -2,38 +2,15 @@
 #include <stdio.h>
 #include <sys/types.h> // pid_t -> in crawler I use pid_t without types.h
 #include <signal.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include "controller.h"
+#include "p.h"
+#include "instances.h"
 #include "../common/packets.h"
 #include "../common/utils.h"
 #include "../common/datastructures/namesList.h"
 #include "../common/datastructures/fileList.h"
-#include "instances.h"
-#include "p.c"
-
-// #define REPORT 1
-
-string REPORT_FIFO = "/tmp/fifo";
-
-// Functions
-void controller(controllerInstance*);
-void waitForMessagesInController(controllerInstance*);
-void waitForMessagesInCFromA(controllerInstance*);
-void waitForMessagesInCFromP(controllerInstance*);
-int  shapeTree(int, int, controllerInstance*);
-void notifyNewMToPInstance(pInstance*, int);
-void killInstanceOfP(int, controllerInstance*);
-int  processCNewFilePacket(byte[], int, controllerInstance*);
-int  processCRemoveFilePacket(byte[], int, controllerInstance*);
-int  processCDeathPacket(controllerInstance*);
-int  processCStartAnalysis(controllerInstance*);
-int  processCNewValueForM(byte[], controllerInstance*);
-int  processCNewValueForN(byte[], controllerInstance*);
-int  processCNewFileOccurrences(byte[], int, controllerInstance *);
-int  processCErrorOnFilePacket(byte[], int, controllerInstance *);
-int  processMessageInControllerFromAnalyzer(byte, byte*, int, controllerInstance*);
-int  processMessageInControllerFromP(byte, byte*, int, controllerInstance*);
-int  openFifoToReport(controllerInstance*);
-
-void wait_a_bit();
 
 // Initialization of controller fields
 void controller(controllerInstance *instanceOfMySelf){

@@ -2,15 +2,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <termios.h>    //termios, TCSANOW, ECHO, ICANON
+#include <unistd.h>
+#include <fcntl.h>
 #include "../common/utils.h"
 #include "../common/packets.h"
 #include "instances.h"
-#include "crawler.c"
-#include "controller.c"
+#include "crawler.h"
+#include "controller.h"
 
 controllerInstance *cInstance;
 
-int  generateNewControllerInstance();
+int generateNewControllerInstance();
 
 int m = 8;
 int n = 1;

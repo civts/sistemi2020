@@ -3,27 +3,13 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <signal.h>
+#include "p.h"
+#include "q.h"
+#include "instances.h"
 #include "../common/packets.h"
 #include "../common/utils.h"
-#include "instances.h"
-#include "q.c"
-
-int  p(pInstance*, int);
-int  generateNewQInstance(qInstance*, int, int);
-void waitForMessagesInP(pInstance*);
-void waitForMessagesInPFromQ(pInstance *);
-void waitForMessagesInPFromController(pInstance*);
-int  processMessageInPFromQ(byte, byte*, int, pInstance*);
-int  processMessageInPFromController(byte, byte*, int, pInstance*);
-
-int  processPNewFilePacket(byte[], int);
-int  processPRemoveFilePacket(byte[], int);
-int  processPDeathPacket();
-int  processPNewValueForM(byte[], pInstance*);
-int  processPFileResults(byte[], int, pInstance*);
-int  processPErrorOnFilePacket(byte[], int, pInstance*);
-void sig_handler_P();
 
 qInstance *qInstances = NULL; // Q processes associated to this P
 int currM;

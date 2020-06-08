@@ -1,29 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <signal.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include "q.h"
+#include "instances.h"
+#include "miniQ.h"
 #include "../common/packets.h"
 #include "../common/utils.h"
 #include "../common/datastructures/miniQlist.h"
-#include "instances.h"
-#include "miniQ.c"
-
-#define READ 0
-#define WRITE 1
-
-void q(qInstance*);
-
-void waitForMessagesInQ(qInstance*);
-void waitForMessagesInQFromP(qInstance*);
-void waitForMessagesInQFromMiniQ(qInstance*);
-int  processMessageInQFromP(byte, byte*, int, qInstance*);
-int  processMessageInQFromMiniQ(byte, byte*, int, qInstance*);
-int  processQNewFilePacketWithID(byte[], int, qInstance*);
-int  processQRemoveFilePacket(byte[], int);
-int  processQDeathPacket();
-int  processQNewValueForM(byte[], qInstance*);
-int  processQFileResults(byte[], int, qInstance*);
-int  processQErrorOnFilePacket(byte[], int, qInstance*);
-void sig_handler_Q();
 
 miniQlist *miniQs = NULL;
 
@@ -35,7 +21,7 @@ void q(qInstance *instanceOfMySelf){
     waitForMessagesInQ(instanceOfMySelf);
 }
 
-// infinite loop in which we read messages from its
+// Infinite loop in which we read messages from its
 // parent P and its children miniQ
 void waitForMessagesInQ(qInstance *instanceOfMySelf){
     while (true){
@@ -265,16 +251,3 @@ void sig_handler_Q(){
     processQDeathPacket();
     exit(0);
 }
-
-// int main(){
-//     miniQs = constructorMiniQlist();
-//     int aar[2];
-//     miniQinfo *mi = constructorMiniQinfo(175, 3, aar, 3, 2);
-//     NodeMiniQ *m = constructorNodeMiniQ(mi);
-//     appendMiniQ(miniQs, m);
-//     string fileName = "irrelevant string";
-//     int length = strlen(fileName);
-//     processQRemoveFilePacket(fileName, length);
-
-//     return 0;   
-// }
