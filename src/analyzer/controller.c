@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <sys/types.h> // pid_t -> in crawler I use pid_t without types.h
 #include <signal.h>
-#include "packets.h"
-#include "utils.c"
+#include "../common/packets.h"
+#include "../common/utils.h"
+#include "../common/datastructures/namesList.h"
+#include "../common/datastructures/fileList.h"
+#include "instances.h"
 #include "p.c"
-// #include "datastructures/namesList.c"
-// #include "datastructures/fileList.c"
 
-#define REPORT 1
+// #define REPORT 1
 
 string REPORT_FIFO = "/tmp/fifo";
 
@@ -95,7 +96,7 @@ void waitForMessagesInCFromA(controllerInstance *instanceOfMySelf){
 
 // we surely receive only atomic packets
 void waitForMessagesInCFromP(controllerInstance *instanceOfMySelf){
-    int numBytesRead, dataSectionSize, offset;
+    int numBytesRead, dataSectionSize;
     byte packetHeader[1 + INT_SIZE];
 
     int i;
@@ -600,12 +601,10 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
 
 // Notify A and R that we found a problem accessing to a certain file
 int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
-    char messageBuffer[SIZE_OF_BUFFER_TO_READ_PIPE];
+    char messageBuffer[MINIQ_MAX_BUFFER_SIZE];
     int returnCode = 0;
     int fileID = fromBytesToInt(packetData + INT_SIZE);
     sprintf(messageBuffer, "Error processing file %d\n", fileID);
-
-    printf("test\n");
     
     NodeFileState *node = instanceOfMySelf->fileList->first;
     int i;
@@ -636,11 +635,21 @@ int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerI
 
 // Creates the named pipe to the report
 int openFifoToReport(controllerInstance *instanceOfMySelf){
+    int returnCode = 0;
     printf("Waiting for the report to open...\n");
-    mkfifo(REPORT_FIFO, 0666);
-    instanceOfMySelf->pipeToReport[READ] = -1;
-    instanceOfMySelf->pipeToReport[WRITE] = open(REPORT_FIFO, O_WRONLY);
-    printf("Found a report process!\n");
+    if (mkfifo(REPORT_FIFO, 0666) == 0){
+        instanceOfMySelf->pipeToReport[READ] = -1;
+        instanceOfMySelf->pipeToReport[WRITE] = open(REPORT_FIFO, O_WRONLY);
+        if (instanceOfMySelf->pipeToReport[WRITE] != -1){
+            printf("Found a report process!\n");
+        } else {
+            returnCode = 2;
+        }
+    } else {
+        returnCode = 1;
+    }
+    
+    return returnCode;
 }
 
 // only for debug... wait a certain amount of time

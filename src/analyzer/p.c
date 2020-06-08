@@ -4,8 +4,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
-#include "packets.h"
-#include "utils.c"
+#include "../common/packets.h"
+#include "../common/utils.h"
+#include "instances.h"
 #include "q.c"
 
 int  p(pInstance*, int);
@@ -101,7 +102,7 @@ void waitForMessagesInP(pInstance *instanceOfMySelf){
 // here the messages arrives always atomically, so we don't
 // need to check if the message is complete
 void waitForMessagesInPFromQ(pInstance *instanceOfMySelf){
-    int numBytesRead, dataSectionSize, offset;
+    int numBytesRead, dataSectionSize;
     byte packetHeader[1 + INT_SIZE];
 
     int i;
@@ -289,6 +290,8 @@ int processPNewValueForM(byte packetData[], pInstance *instanceOfMySelf){
     currM = newM;
     // Nota: qui non serve riassegnare i file perché C invia subito dopo il pacchetto di cambio M anche
     // i pacchetti di tutti i file che non erano stati completati
+
+    return returnCode;
 }
 
 void sig_handler_P(){

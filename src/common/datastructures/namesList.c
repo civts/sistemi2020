@@ -1,37 +1,9 @@
-#ifndef __NAMES_LIST__
-#define __NAMES_LIST__
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include "../utils.c"
-
-typedef struct NodeName {
-    string name;
-    struct NodeName *next;
-    struct NodeName *prev;
-} NodeName;
-
-typedef struct {
-    struct NodeName *first;
-    struct NodeName *last;
-    int counter;
-} NamesList;
-
-
-NodeName*  constructorNodeName(string);
-void       printNodeName(NodeName*);
-void       deleteNodeName(NodeName*);
-NamesList* constructorNamesList();
-void       printNamesList(NamesList*);
-void       deleteNamesList(NamesList*);
-void       appendToNamesList(NamesList*, struct NodeName*);
-int        appendNameToNamesList(NamesList*, string);
-NodeName*  getNodeNameByName(NamesList*, string);
-int        removeNodeNameByName(NamesList*, string);
-
-
+#include "namesList.h"
+#include "../utils.h"
 
 NodeName *constructorNodeName(string fileName){
     NodeName *node = (NodeName*) malloc(sizeof(NodeName));
@@ -74,7 +46,6 @@ void printNamesList(NamesList *list){
         printf("namesList is empty!\n");
     } else {
         struct NodeName *element = list->first; 
-        int i;
         while(element!=NULL){
             printNodeName(element);
             element = element->next;
@@ -215,36 +186,3 @@ void deleteFolderNamesList(string folder, NamesList *existentList, NamesList *de
         tempNode = nextNode;
     }
 }
-
-// int main(){
-
-//     NodeName *node1 = constructorNodeName("Marciello.txt");
-//     NodeName *node2 = constructorNodeName("foldera/folder/Giovanni.txt");
-//     NodeName *node3 = constructorNodeName("folder/Juan.txt");
-//     // printNodeName(node1);
-//     // printNodeName(node2);
-
-//     NamesList *list = constructorNamesList();
-//     appendToNamesList(list, node1);
-//     appendNameToNamesList(list, "Marciello");
-//     appendToNamesList(list, node2);
-//     appendToNamesList(list, node3);
-
-//     printNamesList(list);
-//     // removeNodeNameByName(list, "Marciello");
-//     // removeNodeNameByName(list, "Marciello");
-
-//     // deleteNamesList(list);
-//     // deleteNamesList(list);
-
-//     NamesList *deletedOnes = constructorNamesList();
-//     printf("Delete time\nList:\n");
-//     deleteFolderNamesList("folder/", list, deletedOnes);
-//     printNamesList(list);
-//     printf("Deleted list:\n");
-//     printNamesList(deletedOnes);
-
-//     return 0;
-// }
-
-#endif

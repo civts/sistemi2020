@@ -1,8 +1,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "utils.c"
-#include "datastructures/namesList.c"
+#include "../common/utils.h"
+#include "../common/datastructures/namesList.h"
 
 #define flag_analyze 0
 #define flag_i 1
@@ -14,16 +14,21 @@
 #define flag_n 7
 #define flag_m 8
 #define flag_quit 9
+#define flag_main 10
 
 char* rand_string_alloc(int);
 
 int numberPossibleFlags = 10; 
-string possibleFlags[]  = {"-analyze", "-i",  "-s", "-h",  "-show", "-rem", "-add", "-n", "-m", "-quit"};
-bool   flagsWithArgs[]  = {false,      false, false, false, false,   true,   true,   true,  true, false};
+string possibleFlags[]  = {"-analyze", "-i",  "-s", "-h",  "-show", "-rem", "-add", "-n", "-m", "-quit", "-main"};
+bool   flagsWithArgs[]  = {false,      false, false, false, false,   true,   true,   true,  true, false,  false};
 
-bool   settedFlags[]    = {false, false, false, false, false, false, false, false, false, false};
+bool   settedFlags[]    = {false,      false, false, false, false,   false,  false,  false, false,false,  false};
 string arguments[10];
-string invalidPhrase    = "Wrong command syntax, try command '-h' for help.\n"; 
+string invalidPhrase    = "Wrong command syntax, try command '-h' for help.\n";
+
+void clear(){
+    system("clear");
+}
 
 bool checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithArguments, int numberPossibleFlags, bool* settedFlags,char **arguments, char* invalid,bool printOnFailure){
     bool validity = true;

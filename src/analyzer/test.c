@@ -2,12 +2,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <termios.h>    //termios, TCSANOW, ECHO, ICANON
-#include "utils.c"
+#include "../common/utils.h"
+#include "../common/packets.h"
+#include "instances.h"
 #include "crawler.c"
-#include "packets.h"
 #include "controller.c"
-
-#define BUFFER_SIZE 4096
 
 controllerInstance *cInstance;
 

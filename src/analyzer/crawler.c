@@ -4,9 +4,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-// #include <limits.h>
-#include "utils.c"
-#include "datastructures/namesList.c"
+#include "../common/utils.h"
+#include "../common/datastructures/namesList.h"
 
 // maximum file name length: 255
 // maximum file path length: 4096 (is the file name included?)
@@ -20,7 +19,7 @@ int parseFileListFromFind(int readDescriptor, NamesList *fileList){
     char buffer[SIZE_OF_BUFFER_TO_READ_PIPE];
     string filePath;
 
-    while(fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead) != NULL){
+    while (fgets(buffer, SIZE_OF_BUFFER_TO_READ_PIPE, pipeToRead) != NULL){
         filePath = strtok(buffer, "\n");
         absolutePath = realpath(filePath, absolutePath);
         if(absolutePath != NULL){
@@ -71,40 +70,3 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
 
     return returnCode;
 }
-
-// Given a path to a file/folder it returns:
-// -1 : if it does not exist
-//  0 : if it is a file and it exists
-//  1 : if it is is a folder and it exists
-int inspectPath(const char *path){
-    struct stat path_stat;
-    int returnCode = -1;
-    if (path != NULL && stat(path, &path_stat) == 0){
-        if (S_ISREG(path_stat.st_mode)){
-            returnCode = 0;
-        } else if (S_ISDIR(path_stat.st_mode)){
-            returnCode = 1;
-        }
-    }
-    return returnCode;
-}
-
-// int main(){
-//     string folder = "./";
-//     NamesList *list = constructorNamesList();
-//     int filesFound;
-
-//     crawler(folder, list, &filesFound);
-
-//     printf("Found %d files:\n", filesFound);
-//     printNamesList(list);
-
-//     char buffer[SIZE_OF_BUFFER_TO_READ_PIPE];
-
-//     string file = NULL;
-//     realpath(file, buffer);
-//     printf("isRegularFile: %d\n", inspectPath(file));
-//     printf("realpath %s\n", buffer);
-    
-//     return 0;
-// }

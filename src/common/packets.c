@@ -1,74 +1,36 @@
-#ifndef __PACKETS_H__
-#define __PACKETS_H__
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "utils.c"
-#include "datastructures/namesList.c"
-#include "datastructures/fileList.c"
-
-#define READ 0
-#define WRITE 1
-#define MAX_STRING_SIZE 4096
-#define HISTORY 5
-#define MESSAGES 5
+#include <sys/types.h>
+#include "packets.h"
+#include "utils.h"
 
 // TODO: a lot of repeated code in packets 0-1 and 3-4
 
-typedef struct{
-    pid_t pid;
-    int pipeCP[2];
-    int pipePC[2];
-    int workload;
-} pInstance;
+// Convert 4 bytes in unsigned int (little endian)
+uint fromBytesToInt(byte *bytes){
+    uint result = 0, base = 1;
 
-typedef struct{
-    pid_t pid;
-    int pipePQ[2];
-    int pipeQP[2];
-    int currM; // number of parts in which to split the file
-    int index; // index of the file part this Q needs to analyze
-} qInstance;
+    int i;
+    for (i = INT_SIZE - 1; i >= 0; i--){
+        result += bytes[i] * base;
+        base *= 256;
+    }
 
-typedef struct{
-    pid_t pid;
-    int pipeMiniQQ[2];
-    int currM; // number of parts in which to split the file
-    int index; // index of the file part this Q needs to analyze
-} miniQInstance;
+    return result;
+}
 
-typedef struct{
-    pid_t pid;
-    pid_t pidAnalyzer;
-    int   pipeAC[2];
-    int   pipeCA[2];
-    int   pipeToReport[2];
-    int   currN;
-    int   currM;
-    int   tempN; // used in interactive mode, before starting the analysis
-    int   tempM; // used in interactive mode, before starting the analysis
-    int   nextFileID;
-    int   filesFinished;
-    bool  isAnalysing;
-    pInstance **pInstances; // P processes associated to C
-    NamesList *fileNameList;
-    NamesList *removedFileNames;
-    FileList  *fileList;
-} controllerInstance;
+// Convert an unsigned int in 4 bytes (little endian)
+void fromIntToBytes(uint value, byte out[]){
+    uint base = 0;
+    int i;
+    for (i = INT_SIZE - 1; i >= 0; i--){
+        out[i] = ((value >> base) & 0xFF);
+        base += 8;
+    }
+}
 
-typedef struct{
-    int  statusAnalisys;
-    int  completedFiles;
-    int  totalFiles;
-    int  n;
-    int  m;
-    string lastCommands[HISTORY];
-    string lastMessages[MESSAGES];
-    char mode[50];
-} analyzerInstance;
-
-// forward a packet without looking inside it's content. Useful for new filepath
+// Forward a packet without looking inside it's content
 int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSection){
     byte completePacket[1 + INT_SIZE + dataSectionSize];
 
@@ -78,29 +40,6 @@ int forwardPacket(int fd[], byte packetCode, int dataSectionSize, byte *dataSect
 
     return write(fd[WRITE], completePacket, 1 + INT_SIZE + dataSectionSize);
 }
-
-// Here there is a list of packets we transfer inside
-// the components of the analyzer by packetCode:
-// 0:  new file
-// 1:  remove file by name packet
-// 2:  death packet
-// 3:  notify new M value
-// 4:  notify new N value
-// 5:  start analysis packet
-// 6:  file occurences results
-// 7:  remove file by id packet
-// 8:  newFileNameToReportPacket if file name fits in one packet
-// 9:  newFileNameToReportPacket pt1 if file name doesn't fit in one packet
-// 10: newFileNameToReportPacket pt2 if file name doesn't fit in one packet
-// 11: reportErrorOnFilePacket
-// 12: deleteFolderFromReportPacket if file name fits in one packet
-// 13: deleteFolderFromReportPacket pt1 if file name doesn't fit in one packet
-// 14: deleteFolderFromReportPacket pt2 if file name doesn't fit in one packet
-// 15: sendNewFilePacketWithID used in C->P->Q
-// 16: sendFinishedAnalysis packet sent from controller to analyzer at the end of an analysis
-// 17: oneFileCompleted packet sent from controller to analyzer when the analysis of a single file is completed
-// 18: send string message to report
-
 
 /**
  * This function sends the newFilePacket to the file descriptor
@@ -481,4 +420,3 @@ int sendTextMessageToReport(int fd[], const string message){
     return returnCode;
 }
 
-#endif

@@ -6,9 +6,11 @@
 #include <fcntl.h>    // for file descriptors
 #include <string.h>   // for strlen()
 #include <signal.h>   // for signals
-#include "packets.h"
-#include "utils.c"
-#include "datastructures/miniQlist.c"
+#include "../common/mymath.h"
+#include "../common/packets.h"
+#include "../common/utils.h"
+#include "../common/datastructures/miniQlist.h"
+#include "instances.h"
 
 // IMPORTANT: compile this with -lm to make ceil works...
 
@@ -16,6 +18,7 @@ void miniQ(string, miniQinfo*);
 int  getBigOccurences(string, long, long, ull[NUM_OCCURENCES]);
 long getFileLength(string fileName);
 void sig_handler_miniQ();
+int sendErrorOnFileToReport(miniQinfo *);
 
 // Principal core of a miniQ: it's goal is to detect char occurences
 // and send them back to its parent Q

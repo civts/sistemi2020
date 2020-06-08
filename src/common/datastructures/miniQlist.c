@@ -1,48 +1,8 @@
-#ifndef __MINIQLIST__
-#define __MINIQLIST__
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-
-#define READ 0
-#define WRITE 1
-
-typedef struct{
-  pid_t pid;
-  int   fileId;
-  int   pipeToQ[2];
-  int   currM;
-  int   index;
-} miniQinfo;
-
-typedef struct NodeMiniQ {
-    miniQinfo        *data;
-    struct NodeMiniQ *next;
-    struct NodeMiniQ *prev;
-} NodeMiniQ;
-
-typedef struct {
-    int counter;
-    struct NodeMiniQ *first;
-    struct NodeMiniQ *last;
-} miniQlist;
-
-miniQinfo*  constructorMiniQinfo(pid_t, int, int[2], int, int);
-void        printMiniQinfo(miniQinfo*);
-void        deleteMiniQinfo(miniQinfo*);
-NodeMiniQ*  constructorNodeMiniQ(miniQinfo*);
-void        printNodeMiniQ(NodeMiniQ*);
-void        deleteNodeMiniQ(NodeMiniQ*);
-miniQlist*  constructorMiniQlist();
-void        printMiniQlist(miniQlist*);
-void        deleteMiniQlist(miniQlist*);
-void        appendMiniQ(miniQlist*, struct NodeMiniQ*);
-NodeMiniQ*  getNodeMiniQByPid(miniQlist*, pid_t);
-NodeMiniQ*  getNodeMiniQByFileId(miniQlist*, int);
-void        removeMiniQByPid(miniQlist*, pid_t);
-pid_t       removeMiniQByFileId(miniQlist*, int);
+#include "miniQlist.h"
 
 /**
  * Returns a pointer to a new instance of miniQinfo
@@ -78,6 +38,8 @@ NodeMiniQ *constructorNodeMiniQ(miniQinfo *miniQ){
     NodeMiniQ *node = (NodeMiniQ*) malloc(sizeof(NodeMiniQ));
     node->data = miniQ;
     node->next = node->prev = NULL;
+    
+    return node;
 }
 
 void printNodeMiniQ(NodeMiniQ *node){
@@ -245,36 +207,3 @@ pid_t removeMiniQByFileId(miniQlist *list, int fileId){
     }
     return result;
 }
-
-/**
-int main(){
-    int pipe[2] = {0,1};
-    
-    miniQinfo *miniQ = constructorMiniQinfo(11, 2, pipe, 7);
-    // printMiniQinfo(miniQ);
-    miniQinfo *miniQ1 = constructorMiniQinfo(12, 3, pipe, 8);
-
-    Node *nodo = constructorNodeMiniQ(miniQ);
-    Node *nodo1 = constructorNodeMiniQ(miniQ1);
-    // printNode(nodo);
-    // printNode(nodo1);
-
-    miniQlist *list = constructorMiniQlist();
-    appendMiniQ(list, nodo);
-    appendMiniQ(list, nodo1);
-
-    // removeMiniQByPid(list, 12);
-    // removeMiniQByPid(list, 11);
-    // removeMiniQByPid(list, 11);
-    // removeMiniQByFileId(list, 3);
-    // removeMiniQByFileId(list, 2);
-    // removeMiniQByFileId(list, 3);
-    
-
-    printMiniQlist(list);
-
-    return 0;
-}
-*/
-
-#endif

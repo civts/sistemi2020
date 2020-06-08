@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include "utils.c"
+#include "../common/packets.h"
+#include "../common/utils.h"
+#include "../common/datastructures/miniQlist.h"
+#include "instances.h"
 #include "miniQ.c"
-#include "datastructures/miniQlist.c"
 
 #define READ 0
 #define WRITE 1
@@ -74,7 +76,7 @@ void waitForMessagesInQFromP(qInstance *instanceOfMySelf){
 // here the messages arrives always atomically, so we don't
 // need to check if the message is complete
 void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
-    int numBytesRead, dataSectionSize, offset;
+    int numBytesRead, dataSectionSize;
     byte packetHeader[1 + INT_SIZE];
 
     int i;

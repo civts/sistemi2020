@@ -3,48 +3,8 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "../utils.c"
-
-#define READ 0
-#define WRITE 1
-
-typedef struct {
-  char *fileName;
-  int  idFile;
-  int  numOfRemainingPortionsToRead;
-  int  pIndex;
-} FileState;
-
-typedef struct NodeFileState {
-    FileState *data;
-    struct NodeFileState *next;
-    struct NodeFileState *prev;
-} NodeFileState;
-
-typedef struct FileList {
-    struct NodeFileState *first;
-    struct NodeFileState *last;
-    long long int number_of_nodes;
-} FileList;
-
-FileState      *constructorFileState(char*, int, int, int);
-void            printFileState(FileState*);
-void            deleteFileState(FileState*);
-NodeFileState  *constructorFileNode(FileState*);
-void            printNode(NodeFileState*);
-void            deleteNode(NodeFileState*);
-FileList       *constructorFileNameList();
-void            printList(FileList*);
-void            deleteList(FileList*);
-void           *appendFileState(FileList*, struct NodeFileState*);
-NodeFileState  *getNodeByName(FileList*, char*);
-NodeFileState  *getNodeById(FileList*, int);
-int             removeNode(FileList*, char*);
-int             decrementRemainingPortionsById(FileList*, int);
-bool            isAnalisiFinita(FileList*);
-void            deleteFolderFileList(string, FileList*);
-
-
+#include "fileList.h"
+#include "../utils.h"
 /**
  * Create a new FileState, returns the pointer
  */
@@ -62,14 +22,12 @@ FileState *constructorFileState(char *fileName, int fileId, int portions, int in
 void printFileState(FileState *state){
     printf("FileState id: %3d, File name: %s\n", state->idFile, state->fileName);
     printf("Remaining portions: %3d, index of P: %3d\n", state->numOfRemainingPortionsToRead, state->pIndex);
-    printf("================\n");
 }
 
 void deleteFileState(FileState *state){
     free(state->fileName);
     free(state);
 }
-
 
 /**
  * Create a new fileNode (given a filestate)
@@ -86,7 +44,6 @@ NodeFileState *constructorFileNode(FileState *newFileState){
 void printNode(NodeFileState *node){
     // printf("NodeFileState: %p\n", node);
     printFileState(node->data);
-    printf("==================");
 }
 
 void deleteNode(NodeFileState *node){
@@ -140,7 +97,7 @@ void deleteList(FileList *list){
 /**
  * Append a NodeFileState to the list 
  */
-void *appendFileState(FileList *list, struct NodeFileState *newNode){
+void appendFileState(FileList *list, struct NodeFileState *newNode){
     newNode->prev = list->last;
     newNode->next = NULL;
     if(list->number_of_nodes>0){
@@ -253,19 +210,13 @@ bool isAnalisiFinita(FileList *list){
     int i;
 
     for(i=0; i<list->number_of_nodes; i++){
-        if(element->data->numOfRemainingPortionsToRead > 0) finished=false;
-        if(!finished) break;
+        if (element->data->numOfRemainingPortionsToRead > 0) {finished=false; }
+        if (!finished) { break; }
         element = element->next;
     }
 
     return finished;
 }
-
-void assignFileTo(FileList *list, int idFile, int portions){
-    // TODO: implementare/capire questa funzione
-    // A che cosa mi serve qui il numOfRemainingPortions se l'ho già settato nel FileState?'
-}
-
 
 /**
  * Prende in input il nome di una cartella e due NamesList, toglie dalla prima tutti i 
@@ -300,73 +251,3 @@ void deleteFolderFileList(string folder, FileList *fileList){
         tempNode = nextNode;
     }
 }
-
-
-
-// int main(){
-//     FileState *file = constructorFileState("/file/prova", 0, 1, 4);
-//     FileState *file2 = constructorFileState("/files/prova1", 1, 1, 4);
-//     FileState *file3 = constructorFileState("/files/prova2", 2, 1, 4);
-//     FileState *file4 = constructorFileState("/files/prova3", 3, 1, 4);
-//     FileState *file5 = constructorFileState("/files/prova4", 4, 1, 4);
-//     FileState *file6 = constructorFileState("/folder/prova5", 5, 1, 4);
-//     FileState *file7 = constructorFileState("/folder/prova6", 6, 1, 4);
-//     FileState *file8 = constructorFileState("/folder/prova7", 7, 1, 4);
-// //    printFileState(file);
-
-//     NodeFileState *nodo = constructorFileNode(file);
-//     NodeFileState *nodo2 = constructorFileNode(file2);
-//     NodeFileState *nodo3 = constructorFileNode(file3);
-//     NodeFileState *nodo4 = constructorFileNode(file4);
-//     NodeFileState *nodo5 = constructorFileNode(file5);
-//     NodeFileState *nodo6 = constructorFileNode(file6);
-//     NodeFileState *nodo7 = constructorFileNode(file7);
-//     NodeFileState *nodo8 = constructorFileNode(file8);
-// //    printNode(nodo);
-
-//     FileList *lista = constructorFileNameList(lista);
-//     appendFileState(lista, nodo);
-//     appendFileState(lista, nodo2);
-//     appendFileState(lista, nodo3);
-//     appendFileState(lista, nodo4);
-//     appendFileState(lista, nodo5);
-//     appendFileState(lista, nodo6);
-//     appendFileState(lista, nodo7);
-//     appendFileState(lista, nodo8);
-
-//     // removeNode(lista, "prova2");
-//     // removeNode(lista, "prova2");
-//     // decrementRemainingPortionsById(lista, 2);
-//     // decrementRemainingPortionsById(lista, 2);
-//     // decrementRemainingPortionsById(lista, 3);
-//     // if(isAnalisiFinita(lista)){
-//     //     printf("FINE\n");
-//     // }
-
-//     printList(lista);
-
-//     deleteFolderFileList("/folder", lista);
-//     deleteFolderFileList("/files/", lista);
-
-//     printf(">>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<\n");
-
-//     printList(lista);
-
-//     // NodeFileState *trovato = getNodeById(lista, 2);
-//     // if(trovato == NULL){
-//     //     printf("Nodo non trovato\n");
-//     // } else {
-//     //     printf("Id trovato: %d\n", trovato->data->idFile);
-//     // }
-    
-//     // removeNode(lista, "prova");
-//     // deleteList(lista);
-
-
-//     // int newValue = decrementRemainingById(lista, 5);
-//     // printf("NewValue: %d\n", newValue);
-
-
-
-//     return 0;
-// }
