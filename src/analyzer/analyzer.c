@@ -283,16 +283,16 @@ bool checkParameters(){
         }
         returnValue = false;
     }
-    if(instanceOfMySelf.totalFiles == 0){
-        char mess3[] = "\nError: Cannot start analisys without a file or folder\n";
-        if(!instanceOfMySelf.hasMainOption){
-            fprintf(stderr, "%s", mess3);
-            waitEnter();
-        } else {
-            sendTextMessageToReport(cInstance->pipeAC, mess3);
-        }
-        returnValue = false;
-    }
+    // if(instanceOfMySelf.totalFiles == 0){
+    //     char mess3[] = "\nError: Cannot start analisys without a file or folder\n";
+    //     if(!instanceOfMySelf.hasMainOption){
+    //         fprintf(stderr, "%s", mess3);
+    //         waitEnter();
+    //     } else {
+    //         sendTextMessageToReport(cInstance->pipeAC, mess3);
+    //     }
+    //     returnValue = false;
+    // }
 
     return returnValue;
 }

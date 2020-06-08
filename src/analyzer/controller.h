@@ -11,9 +11,7 @@
 #include "../common/datastructures/fileList.h"
 #include "instances.h"
 
-// #define REPORT 1
-
-#define REPORT_FIFO "/tmp/fifo"
+#define REPORT 1
 
 // Initialization of controller fields
 void controller(controllerInstance *instanceOfMySelf);

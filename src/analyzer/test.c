@@ -23,7 +23,7 @@ int main(int argc, char *argv[]){
     sendNewMPacket(cInstance->pipeAC, m);
 
     sendNewFilePacket(cInstance->pipeAC, "q.c");
-    sendNewFilePacket(cInstance->pipeAC, "file2.txt");
+    // sendNewFilePacket(cInstance->pipeAC, "file2.txt");
     sendStartAnalysisPacket(cInstance->pipeAC, -1);
     // sendNewNPacket(cInstance->pipeAC, 2);
     sleep(4);

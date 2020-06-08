@@ -72,7 +72,6 @@ void waitForMessagesInCFromA(controllerInstance *instanceOfMySelf){
             }
         }
         printf("Got packet %d in C from A\n", packetHeader[0]);
-        sendTextMessageToReport(instanceOfMySelf->pipeCA, "Arrivato un pacchetto\n");
         processMessageInControllerFromAnalyzer(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
     }
 }
@@ -194,21 +193,27 @@ int processMessageInControllerFromAnalyzer(byte packetCode, byte *packetData, in
     switch (packetCode){
         case 0:
             returnCode = processCNewFilePacket(packetData, packetDataSize, instanceOfMySelf);
+            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Pacchetto nuovo file\n");
             break;
         case 1:
             returnCode = processCRemoveFilePacket(packetData, packetDataSize, instanceOfMySelf);
+            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Pacchetto rimozione file\n");
             break;
         case 2:
             returnCode = processCDeathPacket(instanceOfMySelf);
+            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Pacchetto della morte\n");
             break;
         case 3:
             returnCode = processCNewValueForM(packetData, instanceOfMySelf);
+            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Nuovo M\n");
             break;
         case 4:
             returnCode = processCNewValueForN(packetData, instanceOfMySelf);
+            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Nuovo N\n");
             break;
         case 5:
             returnCode = processCStartAnalysis(instanceOfMySelf);
+            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Inizia analisi\n");
             break;
         default:
             fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
@@ -237,7 +242,6 @@ int processMessageInControllerFromP(byte packetCode, byte *packetData, int packe
 
 int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInstance *instanceOfMySelf){
     int returnCode = 0;
-    
     // get path to the file
     char buffer[packetDataSize + 1];
     memcpy(buffer, packetData, packetDataSize);
@@ -250,7 +254,8 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInsta
         // remove the file from the list of removed files (in case it has been removed first and readded then)
         removeNodeNameByName(instanceOfMySelf->removedFileNames, buffer);
 
-        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 0, instanceOfMySelf->fileNameList->counter);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA, 0, instanceOfMySelf->fileNameList->counter);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA, 7, 10);
     } else {
         // assign the new file to the P process with less worload
         int minPindex = 0;
@@ -278,7 +283,8 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInsta
         }
 
         int numberOfFilesCompleted = getNumOfCompletedFiles(instanceOfMySelf);
-        sendFinishedFilePacket(instanceOfMySelf->pipeCA, numberOfFilesCompleted, instanceOfMySelf->fileList->number_of_nodes);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA, numberOfFilesCompleted, instanceOfMySelf->fileList->number_of_nodes);
+        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 8, 10);
     }
 
     return returnCode;
@@ -307,8 +313,8 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerIn
             deleteFolderNamesList(buffer, instanceOfMySelf->fileNameList, instanceOfMySelf->fileNameList);
             appendNameToNamesList(instanceOfMySelf->foldersToRemove, buffer);
         }
-
-        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 0, instanceOfMySelf->fileNameList->counter);
+        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 9, 10);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA, 0, instanceOfMySelf->fileNameList->counter);
     } else {
         if (pathType == 0){
             // dynamic removal of a file
@@ -348,7 +354,8 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerIn
         }
 
         int numberOfFilesCompleted = getNumOfCompletedFiles(instanceOfMySelf);
-        sendFinishedFilePacket(instanceOfMySelf->pipeCA, numberOfFilesCompleted, instanceOfMySelf->fileList->number_of_nodes);
+        sendFinishedFilePacket(instanceOfMySelf->pipeCA,11, 10);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA, numberOfFilesCompleted, instanceOfMySelf->fileList->number_of_nodes);
     }
 
     return returnCode;
@@ -378,7 +385,6 @@ int processCDeathPacket(controllerInstance *instanceOfMySelf){
 int processCNewValueForM(byte packetData[], controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     uint new_m = fromBytesToInt(packetData);
-
     // if we are not analysing we are not supposed to update now m values for Ps
     // it will do it for us the shape tree before starting analyzing
     if (instanceOfMySelf->isAnalysing && instanceOfMySelf->currM != new_m){
@@ -461,6 +467,7 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     printf("C - Starting analysis\n");
     int returnCode = 0, i;
     instanceOfMySelf->isAnalysing = true;
+    instanceOfMySelf->filesFinished = 0;
 
     shapeTree(instanceOfMySelf->tempN, instanceOfMySelf->tempM, instanceOfMySelf);
 
@@ -591,7 +598,8 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
         }
         
         instanceOfMySelf->filesFinished++;
-        sendFinishedFilePacket(instanceOfMySelf->pipeCA, instanceOfMySelf->filesFinished, instanceOfMySelf->fileList->number_of_nodes);
+        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 5, 10);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA, instanceOfMySelf->filesFinished, instanceOfMySelf->fileList->number_of_nodes);
 
         // check if we have analyzed everything
         if (isAnalisiFinita(instanceOfMySelf->fileList)){
@@ -639,8 +647,8 @@ int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerI
     }
     
     printf("C - got error on file packet\n");
-    sendFinishedFilePacket(instanceOfMySelf->pipeCA, getNumOfCompletedFiles(instanceOfMySelf), instanceOfMySelf->fileList->number_of_nodes);
-
+    // sendFinishedFilePacket(instanceOfMySelf->pipeCA, getNumOfCompletedFiles(instanceOfMySelf), instanceOfMySelf->fileList->number_of_nodes);
+    sendFinishedFilePacket(instanceOfMySelf->pipeCA, 6, 10);
     return returnCode;
 }
 
@@ -648,9 +656,9 @@ int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerI
 int openFifoToReport(controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     printf("Waiting for the report to open...\n");
-    if (mkfifo(REPORT_FIFO, 0666) == 0){
+    if (mkfifo("/tmp/fifo", 0666) == 0){
         instanceOfMySelf->pipeToReport[READ] = -1;
-        instanceOfMySelf->pipeToReport[WRITE] = open(REPORT_FIFO, O_WRONLY);
+        instanceOfMySelf->pipeToReport[WRITE] = open("/tmp/fifo", O_WRONLY);
         if (instanceOfMySelf->pipeToReport[WRITE] != -1){
             printf("Found a report process!\n");
         } else {
