@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <termios.h>    //termios, TCSANOW, ECHO, ICANON
-#include "../../src/utils.c"
+#include "utils.c"
 #include "crawler.c"
 #include "packets.h"
 #include "parser.c"
@@ -39,14 +39,14 @@ void switchCommand(int, int, string*);
 void printState();
 void addFiles(int, string*);
 void removeFiles(int, string*);
-// void clear();
+void clear();
 void sig_handler_A();
 void waitEnter();
 void cleanArguments();
 void staticAnalisysScreen();
 int  waitForMessagesInAFromC();
 void printMessages();
-bool checkArgumentsValidity(char **arguments);
+
 
 /**
  * Function that initializes all the resources of the Analyzer.
@@ -98,7 +98,7 @@ void updateMessages(string newMessage){
  * Reads the first commands from the terminal, then switches to inputReader cycle.
  * TODO: it violates the principle of the single point of exit.
  */ 
-int analyzer_main(int argc, char *argv[]){
+int main(int argc, char *argv[]){
     int returnCode = 0;
     initialize();
 
@@ -361,10 +361,10 @@ void printScreen() {
     fflush(stdout);
 }
 
-// // Screen clear
-// void clear(){
-//     system("clear");
-// }
+// Screen clear
+void clear(){
+    system("clear");
+}
 
 // Reset input buffer
 void resetBuffer(char buffer[], int size){
@@ -582,13 +582,19 @@ void addFiles(int numFiles, string *fileNames){
                     instanceOfMySelf.totalFiles+=1;
                     printf("File added\n");
                 }
+            } else {
+                printf("Well, this is embarrassing... it seems we had problems checking file %s\n", fileNames[i]);
             }
         } else if (pathType == 1){
             // it's an existing folder
             printf("Adding folder %s\n", fileNames[i]);
-            crawler(fileNames[i], filePaths, &numOfFilesInFolder);
-            instanceOfMySelf.totalFiles+=numOfFilesInFolder;
-            printf("Folder added\n");
+            int check = crawler(fileNames[i], filePaths, &numOfFilesInFolder);
+            if(check!=0){
+                printf("Well, this is embarrassing... it seems we had problems checking folder %s\n", fileNames[i]);
+            } else {
+                instanceOfMySelf.totalFiles+=numOfFilesInFolder;
+                printf("Folder added\n");
+            }
         } else {
             // invalid file/folder
             fprintf(stderr, "File/folder %s doesn't exist!\n", fileNames[i]);

@@ -5,8 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 // #include <limits.h>
-// #include "utils.c"
-#include "../../src/utils.c"
+#include "utils.c"
 #include "datastructures/namesList.c"
 
 // maximum file name length: 255
@@ -77,18 +76,18 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
 // -1 : if it does not exist
 //  0 : if it is a file and it exists
 //  1 : if it is is a folder and it exists
-// int inspectPath(const char *path){
-//     struct stat path_stat;
-//     int returnCode = -1;
-//     if (path != NULL && stat(path, &path_stat) == 0){
-//         if (S_ISREG(path_stat.st_mode)){
-//             returnCode = 0;
-//         } else if (S_ISDIR(path_stat.st_mode)){
-//             returnCode = 1;
-//         }
-//     }
-//     return returnCode;
-// }
+int inspectPath(const char *path){
+    struct stat path_stat;
+    int returnCode = -1;
+    if (path != NULL && stat(path, &path_stat) == 0){
+        if (S_ISREG(path_stat.st_mode)){
+            returnCode = 0;
+        } else if (S_ISDIR(path_stat.st_mode)){
+            returnCode = 1;
+        }
+    }
+    return returnCode;
+}
 
 // int main(){
 //     string folder = "./";

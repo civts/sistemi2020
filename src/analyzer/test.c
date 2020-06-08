@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <termios.h>    //termios, TCSANOW, ECHO, ICANON
-#include "../../src/utils.c"
+#include "utils.c"
 #include "crawler.c"
 #include "packets.h"
 #include "controller.c"
@@ -24,16 +24,12 @@ int main(int argc, char *argv[]){
     sendNewFilePacket(cInstance->pipeAC, "file.txt");
     sendNewFilePacket(cInstance->pipeAC, "file2.txt");
     sendStartAnalysisPacket(cInstance->pipeAC, -1);
-    // sleep(4);
-
-    sendNewNPacket(cInstance->pipeAC, 2);
-    // sendStartAnalysisPacket(cInstance->pipeAC, -1);
-    // removeFileByNamePacket(cInstance->pipeAC, "file.txt"); 
-    
+    // sendNewNPacket(cInstance->pipeAC, 2);
     sleep(4);
 
     sendDeathPacket(cInstance->pipeAC);
     sleep(2);
+
     return returnCode;
 }
 

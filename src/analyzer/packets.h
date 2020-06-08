@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "../utils.c"
+#include "utils.c"
 #include "datastructures/namesList.c"
 #include "datastructures/fileList.c"
 

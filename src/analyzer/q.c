@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include "../../src/utils.c"
+#include "utils.c"
 #include "miniQ.c"
 #include "datastructures/miniQlist.c"
 
@@ -20,6 +20,7 @@ int  processQRemoveFilePacket(byte[], int);
 int  processQDeathPacket();
 int  processQNewValueForM(byte[], qInstance*);
 int  processQFileResults(byte[], int, qInstance*);
+int  processQErrorOnFilePacket(byte[], int, qInstance*);
 void sig_handler_Q();
 
 miniQlist *miniQs = NULL;
@@ -130,6 +131,9 @@ int processMessageInQFromMiniQ(byte packetCode, byte *packetData, int packetData
         case 6:
             returnCode = processQFileResults(packetData, packetDataSize, instanceOfMySelf);
             break;
+        case 11:
+            returnCode = processQErrorOnFilePacket(packetData, packetDataSize, instanceOfMySelf);
+            break;
         default:
             fprintf(stderr, "Error, Q received from miniQ an unknown packet type %d\n", packetCode);
             returnCode = 1;
@@ -236,9 +240,21 @@ int processQFileResults(byte packetData[], int packetDataSize, qInstance *instan
         returnCode = 2;
     }
 
-    // printMiniQlist(miniQs);
     removeMiniQByFileId(miniQs, idFile);
-    // printMiniQlist(miniQs);
+    return returnCode;
+}
+
+int processQErrorOnFilePacket(byte packetData[], int packetDataSize, qInstance *instanceOfMySelf){
+    int returnCode = 0;
+    int idFile = fromBytesToInt(packetData + INT_SIZE);
+
+    printf("We shall delete miniQ for file %d beacause of an error\n", idFile);
+    
+    if (forwardPacket(instanceOfMySelf->pipeQP, 11, packetDataSize, packetData) < 0){
+        returnCode = 1;
+    }
+
+    removeMiniQByFileId(miniQs, idFile);
     return returnCode;
 }
 

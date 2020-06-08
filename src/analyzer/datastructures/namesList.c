@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include "../../../src/utils.c"
+#include "../utils.c"
 
 typedef struct NodeName {
     string name;
@@ -19,7 +19,7 @@ typedef struct {
     int counter;
 } NamesList;
 
-// int main(){}
+
 NodeName*  constructorNodeName(string);
 void       printNodeName(NodeName*);
 void       deleteNodeName(NodeName*);
@@ -179,26 +179,6 @@ int removeNodeNameByName(NamesList *list, string fileName){
         result = 0;
     }
     return result;
-}
-
-/**
- * Controlla se la parte iniziale della stringa fileName corrisponde con 
- * la stringa folderName. Se sì ritrona true.
- */
-bool isInFolder(string fileName, string folderName){
-    bool ret = false;
-    int folderLen = strlen(folderName);
-    string toCompare = (string)malloc(folderLen+1);
-    memcpy(toCompare, fileName, folderLen);
-    toCompare[folderLen]='\0';
-    
-    string result = strstr(toCompare, folderName);
-    
-    
-    if(result != NULL){
-        ret = true;
-    }
-    return ret;
 }
 
 /**
