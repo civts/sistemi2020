@@ -5,8 +5,18 @@
 #include <unistd.h>     //STDIN_FILENO
 #include <stdlib.h>
 #include <string.h>
-#include "./report.h"
+
+#include "./data_structures/file_with_stats_data_structure.c"
+#include "./data_structures/file_with_stats_list.c"
+#include "./data_structures/namesList.c"
+#include "./data_structures/analyzer_data_structure.c"
+#include "./data_structures/analyzer_list.c"
+#include "./report_print_functions.c"
+#include "./report.c"
+
+#include "../utils.c"
 #include <limits.h>
+
 #define BUFFER_SIZE 4096
 #define DEBUGGING true
 char buf[BUFFER_SIZE], command[BUFFER_SIZE];
@@ -124,7 +134,7 @@ bool parseArguments(char * arguments, int * numArgs,char ** resolvedPaths){
     // }
     return valid;
 }
-int report_main(int argc, char * argv[]){
+int main(int argc, char * argv[]){
     int i=0;
     int retCode = 0;
     char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag, dumpFlag};
