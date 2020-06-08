@@ -362,7 +362,7 @@ int main(int argc, char * argv[]){
             if(settedFlags[quit]){
                 byte l[0];
                 int ex = read(pipe,l,1);
-                while (ex!=0){ ex = read(pipe,l,1);};
+                while (ex>0){ ex = read(pipe,l,1);};
                 destructoraAnalyzerList(analyzers);
                 exit(0);
             }
