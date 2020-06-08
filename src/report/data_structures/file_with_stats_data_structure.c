@@ -24,14 +24,10 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
   fs->gotData=false;
   fs->previousNode = NULL;
   fs->nextNode = NULL;
-  if (DEBUGGING)
-    printf("Creating a new FWS instance @%p for file w/ path %s\n", fs, path);
   return fs;
 }
           
 void destructorFWS(fileWithStats *fs) {
-  if (DEBUGGING)
-    printf("Deleting FWS instance @%p of file w/ path %s\n", fs, fs->path);
   free(fs->path);
   free(fs);
 }
@@ -46,8 +42,6 @@ void fwsResetData(fileWithStats * fs){
 }
 void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsRead,
                        uint occorrenze[ASCII_LENGTH],uint m) {
-  if (DEBUGGING)
-    printf("Adding new stats to FWS object of file %s\n", fs->path);
   if(m!=fs->m){
     fwsResetData(fs);
   }

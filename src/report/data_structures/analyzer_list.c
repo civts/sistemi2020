@@ -61,12 +61,10 @@ analyzer *analyzerListGetElementByPid(analyzerList *l, uint pid) {
 
 bool analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
   bool deleted = false;
-  if (DEBUGGING)
-    printf("Getting element with pid %u for deletion\n", pid);
+
   analyzer *targetNode = analyzerListGetElementByPid(l, pid);
   if (targetNode != NULL) {
-    if (DEBUGGING)
-      printf("Found element with pid %u, its @%p\n", pid, targetNode);
+
     analyzer *prev = targetNode->previousNode;
     analyzer *next = targetNode->nextNode;
     targetNode->nextNode=NULL;
@@ -82,11 +80,7 @@ bool analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
     l->count--;
     deleted=true; 
   } else {
-    if (DEBUGGING)
-      printf(
-          "Element with pid \"%u\" is not in this analyzerList so it was not "
-          "deleted\n",
-          pid);
+
   }
   return deleted;
 }

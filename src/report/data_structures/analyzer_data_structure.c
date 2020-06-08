@@ -15,16 +15,10 @@ analyzer *constructorAnalyzer(uint pid, bool dumps) {
   a->dumpFD = NULL;
   a->previousNode = NULL;
   a->nextNode = NULL;
-  if (DEBUGGING)
-    printf("Creating a new Analyzer instance @%p for Analyzer with pid %u\n", a,
-           a->pid);
   return a;
 }
 
 void destructorAnalyzer(analyzer *a) {
-  if (DEBUGGING)
-    printf("Deleting Analyzer instance @%p for Analyzer with pid %u\n", a,
-           a->pid);
   destructorFwsList(a->files);
   destructorFwsList(a->incompleteList);
   if(a->incompletePathToDelete!=NULL)
@@ -42,8 +36,6 @@ void analyzerStart(analyzer *a){
 }
 
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs) {
-  if(DEBUGGING) {printf("ADD file calle for %s\n", fs->path);
-  fwsPrint(fs);}
   //controllo non sia già presente
   fileWithStats *isInFiles = fwsListGetElementByID(a->files, fs->id);
   fileWithStats *isInErrors = fwsListGetElementByID(a->errors, fs->id);
