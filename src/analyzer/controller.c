@@ -608,7 +608,7 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
             instanceOfMySelf->isAnalysing = false;
 
             // notify the used we have finished to analyze
-            sleep(2);
+            // sleep(2);
             // printf("C - Finished analysis\n");            
             // printf("FINITO DIOSANCHU\n");
             sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
