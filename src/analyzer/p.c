@@ -169,7 +169,7 @@ int processMessageInPFromController(byte packetCode, byte *packetData, int packe
             returnCode = processPRemoveFilePacket(packetData, packetDataSize);
             break;
         case 2:
-            // returnCode = processPDeathPacket();
+            returnCode = processPDeathPacket();
             break;
         case 3:
             returnCode = processPNewValueForM(packetData, instanceOfMySelf);
