@@ -360,7 +360,7 @@ int main(int argc, char * argv[]){
             if(settedFlags[help])
                 printHelp();
             if(settedFlags[quit]){
-                byte l[0];
+                byte l[1] = "\0";
                 int ex = read(pipe,l,1);
                 printf("%c",l[0]);
                 while (ex>0){ ex = read(pipe,l,1); printf("%c",l[0]);};
@@ -389,7 +389,7 @@ int main(int argc, char * argv[]){
                 printf("Scrittura su file degli errori abilitata per tutte le nuove analisi\n");
 
             //NON ELIMINARE QUESTE DUE STAMPE BUF E FFLUSH, SONO FONDAMENTALI PER IL CORRETTO FUNZIONAMENTO
-            printf("> %s*", buf);
+            printf("> %s", buf);
             fflush(stdout);
             //sleep(1);   
         }
