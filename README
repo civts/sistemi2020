@@ -40,10 +40,14 @@ Il progetto è costituito da tre componenti principali:
 - Il sistema analyzer e il report necessitano di una FIFO per comunicare; se qualche altro processo (che non sia un analyzer) scrive sulla FIFO o l'utente crea situazioni per cui analyzer o report non possono accedervi il corretto funzionamento del programma viene precluso.
 - È supportata solamente la codifica extended ASCII.
 - Il sistema di input utilizzato in fase d'esecuzione sfrutta la libreria termios.h per dare la possibilità di poter inserire comandi da parte dell'utente e contemporaneamente aggiornare l'utente sullo svolgimento dell'analisi. Questo impedisce all'utente di cancellare un comando che sta inserendo e di muoversi correttamente con le freccie sul terminale.
+- Sempre a causa di termios nel caso la schermata da visualizzare è più grande dello schermo disponibile non si potrà scrollare e la vissualizzazione risulterà deformata.
 - Se all'analyzer non viene inserito nessun file valido, allora ci sono dei problemi di sincronizzazione col report.
 - Possiamo processare file di al massimo 4,294,967,295 bytes per motivi di efficienza.
 - Se si esegue main è necessario che si trovi nella cartella corrente di lavoro. Questo non è necessario nel caso in cui si eseguano analyzer e report separatamente.
 - Report quando avviato resta in attesa di dati dall'analyzer prima di iniziare a stampare comandi a schermo
+- Analyzer al momento dell'avvio tenta di aprire la fifo verso il Report, l'analisi non può iniziare fino a che il Report non apre la pipe.
+- In modalità interattiva è ossibile cambiare la visualizzazione solo durante l'esecuzione oppure nel caso in cui l'Analyzer venga chiuso o inizi una nuova analisi.
+- In rari casi alcuni elementi della struttura crashando hanno creato processi zombie, non siamo riusciti a replicare il comportamento irregolare e di conseguenza ad identificare la causa.
 
 ---------------------Istruzioni rapide---------------------
 
