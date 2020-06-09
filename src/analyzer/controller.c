@@ -665,7 +665,7 @@ int openFifoToReport(controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     printf("Waiting for the report to open...\n");
     int fifoReturn = mkfifo("/tmp/fifo", 0666);
-    if (fifoReturn == 0 || fifoReturn == EEXIST){
+    if (fifoReturn == 0 || errno == EEXIST){
         instanceOfMySelf->pipeToReport[READ] = -1;
         instanceOfMySelf->pipeToReport[WRITE] = open("/tmp/fifo", O_WRONLY);
         if (instanceOfMySelf->pipeToReport[WRITE] != -1){
@@ -676,7 +676,7 @@ int openFifoToReport(controllerInstance *instanceOfMySelf){
     } else {
         returnCode = 1;
     }
-    
+
     return returnCode;
 }
 
