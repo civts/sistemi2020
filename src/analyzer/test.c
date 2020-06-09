@@ -32,9 +32,9 @@ int main(int argc, char *argv[]){
     sendNewFilePacket(cInstance->pipeAC, "controller.h");
     sendNewFilePacket(cInstance->pipeAC, "instances.h");
     sendNewFilePacket(cInstance->pipeAC, "miniQ.h");
-    // sendNewFilePacket(cInstance->pipeAC, "miniQ.c");
-    // sendNewFilePacket(cInstance->pipeAC, "test.c");
-    // sendNewFilePacket(cInstance->pipeAC, "crawler.h");
+    sendNewFilePacket(cInstance->pipeAC, "miniQ.c");
+    sendNewFilePacket(cInstance->pipeAC, "test.c");
+    sendNewFilePacket(cInstance->pipeAC, "crawler.h");
     // sendNewFilePacket(cInstance->pipeAC, "file2.txt");
     sendStartAnalysisPacket(cInstance->pipeAC, -1);
     // sendNewNPacket(cInstance->pipeAC, 2);

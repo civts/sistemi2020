@@ -192,7 +192,7 @@ int reportReadOnePacket(int pipe, analyzerList *analyzers) {
     if (rdHeader == INT_SIZE + 1) {
       // if (DEBUGGING)
       //   {printf("Got new packet with code %d\n", header[0]); sleep(1);}
-      printf("Got new packet with code %d\n", header[0]); sleep(1);
+      // printf("Got new packet with code %d\n", header[0]); sleep(1);
       switch (header[0]) {
       case CODE_FILE_OCCURENCES:
         gotNewDataPacket(pipe, header, analyzers,fromBytesToInt(header+1));

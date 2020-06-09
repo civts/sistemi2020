@@ -349,14 +349,14 @@ void printRecapTabela(analyzerList *aList) {
     // strlen("|az  ") = 6 = groupWidth
     // si termini con |
     const string beforeBar = " |az   |AZ   |num  |puntg|spazi|altri|letti|total|";
-    sprintf(msg + firstColWidth, beforeBar);
+    sprintf(msg + firstColWidth, "%s", beforeBar);
     const string barTxt = "progress bar";
     int positionNow = firstColWidth + strlen(beforeBar);
     for (i = 0; i < (barWidth - strlen(barTxt)) / 2; i++) {
       msg[positionNow + i] = ' ';
       positionNow++;
     }
-    sprintf(msg + positionNow, barTxt);
+    sprintf(msg + positionNow, "%s", barTxt);
     positionNow += strlen(barTxt);
     for (i = 0; i < (barWidth - strlen(barTxt)) / 2; i++) {
       msg[positionNow + i] = ' ';
