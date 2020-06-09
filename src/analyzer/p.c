@@ -214,11 +214,18 @@ int processPRemoveFilePacket(byte packetData[], int packetDataSize){
 int processPDeathPacket(){
     int i, returnCode = 0;
     for (i = 0; i < currM; i++){
+        // printf("Pipe %d %d\n", qInstances[i].pipePQ[0], qInstances[i].pipePQ[1]);
+        
         if (sendDeathPacket(qInstances[i].pipePQ) != 0){
+            
             // if pipes are not working than kill with a signal
             if (kill(qInstances[i].pid, SIGKILL) != 0){
                 returnCode = 1;
             }
+        } else {
+            printf("Funziona la pipe\n");
+            printf("Pipe %d %d\n", qInstances[i].pipePQ[0], qInstances[i].pipePQ[1]);
+            printf("Funziona la pipe2\n");
         }
 
     }
