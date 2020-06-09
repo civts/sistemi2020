@@ -108,7 +108,7 @@ $(TMP_REP)/report_print_functions.o: $(REPORTFOLDER)/report_print_functions.c
 
 
 #Analyzer
-analyzer: createTempCommonDs createTempAnalyzer $(TMP_COM)/parser.o $(TMP_COM)/mymath.o $(TMP_COM)/packets.o $(TMP_COM_DS)/fileList.o $(TMP_COM)/miniQlist.o $(TMP_COM_DS)/namesList.o $(TMP_COM)/utils.o $(TMP_AN)/p.o $(TMP_AN)/q.o $(TMP_AN)/crawler.o $(TMP_AN)/miniQ.o $(TMP_AN)/controller.o
+analyzer: createDest createTempCommonDs createTempAnalyzer $(TMP_COM)/parser.o $(TMP_COM)/mymath.o $(TMP_COM)/packets.o $(TMP_COM_DS)/fileList.o $(TMP_COM)/miniQlist.o $(TMP_COM_DS)/namesList.o $(TMP_COM)/utils.o $(TMP_AN)/p.o $(TMP_AN)/q.o $(TMP_AN)/crawler.o $(TMP_AN)/miniQ.o $(TMP_AN)/controller.o
 	@$(COMPILE) $(ANALYZERFOLDER)/analyzer.c \
 	$(TMP_COM)/parser.o \
 	$(TMP_COM)/mymath.o \
@@ -126,7 +126,7 @@ analyzer: createTempCommonDs createTempAnalyzer $(TMP_COM)/parser.o $(TMP_COM)/m
 
 
 #Report
-report: createTempCommonDs createTempRepDs createDest $(TMP_COM)/utils.o $(TMP_REP_DS)/analyzer_list.o $(TMP_REP)/packet_handler.o $(TMP_REP)/report_print_functions.o $(TMP_REP_DS)/analyzer_data_structure.o $(TMP_REP_DS)/file_with_stats_list.o $(TMP_COM_DS)/namesList.o $(TMP_REP_DS)/file_with_stats_data_structure.o $(TMP_COM)/packets.o
+report: createDest createTempCommonDs createTempRepDs createDest $(TMP_COM)/utils.o $(TMP_REP_DS)/analyzer_list.o $(TMP_REP)/packet_handler.o $(TMP_REP)/report_print_functions.o $(TMP_REP_DS)/analyzer_data_structure.o $(TMP_REP_DS)/file_with_stats_list.o $(TMP_COM_DS)/namesList.o $(TMP_REP_DS)/file_with_stats_data_structure.o $(TMP_COM)/packets.o
 	@$(COMPILE) $(REPORTFOLDER)/report.c \
 	$(TMP_COM)/utils.o \
 	$(TMP_COM)/packets.o \
