@@ -2,9 +2,9 @@
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
                               uint occorrenze[ASCII_LENGTH]) {
   fileWithStats *fs = (fileWithStats *)malloc(sizeof(fileWithStats));
-   checkNotNull(fs);
-  fs->path = (char *)malloc(strlen(path)+1);
-   checkNotNull(fs->path);
+  checkNotNull(fs);
+  fs->path = (char *)malloc(strlen(path) + 1);
+  checkNotNull(fs->path);
   fs->id = id;
   strcpy(fs->path, path);
   fs->totalCharacters = totalCharacters;
@@ -21,28 +21,28 @@ fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
     }
   }
   fs->m = -1;
-  fs->gotData=false;
+  fs->gotData = false;
   fs->previousNode = NULL;
   fs->nextNode = NULL;
   return fs;
 }
-          
+
 void destructorFWS(fileWithStats *fs) {
   free(fs->path);
   free(fs);
 }
-void fwsResetData(fileWithStats * fs){
-  fs->m=-1;
+void fwsResetData(fileWithStats *fs) {
+  fs->m = -1;
   int i;
   for (i = 0; i < ASCII_LENGTH; i++) {
-    fs->occorrenze[i]  = 0;
+    fs->occorrenze[i] = 0;
   }
-  fs->readCharacters=0;
-  fs->gotData=false;
+  fs->readCharacters = 0;
+  fs->gotData = false;
 }
 void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsRead,
-                       uint occorrenze[ASCII_LENGTH],uint m) {
-  if(m!=fs->m){
+                       uint occorrenze[ASCII_LENGTH], uint m) {
+  if (m != fs->m) {
     fwsResetData(fs);
   }
   // totale dei caratteri del file
@@ -53,7 +53,7 @@ void fwsUpdateFileData(fileWithStats *fs, uint totCharsFile, uint totCharsRead,
   for (i = 0; i < ASCII_LENGTH; i++) {
     fs->occorrenze[i] += occorrenze[i];
   }
-  fs->m=m;
+  fs->m = m;
   fs->gotData = true;
 }
 
@@ -89,7 +89,7 @@ void fwsPrint(fileWithStats *fs) {
 charGroupStats statsForFile(fileWithStats *fws) {
   const char spaceChars[] = {' ', '\t', '\r', '\n', '\f', '\v'};
   const char punctuationChars[] = {
-    ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
+      ',', ';', '.', ':', '-', '?', '!', '\'', '`', '"', '*', '(', ')', '_',
   };
   charGroupStats result;
   result.az = result.AZ = result.digits = result.punctuation = result.spaces =

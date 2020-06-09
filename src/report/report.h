@@ -47,14 +47,6 @@ char quitFlag[] = "-q";
 // Flag for telling analyzers to start dumping to files
 char dumpFlag[] = "--dump";
 
-// void clearScreen(){
-// //  const char *CLEAR_SCREEN_ANSI = "\e[1;1H\e[2J";
-// //  write(STDOUT_FILENO, CLEAR_SCREEN_ANSI, 12);
-//     printf("\e[1;1H\e[2J");
-// }
-// void clear(){
-//     system("clear");
-// }
 void clear();
 void resetBuffer(char buffer[], int size);
 bool optionCombinationValid(bool *settedFlags);

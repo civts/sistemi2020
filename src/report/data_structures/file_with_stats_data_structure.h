@@ -34,16 +34,16 @@ typedef struct fwsNode_t {
 // Creates a fileWithStats and returns pointer to it - TESTED
 fileWithStats *constructorFWS(char *path, uint id, uint totalCharacters,
                               uint occorrenze[ASCII_LENGTH]);
-                          
+
 // Destructor for fileWithStats
 void destructorFWS(fileWithStats *fs);
 // Adds new stats to this fileWithStats
 void fwsUpdateFileData(fileWithStats *fs, uint totChars, uint totCharsToAdd,
-                       uint occorrenze[ASCII_LENGTH],uint m);
+                       uint occorrenze[ASCII_LENGTH], uint m);
 // appends the path
 void fwsUpdateFilePath(fileWithStats *fs, char *path);
 // resets
-void fwsResetData(fileWithStats * fs);
+void fwsResetData(fileWithStats *fs);
 
 // Prints the fileWithStats, just fore testing for now - TESTED
 void fwsPrint(fileWithStats *fs);

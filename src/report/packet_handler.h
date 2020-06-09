@@ -1,9 +1,7 @@
 #ifndef PACKET_HANDLER_H
 #define PACKET_HANDLER_H
-// #include "../common/utils.h"
 #include "../common/packets.h"
 #include "./data_structures/analyzer_list.h"
-// #include "./data_structures/file_with_stats_list.h"
 
 #include <fcntl.h>
 #include <unistd.h>

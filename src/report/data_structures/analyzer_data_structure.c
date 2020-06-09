@@ -4,7 +4,7 @@ analyzer *constructorAnalyzer(uint pid, bool dumps) {
   analyzer *a = (analyzer *)malloc(sizeof(analyzer));
   checkNotNull(a);
   a->pid = pid;
-    // a->dumpFD = NULL;
+  // a->dumpFD = NULL;
   a->files = constructorFwsListEmpty();
   a->incompleteList = constructorFwsListEmpty();
   a->incompletePathToDelete = NULL;
@@ -20,48 +20,46 @@ analyzer *constructorAnalyzer(uint pid, bool dumps) {
 void destructorAnalyzer(analyzer *a) {
   destructorFwsList(a->files);
   destructorFwsList(a->incompleteList);
-  if(a->incompletePathToDelete!=NULL)
-    free (a->incompletePathToDelete);
+  if (a->incompletePathToDelete != NULL)
+    free(a->incompletePathToDelete);
   destructorFwsList(a->errors);
   deleteNamesList(a->errorMessages);
-  if(a->dumpFD!=NULL){
+  if (a->dumpFD != NULL) {
     fflush(a->dumpFD);
     fclose(a->dumpFD);
   }
   free(a);
 }
 
-void analyzerStart(analyzer *a){
-  fwsListResetData(a->files);
-}
+void analyzerStart(analyzer *a) { fwsListResetData(a->files); }
 
 void analyzerAddNewFile(analyzer *a, fileWithStats *fs) {
-  //controllo non sia già presente
+  // controllo non sia già presente
   fileWithStats *isInFiles = fwsListGetElementByID(a->files, fs->id);
   fileWithStats *isInErrors = fwsListGetElementByID(a->errors, fs->id);
-  
-  if (isInFiles == NULL && isInErrors==NULL) {
-    fwsListAppend(a->files,fs);
+
+  if (isInFiles == NULL && isInErrors == NULL) {
+    fwsListAppend(a->files, fs);
   } else {
     destructorFWS(fs);
   }
 }
-void analyzerErrorFile(analyzer *a,uint id){
+void analyzerErrorFile(analyzer *a, uint id) {
   // controllo non sia già  presente
-  fileWithStats *isInFiles = fwsListGetElementByID(a->errors,id);
+  fileWithStats *isInFiles = fwsListGetElementByID(a->errors, id);
   if (isInFiles == NULL) {
-    isInFiles = fwsListGetElementByID(a->files,id);
-    if(isInFiles != NULL){
-      fwsListRemoveElementByID(a->files,id,false);
-      fwsListAppend(a->errors,isInFiles);
+    isInFiles = fwsListGetElementByID(a->files, id);
+    if (isInFiles != NULL) {
+      fwsListRemoveElementByID(a->files, id, false);
+      fwsListAppend(a->errors, isInFiles);
     }
-  } 
+  }
 }
 void analyzerAddIncompleteFile(analyzer *a, fileWithStats *fs) {
-  //controllo non sia già presente
+  // controllo non sia già presente
   fileWithStats *n = fwsListGetElementByID(a->incompleteList, fs->id);
   fileWithStats *isInErrors = fwsListGetElementByID(a->errors, fs->id);
-  if (n == NULL && isInErrors==NULL) {
+  if (n == NULL && isInErrors == NULL) {
     fwsListAppend(a->incompleteList, fs);
   } else {
     destructorFWS(fs);
@@ -76,51 +74,51 @@ void analyzerUpdateFilePath(analyzer *a, uint idFile, char *path) {
   // remove from incompleteList
   fwsListRemoveElementByID(a->incompleteList, idFile, false);
   // add to files/folders
-  if (updatedNode != NULL){
-    analyzerAddNewFile(a,updatedNode);
+  if (updatedNode != NULL) {
+    analyzerAddNewFile(a, updatedNode);
   }
 }
 
 void analyzerDeleteFile(analyzer *a, uint idFile) {
-  //remove from mainlist
-  bool removed = fwsListRemoveElementByID(a->files,idFile,true);
-  if(!removed)
-    removed = fwsListRemoveElementByID(a->errors,idFile,true);
+  // remove from mainlist
+  bool removed = fwsListRemoveElementByID(a->files, idFile, true);
+  if (!removed)
+    removed = fwsListRemoveElementByID(a->errors, idFile, true);
 }
 
-void analyzerUpdateFileData(analyzer *a, uint idFile,
-                                uint totChars, uint readChars,
-                                uint occurrences[INT_SIZE],uint m) {
-  fileWithStats * searched = fwsListGetElementByID(a->files,idFile);
-  if(searched!=NULL){
+void analyzerUpdateFileData(analyzer *a, uint idFile, uint totChars,
+                            uint readChars, uint occurrences[INT_SIZE],
+                            uint m) {
+  fileWithStats *searched = fwsListGetElementByID(a->files, idFile);
+  if (searched != NULL) {
     // caso in cui il file è stato modificato
-    if(searched->totalCharacters!=totChars && searched->gotData ){
-      fwsListRemoveElementByID(a->files,idFile,false);
-      fwsListAppend(a->errors,searched);
-    }else{
-      fwsUpdateFileData(searched,totChars,readChars,occurrences,m);
+    if (searched->totalCharacters != totChars && searched->gotData) {
+      fwsListRemoveElementByID(a->files, idFile, false);
+      fwsListAppend(a->errors, searched);
+    } else {
+      fwsUpdateFileData(searched, totChars, readChars, occurrences, m);
     }
   }
 }
 
-void analyzerDeleteFolder(analyzer *a, char * path){
-  fwsListDeleteFolder(a->files,path);
-  fwsListDeleteFolder(a->errors,path);
+void analyzerDeleteFolder(analyzer *a, char *path) {
+  fwsListDeleteFolder(a->files, path);
+  fwsListDeleteFolder(a->errors, path);
 }
 
-void analyzerIncompleteFolderDelete(analyzer *a, char * path){
-  a->incompletePathToDelete = malloc(sizeof(char)*strlen(path)+1);
-   checkNotNull(a->incompletePathToDelete);
-  strcpy(a->incompletePathToDelete,path);
+void analyzerIncompleteFolderDelete(analyzer *a, char *path) {
+  a->incompletePathToDelete = malloc(sizeof(char) * strlen(path) + 1);
+  checkNotNull(a->incompletePathToDelete);
+  strcpy(a->incompletePathToDelete, path);
 }
 
-void analyzerCompletionFolderDelete(analyzer *a, char * path){
+void analyzerCompletionFolderDelete(analyzer *a, char *path) {
   char *oldPath = a->incompletePathToDelete;
   char *completePath = (char *)malloc(strlen(oldPath) + strlen(path) + 1);
-   checkNotNull(completePath);
+  checkNotNull(completePath);
   strcpy(completePath, oldPath);
   strcat(completePath, path);
-  analyzerDeleteFolder(a,completePath);
+  analyzerDeleteFolder(a, completePath);
   free(oldPath);
   free(completePath);
   a->incompletePathToDelete = NULL;
@@ -163,9 +161,10 @@ void analyzerAddError(analyzer *a, char *error) {
 
 void analyzerPrintErrorMessages(const analyzer *a) {
   NodeName *n = a->errorMessages->last;
-  if(a->errorMessages->counter!=0)
-    printf("Ultimi 3 messaggi provenienti dall'analyzer PID:%d\n",a->pid);
-  if(n==NULL) return;
+  if (a->errorMessages->counter != 0)
+    printf("Ultimi 3 messaggi provenienti dall'analyzer PID:%d\n", a->pid);
+  if (n == NULL)
+    return;
   int i;
   // go back 2 steps
   for (i = 0; i < 2; i++) {
@@ -190,5 +189,5 @@ void analyzerPrint(analyzer *a) {
   printf("analyzer filesList:\n");
   fwsListPrint(a->files);
   printf("analyzer incompleteList:\n");
-  fwsListPrint(a->incompleteList);  
+  fwsListPrint(a->incompleteList);
 }
