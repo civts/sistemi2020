@@ -32,31 +32,51 @@ Il progetto è costituito da tre componenti principali:
 
 - Main
   1. È possibile utilizzarlo per avviare l'analyzer in modalità statica
-  2. Visualizza il report in modalità verbosa
+  2. Visualizza il report in modalità verbosa di default
+  3. Permette di interagire con il report durante l'esecuzione
 
 ------------------------Limitazioni------------------------
 
 - Il sistema analyzer e il report necessitano di una FIFO per comunicare; se qualche altro processo (che non sia un analyzer) scrive sulla FIFO o l'utente crea situazioni per cui analyzer o report non possono accedervi il corretto funzionamento del programma viene precluso.
 - È supportata solamente la codifica extended ASCII.
-- Il sistema di input utilizzato in fase d'esecuzione sfrutta la libreria termios.h per dare la possibilità di poter inserire comandi da parte dell'utente e contemporaneamente aggiornare l'utente sullo svolgimento dell'analisi.
+- Il sistema di input utilizzato in fase d'esecuzione sfrutta la libreria termios.h per dare la possibilità di poter inserire comandi da parte dell'utente e contemporaneamente aggiornare l'utente sullo svolgimento dell'analisi. Questo impedisce all'utente di cancellare un comando che sta inserendo e di muoversi correttamente con le freccie sul terminale.
 - Se all'analyzer non viene inserito nessun file valido, allora ci sono dei problemi di sincronizzazione col report.
 - Possiamo processare file di al massimo 4,294,967,295 bytes per motivi di efficienza.
+- Se si esegue main è necessario che si trovi nella cartella corrente di lavoro. Questo non è necessario nel caso in cui si eseguano analyzer e report separatamente.
+- Report quando avviato resta in attesa di dati dall'analyzer prima di iniziare a stampare comandi a schermo
 
 ---------------------Istruzioni rapide---------------------
 
 - Analyzer: elenco dei comandi che è possibile specificare sia da linea di comando che all'interno del programma (se in modalità dinamica)
-  Per iniziare un'analisi bisogna inserire almeno: mode, n, m and at least one file/folder
+  Per iniziare un'analisi bisogna inserire almeno: mode, n, m e almeno un file/cartella
   -i: interactive mode
   -s: static mode
   -h: help mode
-  -add _name1_ _name2_ aggiunta di file/folder
-  -rem _names_ _name2_ rimozione di file/folder (in modalità interattiva)
-  -n   _value_         cambia il valore di n
-  -m   _value_         cambia il valore di m
-  -show                mostra i valori attuali di n ed m (in modalità interattiva)
-  -analyze             inizia il processo di analisi (in modalità interattiva)
-  -quit                chiudi il processo
+  -add _name1_ _name2_...   aggiunta di file/folder
+  -rem _names_ _name2_...   rimozione di file/folder (in modalità interattiva)
+  -n   _value_              cambia il valore di n
+  -m   _value_              cambia il valore di m
+  -show                     mostra i valori attuali di n ed m (in modalità interattiva)
+  -analyze                  inizia il processo di analisi (in modalità interattiva)
+  -quit                     chiudi il processo
 
-- Report
+- Report: Visualizza i dati provenienti dall'analyzer (o dagli analyzers)
+  Le opzioni di visualizzazione sono:
+  -t      visualizzazione in "tabella"
+  -v      visualizzazione "verbosa"
+  -c      visualizzazione "compatta"
+  --only  Questo flag, seguito da una lista di percorsi permette di vedere le statistiche relative a tutti e soli i files
+  Di default le statistiche sono raggruppate per minuscole, maiuscole, numeri, punteggiatura e spazi ma aggiungendo il l'opzione -e al comando -v è possibile visualizzare le statistiche dei singoli caratteri.
+  Infine sono disponibili dei comandi:
+  -h		help: mostra questa schermata
+  -r		reset: cancella i dati attuali di tutte le analisi
+  -q		quit: chiude il programma
 
-- Main
+- Main: 
+  Permette di avviare un'analisi e interagire con un report.
+  Al momento dell'invocazione bisogna specificare eventuali comandi da dare all'analyzer con una sintassi come la seguente:
+    ./main [comandi per analyzer]
+  Se si vogliono specificare anche comandi per il report si possono inserire separandoli da quelli dell'analyzer con tre trattini, con una sintassi come la seguente:
+    ./main [comandi per analyzer] --- [comandi per report]
+  Questi comandi verranno reindirizzati ad analyzer o report e sarà poi possibile interagire con il report
+  
