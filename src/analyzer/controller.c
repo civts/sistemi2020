@@ -663,6 +663,7 @@ int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerI
 // Creates the named pipe to the report
 int openFifoToReport(controllerInstance *instanceOfMySelf){
     int returnCode = 0;
+    errno = 0;
     printf("Waiting for the report to open...\n");
     int fifoReturn = mkfifo("/tmp/fifo", 0666);
     if (fifoReturn == 0 || errno == EEXIST){
