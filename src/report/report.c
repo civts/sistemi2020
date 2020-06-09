@@ -172,7 +172,7 @@ int main(int argc, char * argv[]){
     char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag, dumpFlag};
     // SPECIFICARE LA DIMENSIONE
     int numberPossibleFlags =  9;
-    // SPECIFICARE QUALI FLAG ACCETTANO ARGOMENTI, da passare in una stringa "adasda dasdas asdad". Esempio: "--only "patate ecmpa cobp""
+    // SPECIFICARE QUALI FLAG ACCETTANO ARGOMENTI, da passare in una stringa "adasda dasdas asdad". Esempio: "--only "sdino ecmpa cobp""
     bool flagsWithArguments[numberPossibleFlags];
     for(i = 0; i < numberPossibleFlags; i++){
         flagsWithArguments[i] = false;

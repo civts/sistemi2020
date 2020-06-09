@@ -70,7 +70,6 @@ void child_process(int pipeOUT[2],int pipeIN[2],char* path,char**argv){
     //close(pipeIN[1]); 
     //close(pipeIN[0]);
     execv(path,argv);
-    //printf("patate*\n");
     // make sure the write buffer is flushed before we exit
     fflush(stdout); 
     

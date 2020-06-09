@@ -104,7 +104,7 @@ typedef struct {
 // // flagsWithArguments vettore di booleani, settare a true la posizione in cui il corrispondente flag richiede un altro parametro
 // // numberPossibleFlags lunghezza della lista dei possibili parametri
 // // settedFlags vettore di booleani, sono settati a true è presente l'argomento della corrispondente posizione. E' possibile inizializzarli a valori diversi da false per far finta che un argomento sia sempre implicito
-// // arguments lista dove in posizione i si trova l'altro parametro inserito dall'utente per l'argomento i. Dovete fare la free!. Nel caso di argomenti multipli "-i ciao patate" l'argomento viene concatenato con lo spazio. Dunque "ciao patate"
+// // arguments lista dove in posizione i si trova l'altro parametro inserito dall'utente per l'argomento i. Dovete fare la free!. Nel caso di argomenti multipli "-i ciao abcd" l'argomento viene concatenato con lo spazio. Dunque "ciao abcd"
 // // invalid è la stringa di testo da mostrare in caso vi siano argomenti invalidi
 // // printOnFailure specifica se mostare la  stringa di testo invalid se un argomento è invalido
 // // return true se gli argomenti sono tutti validi, false altrimenti. Se gli argomenti sono invalidi, tutti i flag sono messi a false e i parametri degli argomenti sono disallocati
