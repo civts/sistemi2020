@@ -134,15 +134,6 @@ int main(int argc, char *argv[]){
     bool validCall = checkArguments(argc-1, argv+1, possibleFlagsAnalyzer, flagsWithArgsAnalyzer, numberPossibleFlagsAnalyzer +1, settedFlagsAnalyzer, argumentsAnalyzer, invalidPhraseAnalyzer, true);
     bool validArguments = checkArgumentsValidity(argumentsAnalyzer);
     bool modeSet = false;
-
-
-    if (settedFlagsAnalyzer[10]){
-        cInstance->hasMainOption = true;
-    }
-    if(settedFlagsAnalyzer[flag_i]||settedFlagsAnalyzer[flag_s]){
-        modeSet = true;
-    }
-
     returnCode = generateNewControllerInstance();
 
     int i;      
@@ -397,7 +388,7 @@ int processExit(){
         printf("Cleanup complete, see you next time!\n");
     }
     sleep(1);
-    return 9; // to exit from infinite loop
+    exit(9); // to exit from infinite loop
 }
 
 /**
@@ -424,7 +415,8 @@ void printScreen() {
     printf("Analisys mode: %s\n", instanceOfMySelf.mode);
     printf("Analisys status: %s\n", statuses[instanceOfMySelf.statusAnalisys]);
     printf("===================Processing===================\n");
-    if(instanceOfMySelf.statusAnalisys == 1){
+    // if(instanceOfMySelf.statusAnalisys == 1){
+    if(true){
         printf("Completed files: %2d over %2d\n", instanceOfMySelf.completedFiles, instanceOfMySelf.totalFiles);
         printf("================================================\n");
         printf("============Messages from controller============\n");
