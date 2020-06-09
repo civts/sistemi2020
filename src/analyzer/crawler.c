@@ -41,7 +41,6 @@ int crawler(string folder, NamesList *fileList, int* outNumFilesFound){
 
     pid_t f = fork();
     if (f < 0){
-        fprintf(stderr, "\nError creating little brittle crawler-son\n");
         returnCode = 1;
     } else if (f == 0){
         // child process
