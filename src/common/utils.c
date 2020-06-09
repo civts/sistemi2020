@@ -45,7 +45,7 @@ void checkNotNull(void *ptr) {
  * la stringa folderName. Se sì ritrona true.
  */
 bool isInFolder(string fileName, string folderName){
-    printf("Comparing file '%s' with folder '%s'\n", fileName, folderName);
+    // printf("Comparing file '%s' with folder '%s'\n", fileName, folderName);
     bool ret = false;
     int folderLen = strlen(folderName);
     string toCompare = (string)malloc(folderLen+1);
