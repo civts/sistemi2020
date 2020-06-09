@@ -1,10 +1,17 @@
 #include "./report.h"
+#include <signal.h>
+
 // Path to the named pipe
 const char *PATH_TO_PIPE = "/tmp/fifo";
+
+//globals
+analyzerList *analyzers = NULL;
+int pipeFromA = -1;
 
 void clear(){
     system("clear");
 }
+void sig_handler();
 void resetBuffer(char buffer[], int size){
     int i;
     for (i = 0; i < BUFFER_SIZE; i++){
@@ -158,6 +165,10 @@ bool checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithA
 int main(int argc, char * argv[]){
     int i=0;
     int retCode = 0;
+    signal(SIGINT, sig_handler);
+    signal(SIGKILL, sig_handler);
+    signal(SIGTERM, sig_handler);
+    signal(SIGQUIT, sig_handler);
     char * possibleFlags[] = {helpFlag,verboseFlag,tabFlag,compactFlag,onlyFlag,extendedFlag,forceReAnalysisFlag,quitFlag, dumpFlag};
     // SPECIFICARE LA DIMENSIONE
     int numberPossibleFlags =  9;
@@ -244,11 +255,11 @@ int main(int argc, char * argv[]){
         /*This is your part:
         Notice that EOF is also turned off
         in the non-canonical mode*/
-        analyzerList *analyzers = constructorAnalyzerListEmpty();
+        analyzers = constructorAnalyzerListEmpty();
         analyzers->dumps = settedFlags[dumps_idx];
         // PIPE opening
  
-        int pipe = open(PATH_TO_PIPE, O_RDONLY );
+        pipeFromA = open(PATH_TO_PIPE, O_RDONLY );
         while(1){
             if ((numReadCharacters = read(0, buf + lenBuffer, BUFFER_SIZE - lenBuffer)) > 0){
                 lenBuffer += numReadCharacters;
@@ -332,13 +343,13 @@ int main(int argc, char * argv[]){
 
                 }
             }
-            if (pipe == -1) {
+            if (pipeFromA == -1) {
                 perror("No pipe");
-                pipe = open(PATH_TO_PIPE, O_RDONLY);
+                pipeFromA = open(PATH_TO_PIPE, O_RDONLY);
             }else{
                 //lettura di 1 batch di pacchetti
                 //reportReadBatch(pipe, analyzers,BATCH_SIZE);
-                reportReadOnePacket(pipe, analyzers);
+                reportReadOnePacket(pipeFromA, analyzers);
             }
             clear();
             //clearScreen();
@@ -360,19 +371,7 @@ int main(int argc, char * argv[]){
             if(settedFlags[help])
                 printHelp();
             if(settedFlags[quit]){
-                byte l[1];
-                int ex = read(pipe,l,1);
-                while (ex>0){ ex = read(pipe,l,1);}
-                if(pipe!=-1){
-                    ex = close(pipe);
-                    if(ex!=0) perror("Pipe non chiusa\n");
-                }
-                if(pipe!=-1){
-                    ex = remove(PATH_TO_PIPE);
-                    if(ex!=0) perror("Pipe non cancellata\n");
-                }
-                destructoraAnalyzerList(analyzers);
-                exit(ex);
+                sig_handler();
             }
             if(settedFlags[force]){
                 destructoraAnalyzerList(analyzers);
@@ -399,4 +398,31 @@ int main(int argc, char * argv[]){
 
 
     return retCode;
+}
+
+
+void sig_handler() {
+  clear();
+  // clean up analyzers
+  if (analyzers != NULL)
+    destructoraAnalyzerList(analyzers);
+  // drain pipe
+  byte l[1];
+  int ex = read(pipeFromA, l, 1);
+  while (ex > 0) {
+    ex = read(pipeFromA, l, 1);
+  }
+  if (pipeFromA != -1) {
+    ex = close(pipeFromA);
+    if (ex != 0)
+      perror("Pipe non chiusa\n");
+  }
+  if (pipeFromA != -1) {
+    ex = remove(PATH_TO_PIPE);
+    if (ex != 0)
+      perror("Pipe non cancellata\n");
+  }
+  if(!ex)
+    printf("Cleanup finished succesfully, see you next time!\n");
+  exit(ex);
 }
