@@ -16,6 +16,8 @@ miniQlist *miniQs = NULL;
 void q(qInstance *instanceOfMySelf){
     signal(SIGINT, sig_handler_Q);
     signal(SIGKILL, sig_handler_Q);
+    signal(SIGTERM, sig_handler_Q);
+    signal(SIGQUIT, sig_handler_Q);
     miniQs = constructorMiniQlist();
 
     waitForMessagesInQ(instanceOfMySelf);
