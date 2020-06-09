@@ -5,6 +5,7 @@
 #Build folders
 build/
 bin/
+.tmp/
 
 #binaries
 *.exe
