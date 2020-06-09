@@ -362,7 +362,9 @@ int main(int argc, char * argv[]){
             if(settedFlags[quit]){
                 byte l[0];
                 int ex = read(pipe,l,1);
-                while (ex>0){ ex = read(pipe,l,1);};
+                printf("%c",l[0]);
+                while (ex>0){ ex = read(pipe,l,1); printf("%c",l[0]);};
+                printf("\n");
                 if(pipe!=-1){
                     ex = close(pipe);
                     if(ex!=0) perror("Pipe non chiusa\n");
@@ -387,7 +389,7 @@ int main(int argc, char * argv[]){
                 printf("Scrittura su file degli errori abilitata per tutte le nuove analisi\n");
 
             //NON ELIMINARE QUESTE DUE STAMPE BUF E FFLUSH, SONO FONDAMENTALI PER IL CORRETTO FUNZIONAMENTO
-            printf("> %s", buf);
+            printf("> %s*", buf);
             fflush(stdout);
             //sleep(1);   
         }
