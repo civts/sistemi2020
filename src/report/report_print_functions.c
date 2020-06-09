@@ -319,8 +319,8 @@ void printProgressBar(uint done, uint total, int barWidth, bool gotData) {
 
 void printRecapTabela(analyzerList *aList) {
   analyzer *a = aList->firstNode;
-  const int totWidth = 120;
-  const int groupWidth = 6;
+  const int totWidth = 140;
+  const int groupWidth = 8;
   const int barWidth = 15;
   if(aList->count==0){
     printf("Nessun dato al momento\n");
@@ -348,7 +348,7 @@ void printRecapTabela(analyzerList *aList) {
     // la lunghezza di ogni pezzo dev'essere groupWidth-1:
     // strlen("|az  ") = 6 = groupWidth
     // si termini con |
-    const string beforeBar = " |az   |AZ   |num  |puntg|spazi|altri|letti|total|";
+    const string beforeBar = " |az     |AZ     |numeri |puntegg|spazi  |altri  |letti  |totali |";
     sprintf(msg + firstColWidth, "%s", beforeBar);
     const string barTxt = "progress bar";
     int positionNow = firstColWidth + strlen(beforeBar);
@@ -382,7 +382,7 @@ void printRecapTabela(analyzerList *aList) {
       for (j = 0; j < firstColWidth - strlen(trimmedPath); j++) {
         line[strlen(trimmedPath) + j] = ' ';
       }
-      sprintf(line + firstColWidth, " |%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|%-5d|",
+      sprintf(line + firstColWidth, " |%-7d|%-7d|%-7d|%-7d|%-7d|%-7d|%-7d|%-7d|",
               stats.az, stats.AZ, stats.digits, stats.punctuation, stats.spaces,
               stats.otherChars, stats.totalCharsRead, stats.totalChars);
       printf("%s",line);
