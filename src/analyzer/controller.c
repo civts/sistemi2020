@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h> // pid_t -> in crawler I use pid_t without types.h
-
+#include <errno.h>
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -612,7 +612,7 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
             instanceOfMySelf->isAnalysing = false;
 
             // notify the used we have finished to analyze
-            sleep(10);
+            sleep(2);
             printf("C - Finished analysis\n");            
             printf("FINITO DIOSANCHU\n");
             sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
@@ -664,7 +664,8 @@ int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerI
 int openFifoToReport(controllerInstance *instanceOfMySelf){
     int returnCode = 0;
     printf("Waiting for the report to open...\n");
-    if (mkfifo("/tmp/fifo", 0666) == 0){
+    int fifoReturn = mkfifo("/tmp/fifo", 0666);
+    if (fifoReturn == 0 || fifoReturn == EEXIST){
         instanceOfMySelf->pipeToReport[READ] = -1;
         instanceOfMySelf->pipeToReport[WRITE] = open("/tmp/fifo", O_WRONLY);
         if (instanceOfMySelf->pipeToReport[WRITE] != -1){
