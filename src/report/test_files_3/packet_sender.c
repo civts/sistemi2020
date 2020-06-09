@@ -19,9 +19,9 @@ int main() {
   }
   occurences['a'] = 5;
   int v = mkfifo(myfifo, 0666);
-  printf("patate",errno);
+  printf("dummytext",errno);
   if(( v!= 0)){
-    perror("patate\n");
+    perror("dummytext\n");
   }
   // mkfifo(myfifo, 0666);
   fd[WRITE] = open(myfifo, O_WRONLY);
@@ -32,10 +32,10 @@ int main() {
   // newFileNameToReportPacket(fd, pid, 1, "/tmp/file2.txt");
   // // newFileNameToReportPacket(fd, pid, 2, "/home/michele/Documents/SISTEMI/"
   // //                                       "sistemi2020-report/src/report/"
-  // //                                       "test_files_2/patate.txt");
+  // //                                       "test_files_2/dummy.txt");
   // // newFileNameToReportPacket(fd, pid, 3, "/home/michele/Documents/SISTEMI/"
   // //                                       "sistemi2020-report/src/report/"
-  // //                                       "test_files_2/formaggio.txt");
+  // //                                       "test_files_2/isaond.txt");
   // // // sendOccurencesPacketToReport(fd, 40, 0, 5, 0, 50, 10, occurences);
   // // sendOccurencesPacketToReport(fd, pid, 3, 3, 0, 40, 5, occurences);
   // // sendOccurencesPacketToReport(fd, pid, 3, 9, 0, 40, 6, occurences);

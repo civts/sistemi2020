@@ -50,8 +50,6 @@
         for (int n = 0; (n = read(pipe_pair[0], buf, BUFSIZE)) > 0;){ 
           
         //   printf("Received %d bytes from child process: ", n); 
-        //           int patate=0;
-        //   scanf("%d",&patate);
         //   printf("%d\n");
           // (needed otherwise write() may output before 
           // printf since stdio output to stdout is line buffered)
