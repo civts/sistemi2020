@@ -22,7 +22,8 @@
 //                                 filePath
 //- removeFirst                 -> Remove (and de-allocates) first node
 //- removeLast                  -> Remove (and de-allocates) last node
-//- updateFileData {}             -> Adds new stats to the relative fileWithStats
+//- updateFileData {}             -> Adds new stats to the relative
+//fileWithStats
 //                                 (if not present appends a new node)
 //- removeLast                  -> Remove (and de-allocates) last node
 //- printfwsList                   -> prints the fwsList
@@ -43,9 +44,9 @@ void destructorFwsList(fwsList *l);
 bool fwsListIsEmpty(fwsList *l);
 // Appends new node to end of fwsList - TESTED✔️
 void fwsListAppend(fwsList *l, fileWithStats *fs);
-//inserts at a given position index, as in arrays from [0....n-1]
+// inserts at a given position index, as in arrays from [0....n-1]
 void fwsListInsertAt(fwsList *l, fileWithStats *fs, int index);
-//inserts in order
+// inserts in order
 void fwsListInsertOrder(fwsList *l, fileWithStats *fs);
 // Returns node in the given position (starting from 0) Returns NULL if not
 // found
@@ -63,26 +64,29 @@ void fwsListRemoveLast(fwsList *fwsList);
 // Adds the stats from newData to the right file in this fwsList. If file is not
 // present it is ignored.
 void fwsListUpdateFileData(fwsList *l, uint id, uint charTot, uint charsToAdd,
-                           uint *occourrrences,uint m);
+                           uint *occourrrences, uint m);
 // Adds new chars to file path. IF file with this id is not present, it is
 // ignored
 void fwsListUpdateFilePath(fwsList *fwsList, uint id, char *path);
 // remove element with given id from fwsList, delete true if deletion of said
-// node id necessary. Returns true if the element was successfully removed from the list
+// node id necessary. Returns true if the element was successfully removed from
+// the list
 bool fwsListRemoveElementByID(fwsList *fwsList, uint id, bool del);
 // remove element with given PATH from fwsList, delete true if deletion of said
-// node id necessary. Returns true if the element was successfully removed from the list
+// node id necessary. Returns true if the element was successfully removed from
+// the list
 bool fwsListRemoveElementByPath(fwsList *fwsList, char *path, bool del);
-// function that retunrs true if path1 is alphabetically before path2, if not false. 
-bool comparePaths(char* path1,char*path2);
+// function that retunrs true if path1 is alphabetically before path2, if not
+// false.
+bool comparePaths(char *path1, char *path2);
 // if path1 is contained in path2. IE if path 2 is a file within path1
-bool pathIsContained(char* path1, char* path2);
-//deletes all elements in a folder
-void fwsListDeleteFolder(fwsList * l, char* path);
+bool pathIsContained(char *path1, char *path2);
+// deletes all elements in a folder
+void fwsListDeleteFolder(fwsList *l, char *path);
 // returns a list of items( copy) ) that have that belong to that folder
 // fwsList* fwsListGetFolder(fwsList * l, char* path);
 // resets all data in the list
-void fwsListResetData(fwsList * l);
+void fwsListResetData(fwsList *l);
 void fwsListPrint(fwsList *l);
 
 #endif

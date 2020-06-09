@@ -1,13 +1,10 @@
 
 #ifndef PRINT_FUNCTIONS_H
 #define PRINT_FUNCTIONS_H
-// #include "../common/utils.h"
 #include "./data_structures/analyzer_list.h"
-// #include "./help.h"
 #include <fcntl.h>
 
 // Prints the line "Analyzed X filehs [in Y folders] [w/ Z analyzers]:\n"
-// AGGIORNATA CON LE FOLDER
 void printFirstInfoLine(analyzerList *aList);
 // Prints a progress bar with the percentage of a/b*100 [###    ]
 void printPercentage(uint done, uint total, int barWidth,bool gotData);

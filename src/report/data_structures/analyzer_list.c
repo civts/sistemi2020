@@ -67,8 +67,8 @@ bool analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
 
     analyzer *prev = targetNode->previousNode;
     analyzer *next = targetNode->nextNode;
-    targetNode->nextNode=NULL;
-    targetNode->previousNode=NULL;
+    targetNode->nextNode = NULL;
+    targetNode->previousNode = NULL;
     if (prev != NULL)
       prev->nextNode = next;
     else
@@ -78,9 +78,8 @@ bool analyzerListRemoveElementByPid(analyzerList *l, uint pid) {
       next->previousNode = prev;
     destructorAnalyzer(targetNode);
     l->count--;
-    deleted=true; 
+    deleted = true;
   } else {
-
   }
   return deleted;
 }
@@ -111,8 +110,7 @@ void analyzerListRemoveLast(analyzerList *l) {
   }
 }
 
-
-void analyzerListStart(analyzerList *l, uint pid){
+void analyzerListStart(analyzerList *l, uint pid) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
@@ -132,7 +130,7 @@ void analyzerListAddNewFile(analyzerList *l, uint pid, fileWithStats *fs) {
   // function that adds the file to the mainList
   analyzerAddNewFile(a, fs);
 }
-void analyzerListErrorFile(analyzerList *l, uint pid,uint idFile){
+void analyzerListErrorFile(analyzerList *l, uint pid, uint idFile) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   // if no analyzer with given pid is found
   if (a == NULL) {
@@ -167,13 +165,12 @@ void analyzerListUpdateFilePath(analyzerList *l, uint pid, uint idFile,
 
 void analyzerListUpdateFileData(analyzerList *l, uint pid, uint idFile,
                                 uint totChars, uint readChars,
-                                uint occurrences[INT_SIZE],uint m) {
+                                uint occurrences[INT_SIZE], uint m) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
     // update
-    analyzerUpdateFileData(a, idFile, totChars, readChars,
-                          occurrences,m);
-    }else {
+    analyzerUpdateFileData(a, idFile, totChars, readChars, occurrences, m);
+  } else {
     // perror("analyzer non esistente\n");
   }
 }
@@ -187,7 +184,7 @@ void analyzerListDeleteFile(analyzerList *l, uint pid, uint idFile) {
     // perror("analyzer non esistente\n");
   }
 }
-void analyzerListDeleteFolder(analyzerList *l,uint pid, char* path){
+void analyzerListDeleteFolder(analyzerList *l, uint pid, char *path) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
     analyzerDeleteFolder(a, path);
@@ -195,7 +192,7 @@ void analyzerListDeleteFolder(analyzerList *l,uint pid, char* path){
     // perror("analyzer non esistente\n");
   }
 }
-void analyzerListIncompleteFolderDelete(analyzerList *l,uint pid, char* path){
+void analyzerListIncompleteFolderDelete(analyzerList *l, uint pid, char *path) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
     analyzerIncompleteFolderDelete(a, path);
@@ -203,7 +200,7 @@ void analyzerListIncompleteFolderDelete(analyzerList *l,uint pid, char* path){
     // perror("analyzer non esistente\n");
   }
 }
-void analyzerListCompletionFolderDelete(analyzerList *l,uint pid, char* path){
+void analyzerListCompletionFolderDelete(analyzerList *l, uint pid, char *path) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
     analyzerCompletionFolderDelete(a, path);
@@ -227,7 +224,7 @@ void analyzerListCompletionFolderDelete(analyzerList *l,uint pid, char* path){
 //     // perror("analyzer non esistente\n");
 //   }
 // }
-void analyzerListAddError(analyzerList * l,uint pid, char* path){
+void analyzerListAddError(analyzerList *l, uint pid, char *path) {
   analyzer *a = analyzerListGetElementByPid(l, pid);
   if (a != NULL) {
     analyzerAddError(a, path);

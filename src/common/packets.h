@@ -39,7 +39,7 @@ int forwardPacket(int[], byte, int, byte *);
 int sendNewFilePacket(int[], const string);
 
 /**
- * This function sends the removeFileByNamePacket to the 
+ * This function sends the removeFileByNamePacket to the
  * file descriptor as argument.
  * 1 - Error with the fd sending name packet
  */
@@ -70,9 +70,11 @@ int removeFileByIdPacket(int[], pid_t, int);
 
 int sendNewFilePacketWithID(int[], int, string);
 
-// -------------------------------- PACKETS TO REPORT --------------------------------------
+// -------------------------------- PACKETS TO REPORT
+// --------------------------------------
 
-int sendOccurencesPacketToReport(int[], int, int, int, int, ull, ull, ull[NUM_OCCURENCES]);
+int sendOccurencesPacketToReport(int[], int, int, int, int, ull, ull,
+                                 ull[NUM_OCCURENCES]);
 
 // Used to send a new file name to report in three cases:
 // - unique packet if data can fit

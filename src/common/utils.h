@@ -38,15 +38,15 @@ void trimStringToLength(char *src, int maxLen);
 // Struct for keeping how many char of each group are present in a given
 // file/folder, the total number of chars and how many we have read
 typedef struct {
-	uint az, AZ, digits, punctuation, spaces, otherChars;
-	uint totalCharsRead, totalChars;
+  uint az, AZ, digits, punctuation, spaces, otherChars;
+  uint totalCharsRead, totalChars;
 } charGroupStats;
 
 // Check if malloc has failed
 void checkNotNull(void *ptr);
 
 /**
- * Controlla se la parte iniziale della stringa fileName corrisponde con 
+ * Controlla se la parte iniziale della stringa fileName corrisponde con
  * la stringa folderName. Se sì ritrona true.
  */
 bool isInFolder(string fileName, string folderName);
@@ -56,6 +56,5 @@ bool isInFolder(string fileName, string folderName);
 //  0 : if it is a file and it exists
 //  1 : if it is is a folder and it exists
 int inspectPath(const char *path);
-
 
 #endif

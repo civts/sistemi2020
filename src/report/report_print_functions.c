@@ -19,14 +19,14 @@ void printFirstInfoLine(analyzerList *aList) {
   }
   printf(":\n");
 }
-void printPercentage(uint done, uint total, int barWidth,bool gotData) {
+void printPercentage(uint done, uint total, int barWidth, bool gotData) {
   float percentage;
-  if(total == 0 && gotData)
-    percentage=1;
-  if(total == 0 && !gotData)
-    percentage=0;
-  if(total!=0)
-    percentage = done/(float)total;
+  if (total == 0 && gotData)
+    percentage = 1;
+  if (total == 0 && !gotData)
+    percentage = 0;
+  if (total != 0)
+    percentage = done / (float)total;
   printf("\n[");
   int i, pos = barWidth * percentage;
   for (i = 0; i < barWidth; i++) {
@@ -53,6 +53,7 @@ void printErrors(analyzer *a) {
     }
   }
 }
+
 void printRecapCompact(analyzerList *aList) {
   printFirstInfoLine(aList);
   analyzer *current = aList->firstNode;
@@ -63,7 +64,7 @@ void printRecapCompact(analyzerList *aList) {
   bool gotData = false;
   while (current != NULL) {
     fileWithStats *cursor = current->files->firstNode;
-    while(cursor!=NULL){
+    while (cursor != NULL) {
       charGroupStats fileStats = statsForFile(cursor);
       az += fileStats.az;
       AZ += fileStats.AZ;
@@ -82,13 +83,13 @@ void printRecapCompact(analyzerList *aList) {
          "%u\n\nTotal characters read: %u over %u\n",
          az, AZ, digits, punctuation, spaces, otherChars, totalCharsRead,
          totalChars);
-  printPercentage(totalCharsRead, totalChars, 30,gotData);
+  printPercentage(totalCharsRead, totalChars, 30, gotData);
   current = aList->firstNode;
-   while (current != NULL) {
+  while (current != NULL) {
     printErrors(current);
     analyzerPrintErrorMessages(current);
-    current=current->nextNode;
-   }
+    current = current->nextNode;
+  }
 }
 
 void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
@@ -112,7 +113,7 @@ void printRecapVerbose(analyzerList *aList, bool shouldGroup) {
       printSingleFile(fNode, shouldGroup);
       fNode = fNode->nextNode;
     }
-     analyzerPrintErrorMessages(current);
+    analyzerPrintErrorMessages(current);
     current = current->nextNode;
   }
 }
@@ -166,39 +167,8 @@ void printSingleFile(fileWithStats *f, bool group) {
   }
   printf("others: %d\n", otherChars);
   printf("\nTotal characters read: %u over %u\n", totalCharsRead, totalChars);
-  printPercentage(totalCharsRead, totalChars, 30,f->gotData);
+  printPercentage(totalCharsRead, totalChars, 30, f->gotData);
 }
-
-// void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
-//                         bool group) {
-//   int i;
-//   // for each path I search it across the analyzers and print it if found
-//   for (i = 0; i < pathsLen; i++) {
-//     bool printed = false;
-//     char *path = paths[i];
-//     analyzer *analyzer = analyzers->firstNode;
-//     while (analyzer != NULL && !printed) {
-//       fileWithStats *fws = analyzer->files->firstNode;
-//       while (fws != NULL) {
-//         if (streq(fws->path, path)) {
-//           printSingleFile(fws, group);
-//           printed = true;
-//         }
-//         fws = fws->nextNode;
-//       }
-//       analyzer = analyzer->nextNode;
-//     }
-//     if (!printed) {
-//       char *msg = "File with path ";
-//       char nPath [strlen(path)];
-//       strcpy(nPath,path);
-//       trimStringToLength(nPath, 80);
-//       msg = strcat(msg, nPath);
-//       msg = strcat(msg, "was not found\n");
-//       perror(msg);
-//     }
-//   }
-// }
 
 // dovremmo speficare il pid a mio avviso
 void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
@@ -215,96 +185,48 @@ void printSelectedFiles(analyzerList *analyzers, int pathsLen, char *paths[],
     a = a->nextNode;
   }
 }
-// void printFolder(analyzerList *analyzers, char *folderPath, bool group) {
-//   analyzer *a = analyzers->firstNode;
-//   while (a != NULL) {
-//     fwsList *folder = fwsListGetFolder(a->files, folderPath);
-//     // adesso dentro folder puoi farci quello che vuoi. Per adesso è ancora una
-//     // copia. Nel caso
-//     a = a->nextNode;
-//   }
-// }
 
-void printFilesOrFolder(analyzerList *analyzers,int pathsLen, char *paths[], bool group){
+void printFilesOrFolder(analyzerList *analyzers, int pathsLen, char *paths[],
+                        bool group) {
   analyzer *a = analyzers->firstNode;
   while (a != NULL) {
     int i;
-    for(i=0;i<pathsLen;i++){
-        int val = inspectPath(paths[i]);
-        switch (val){
-          case 0:{
-            fileWithStats * fws = fwsListGetElementByPath(a->files,paths[i]);
-            if(fws!=NULL)
-              printSingleFile(fws,group);
-            break;
+    for (i = 0; i < pathsLen; i++) {
+      int val = inspectPath(paths[i]);
+      switch (val) {
+      case 0: {
+        fileWithStats *fws = fwsListGetElementByPath(a->files, paths[i]);
+        if (fws != NULL)
+          printSingleFile(fws, group);
+        break;
+      }
+      case 1: {
+        fileWithStats *cursor = a->files->firstNode;
+        while (cursor != NULL) {
+          if (pathIsContained(paths[i], cursor->path)) {
+            printSingleFile(cursor, group);
           }
-          case 1:
-          {
-            fileWithStats *cursor = a->files->firstNode;
-            while (cursor!= NULL){
-              if(pathIsContained(paths[i],cursor->path)){
-                printSingleFile(cursor,group);
-              }
-              cursor = cursor->nextNode;
-            }
-            break;
-          }
-          case -1: printf("file/cartella non esistente %s\n",paths[i]);
-            break;
+          cursor = cursor->nextNode;
         }
+        break;
+      }
+      case -1:
+        printf("file/cartella non esistente %s\n", paths[i]);
+        break;
+      }
     }
     a = a->nextNode;
   }
 }
-// void printFolder(analyzerList *analyzers, char *folderPath, bool group) {
-//   analyzer *a = analyzers->firstNode;
-//   bool foundFolder = false;
-//   while (a != NULL) {
-//     fileWithStats *f = a->files->firstNode;
-//     int i;
-//     bool foundInThisAnalyzer = false;
-//     for (i = 0; i < a->files->count; i++) {
-//       if (f == NULL)
-//         break; // Does not happen, but if it happens…
-//       if (strlen(folderPath) >= strlen(f->path))
-//         continue;
-//       int j;
-//       bool isInTheFolder = true;
-//       // check if file is in desired folder
-//       for (j = 0; j < strlen(folderPath); j++) {
-//         if (f->path[j] != folderPath[j]) {
-//           isInTheFolder = false;
-//           break;
-//         }
-//       }
-//       if (isInTheFolder) {
-//         foundFolder = true;
-//         if (!foundInThisAnalyzer) {
-//           foundInThisAnalyzer = true;
-//           printf("Files in the folder %s from the analyzer with pid %d:\n",
-//                  trimStringToLength(folderPath, 30), a->pid);
-//         }
-//         printSingleFile(f, group);
-//       }
-//       f = f->nextNode;
-//     }
-//     a = a->nextNode;
-//   }
-//   if (!foundFolder) {
-//     printf("Requested folder was not found in any known analysis. Please
-//     check "
-//            "the input for typos\n");
-//   }
-// };
 
 void printProgressBar(uint done, uint total, int barWidth, bool gotData) {
   float percentage;
-  if(total == 0 && gotData)
-    percentage=1;
-  if(total == 0 && !gotData)
-    percentage=0;
-  if(total!=0)
-    percentage = done/(float)total;
+  if (total == 0 && gotData)
+    percentage = 1;
+  if (total == 0 && !gotData)
+    percentage = 0;
+  if (total != 0)
+    percentage = done / (float)total;
   int i, pos = (barWidth - 3) * percentage;
   for (i = 0; i < barWidth - 3; i++) {
     if (i < pos)
@@ -322,10 +244,10 @@ void printRecapTabela(analyzerList *aList) {
   const int totWidth = 140;
   const int groupWidth = 8;
   const int barWidth = 15;
-  if(aList->count==0){
+  if (aList->count == 0) {
     printf("Nessun dato al momento\n");
   }
-  while (a != NULL) {        // forEach analyzer
+  while (a != NULL) { // forEach analyzer
     printErrors(a);
     char msg[totWidth + 1];  // table header text
     char leftOver[totWidth]; // se devo finire la print nella riga succ
@@ -348,7 +270,8 @@ void printRecapTabela(analyzerList *aList) {
     // la lunghezza di ogni pezzo dev'essere groupWidth-1:
     // strlen("|az  ") = 6 = groupWidth
     // si termini con |
-    const string beforeBar = " |az     |AZ     |numeri |puntegg|spazi  |altri  |letti  |totali |";
+    const string beforeBar =
+        " |az     |AZ     |numeri |puntegg|spazi  |altri  |letti  |totali |";
     sprintf(msg + firstColWidth, "%s", beforeBar);
     const string barTxt = "progress bar";
     int positionNow = firstColWidth + strlen(beforeBar);
@@ -382,38 +305,37 @@ void printRecapTabela(analyzerList *aList) {
       for (j = 0; j < firstColWidth - strlen(trimmedPath); j++) {
         line[strlen(trimmedPath) + j] = ' ';
       }
-      sprintf(line + firstColWidth, " |%-7d|%-7d|%-7d|%-7d|%-7d|%-7d|%-7d|%-7d|",
-              stats.az, stats.AZ, stats.digits, stats.punctuation, stats.spaces,
-              stats.otherChars, stats.totalCharsRead, stats.totalChars);
-      printf("%s",line);
-      printProgressBar(f->readCharacters, f->totalCharacters, barWidth,f->gotData);
+      sprintf(line + firstColWidth,
+              " |%-7d|%-7d|%-7d|%-7d|%-7d|%-7d|%-7d|%-7d|", stats.az, stats.AZ,
+              stats.digits, stats.punctuation, stats.spaces, stats.otherChars,
+              stats.totalCharsRead, stats.totalChars);
+      printf("%s", line);
+      printProgressBar(f->readCharacters, f->totalCharacters, barWidth,
+                       f->gotData);
       f = f->nextNode;
     }
     analyzerPrintErrorMessages(a);
     a = a->nextNode;
   }
 }
-void printHelp(){
-  printf("%s", help);
-}
-void printLastErrorMessages(analyzer* a,int qty){
-  int i=0;
-  NodeName * current = a->errorMessages->last;
-  if(a->errorMessages->counter!=0){
-    printf("Ultimi %d messaggi di errore provenienti dall'analyzer PID:%d\n",qty,a->pid);
+void printHelp() { printf("%s", help); }
+void printLastErrorMessages(analyzer *a, int qty) {
+  int i = 0;
+  NodeName *current = a->errorMessages->last;
+  if (a->errorMessages->counter != 0) {
+    printf("Ultimi %d messaggi di errore provenienti dall'analyzer PID:%d\n",
+           qty, a->pid);
   }
-  while(i<qty && current!=NULL){
-    printf("%s\n",current->name);
+  while (i < qty && current != NULL) {
+    printf("%s\n", current->name);
     current = current->prev;
     i++;
   }
-
 }
-void printErrorMessages(analyzer* a){
-  NodeName * current = a->errorMessages->last;
-  while(current!=NULL){
-    printf("%s\n",current->name);
+void printErrorMessages(analyzer *a) {
+  NodeName *current = a->errorMessages->last;
+  while (current != NULL) {
+    printf("%s\n", current->name);
     current = current->prev;
   }
-
 }
