@@ -25,9 +25,7 @@ void q(qInstance *instanceOfMySelf){
 // parent P and its children miniQ
 void waitForMessagesInQ(qInstance *instanceOfMySelf){
     while (true){
-        printf("----------Wait from P-----------\n");
         waitForMessagesInQFromP(instanceOfMySelf);
-        printf("----------Wait from miniQ-----------\n");
         waitForMessagesInQFromMiniQ(instanceOfMySelf);
     }
 }
@@ -66,16 +64,11 @@ void waitForMessagesInQFromP(qInstance *instanceOfMySelf){
 void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
     int numBytesRead, dataSectionSize;
     byte packetHeader[1 + INT_SIZE];
-
-    int i;
     NodeMiniQ *currElement = miniQs->first;
     NodeMiniQ *nextElement = NULL;
-    while(currElement != NULL){
+    while (currElement != NULL){
         nextElement = currElement->next;
         numBytesRead = read(currElement->data->pipeToQ[READ], packetHeader, 1 + INT_SIZE);
-        if (numBytesRead > 0){
-            printf("Ho letto qualcosa\n");
-        }
         if (numBytesRead == (1 + INT_SIZE)){
             dataSectionSize = fromBytesToInt(packetHeader + 1);
             byte packetData[dataSectionSize];
@@ -83,14 +76,9 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
             numBytesRead = read(currElement->data->pipeToQ[READ], packetData, dataSectionSize);
             printf("Got packet %d in Q from miniQ\n", packetHeader[0]);
             processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
-            printf("boiadio %d\n", miniQs->counter);
-            printMiniQlist(miniQs);
         }
-        printf("ciao\n");
         currElement = nextElement;
     }
-
-    printf("Terminato il ciclo\n");
 }
 
 int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize, qInstance *instanceOfMySelf){
@@ -183,7 +171,6 @@ int processQRemoveFilePacket(byte packetData[], int packetDataSize){
 int processQDeathPacket(){
     // kill all miniQs
     NodeMiniQ *node = miniQs->first;
-    int i;
     while(node != NULL){
         kill(node->data->pid, SIGKILL);
         node = node->next;
@@ -205,8 +192,7 @@ int processQNewValueForM(byte packetData[], qInstance* instanceOfMySelf){
 
         // kill all existing miniQ since their M is deprecated
         NodeMiniQ *node = miniQs->first;
-        int i;
-        while(node!=NULL){
+        while (node != NULL){
             printf("MiniQ killed\n");
             kill(node->data->pid, SIGKILL);
             node = node->next;
@@ -235,9 +221,8 @@ int processQFileResults(byte packetData[], int packetDataSize, qInstance *instan
     } else {
         returnCode = 2;
     }
-    printf("NONO\n");
+    
     removeMiniQByFileId(miniQs, idFile);
-    printf("OKOK\n");
     return returnCode;
 }
 
