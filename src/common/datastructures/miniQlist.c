@@ -26,7 +26,6 @@ void printMiniQinfo(miniQinfo *miniQ){
 }
 
 void deleteMiniQinfo(miniQinfo *miniQ){
-    // TODO - dobbiamo chiudere la pipe?
     free(miniQ);
 }
 
@@ -151,7 +150,7 @@ void removeMiniQByPid(miniQlist *list, pid_t pid){
     NodeMiniQ *toRemove = getNodeMiniQByPid(list, pid);
     
     if (toRemove == NULL){
-        printf("No node found with pid %3d\n", pid);
+        // printf("No node found with pid %3d\n", pid);
     } else {
         if (list->first == toRemove){
             list->first = toRemove->next;
@@ -183,7 +182,7 @@ pid_t removeMiniQByFileId(miniQlist *list, int fileId){
     NodeMiniQ *toRemove = getNodeMiniQByFileId(list, fileId);
     
     if (toRemove == NULL){
-        printf("No node found with fileId %3d\n", fileId);
+        // printf("No node found with fileId %3d\n", fileId);
     } else {
         if (list->first == toRemove){
             list->first = toRemove->next;

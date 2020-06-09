@@ -406,12 +406,14 @@ void sig_handler() {
   // clean up analyzers
   if (analyzers != NULL)
     destructoraAnalyzerList(analyzers);
+
+  int ex;
   // drain pipe
-  byte l[1];
-  int ex = read(pipeFromA, l, 1);
-  while (ex > 0) {
-    ex = read(pipeFromA, l, 1);
-  }
+//   byte l[1];
+//   int ex = read(pipeFromA, l, 1);
+//   while (ex > 0) {
+//     ex = read(pipeFromA, l, 1);
+//   }
   if (pipeFromA != -1) {
     ex = close(pipeFromA);
     if (ex != 0)

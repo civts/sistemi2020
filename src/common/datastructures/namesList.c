@@ -98,7 +98,7 @@ int appendNameToNamesList(NamesList *list, string name){
         appendToNamesList(list, newNode);
         ret = 0;
     } else {
-        printf("File gia' presente nella lista!\n");
+        // printf("File gia' presente nella lista!\n");
     }
     return ret;
 }
@@ -144,7 +144,7 @@ int removeNodeNameByName(NamesList *list, string fileName){
             toRemove->next->prev = toRemove->prev;
             
         }
-        printf("%s deleted.\n", fileName);
+        // printf("%s deleted.\n", fileName);
         deleteNodeName(toRemove);
         list->counter--;
         result = 0;

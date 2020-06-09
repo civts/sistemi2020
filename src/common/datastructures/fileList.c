@@ -158,7 +158,7 @@ int removeNode(FileList *list, char *name){
     NodeFileState *toRemove = getNodeByName(list, name);
     
     if(toRemove == NULL){
-        printf("No node found with name %s\n", name);
+        // printf("No node found with name %s\n", name);
     } else {
         idRemovedFile = toRemove->data->idFile;
         if(list->first == toRemove){
@@ -188,12 +188,12 @@ int decrementRemainingPortionsById(FileList *list, int idFile){
     int newValue=-1;
     NodeFileState *node = getNodeById(list, idFile);
     if (node == NULL){
-        printf("Cannot decrement, idFile not found\n");
+        // printf("Cannot decrement, idFile not found\n");
     } else {
         newValue = --node->data->numOfRemainingPortionsToRead;
         if (newValue < 0){
-            printf("ATTENZIONE! numOfRemainingPortionsToRead del file: \"%s\"", node->data->fileName);
-            printf(" e sceso sotto zero!!!\n");
+            // printf("numOfRemainingPortionsToRead del file: \"%s\"", node->data->fileName);
+            // printf(" e sceso sotto zero!!!\n");
         } 
     }
 
@@ -231,10 +231,10 @@ void deleteFolderFileList(string folder, FileList *previousList, FileList *delet
     NodeFileState *nextNode;
     while(tempNode != NULL){
         nextNode = tempNode->next;
-        printf("File %s\n", tempNode->data->fileName);
+        // printf("File %s\n", tempNode->data->fileName);
         if(isInFolder(tempNode->data->fileName, folder)){
             // aggiorno nodo precedente
-            printf("in folder\n");
+            // printf("in folder\n");
             if(tempNode->prev!=NULL){
                 tempNode->prev->next = tempNode->next;
             } else {
@@ -253,7 +253,7 @@ void deleteFolderFileList(string folder, FileList *previousList, FileList *delet
             tempNode->next = tempNode->prev = NULL;
             appendFileState(deletedList, tempNode);
         } else {
-            printf("not in folder\n");
+            // printf("not in folder\n");
         }
         tempNode = nextNode;
     }

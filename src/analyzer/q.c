@@ -50,11 +50,11 @@ void waitForMessagesInQFromP(qInstance *instanceOfMySelf){
             if (numBytesRead > 0){
                 offset += numBytesRead;
             } else if (numBytesRead < 0){
-                fprintf(stderr, "Error reading from pipe P->Q\n");
+                // fprintf(stderr, "Error reading from pipe P->Q\n");
             }
         }
 
-        printf("Got packet %d in Q from P\n", packetHeader[0]);
+        // printf("Got packet %d in Q from P\n", packetHeader[0]);
         processMessageInQFromP(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
     }
 }
@@ -74,7 +74,7 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
             byte packetData[dataSectionSize];
 
             numBytesRead = read(currElement->data->pipeToQ[READ], packetData, dataSectionSize);
-            printf("Got packet %d in Q from miniQ\n", packetHeader[0]);
+            // printf("Got packet %d in Q from miniQ\n", packetHeader[0]);
             processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
         }
         currElement = nextElement;
@@ -97,7 +97,7 @@ int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize
             returnCode = processQNewFilePacketWithID(packetData, packetDataSize, instanceOfMySelf);
             break;
         default:
-            fprintf(stderr, "Error, Q received from P an unknown packet type %d\n", packetCode);
+            // fprintf(stderr, "Error, Q received from P an unknown packet type %d\n", packetCode);
             returnCode = 1;
     }
 
@@ -114,7 +114,7 @@ int processMessageInQFromMiniQ(byte packetCode, byte *packetData, int packetData
             returnCode = processQErrorOnFilePacket(packetData, packetDataSize, instanceOfMySelf);
             break;
         default:
-            fprintf(stderr, "Error, Q received from miniQ an unknown packet type %d\n", packetCode);
+            // fprintf(stderr, "Error, Q received from miniQ an unknown packet type %d\n", packetCode);
             returnCode = 1;
     }
 
@@ -138,9 +138,9 @@ int processQNewFilePacketWithID(byte packetData[], int packetDataSize, qInstance
     pid_t f;
     f = fork();
     if (f < 0){
-        fprintf(stderr, "Error, creating miniQ\n");
+        // fprintf(stderr, "Error, creating miniQ\n");
     } else if (f == 0){
-        printf("Created miniQ with m=%d\n", currentM);
+        // printf("Created miniQ with m=%d\n", currentM);
         miniQCopy.pid = getpid();
         miniQ(pathName, &miniQCopy);
         exit(0);
@@ -153,16 +153,15 @@ int processQNewFilePacketWithID(byte packetData[], int packetDataSize, qInstance
 }
 
 int processQRemoveFilePacket(byte packetData[], int packetDataSize){
-    // TODO: remove debug printfs
     int fileId = fromBytesToInt(packetData + INT_SIZE);
-    printf("fileID read from packet: %d\n", fileId);
+    // printf("fileID read from packet: %d\n", fileId);
     
     pid_t miniQPid = removeMiniQByFileId(miniQs, fileId);
     if (miniQPid != -1){
-        printf("Removed miniQ with pid: %d\n", miniQPid);
+        // printf("Removed miniQ with pid: %d\n", miniQPid);
         kill(miniQPid, SIGKILL);
     } else {
-        printf("No miniQ had that fileId\n");
+        // printf("No miniQ had that fileId\n");
     }
 
     return 0;
@@ -179,7 +178,7 @@ int processQDeathPacket(){
     // erase miniQ list
     deleteMiniQlist(miniQs);
 
-    printf("Q is dead\n");
+    // printf("Q is dead\n");
     exit(0);
     return 0;
 }
@@ -193,7 +192,7 @@ int processQNewValueForM(byte packetData[], qInstance* instanceOfMySelf){
         // kill all existing miniQ since their M is deprecated
         NodeMiniQ *node = miniQs->first;
         while (node != NULL){
-            printf("MiniQ killed\n");
+            // printf("MiniQ killed\n");
             kill(node->data->pid, SIGKILL);
             node = node->next;
         }
@@ -212,7 +211,7 @@ int processQFileResults(byte packetData[], int packetDataSize, qInstance *instan
     int idFile = fromBytesToInt(packetData + INT_SIZE);
     int m = fromBytesToInt(packetData + 2 * INT_SIZE);
 
-    printf("We shall delete miniQ for file %d\n", idFile);
+    // printf("We shall delete miniQ for file %d\n", idFile);
     
     if (instanceOfMySelf->currM == m){
         if (forwardPacket(instanceOfMySelf->pipeQP, 6, packetDataSize, packetData) < 0){
@@ -230,7 +229,7 @@ int processQErrorOnFilePacket(byte packetData[], int packetDataSize, qInstance *
     int returnCode = 0;
     int idFile = fromBytesToInt(packetData + INT_SIZE);
 
-    printf("We shall delete miniQ for file %d beacause of an error\n", idFile);
+    // printf("We shall delete miniQ for file %d beacause of an error\n", idFile);
     
     if (forwardPacket(instanceOfMySelf->pipeQP, 11, packetDataSize, packetData) < 0){
         returnCode = 1;
@@ -241,7 +240,7 @@ int processQErrorOnFilePacket(byte packetData[], int packetDataSize, qInstance *
 }
 
 void sig_handler_Q(){
-    printf("\nQ killed with signal\n");
+    // printf("\nQ killed with signal\n");
     processQDeathPacket();
     exit(0);
 }
