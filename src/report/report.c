@@ -363,9 +363,16 @@ int main(int argc, char * argv[]){
                 byte l[0];
                 int ex = read(pipe,l,1);
                 while (ex>0){ ex = read(pipe,l,1);};
-                close(pipe);
+                if(pipe!=-1){
+                    ex = close(pipe);
+                    if(ex!=0) perror("Pipe non chiusa\n");
+                }
+                if(pipe!=-1){
+                    ex = remove(PATH_TO_PIPE);
+                    if(ex!=0) perror("Pipe non cancellata\n");
+                }
                 destructoraAnalyzerList(analyzers);
-                exit(0);
+                exit(ex);
             }
             if(settedFlags[force]){
                 destructoraAnalyzerList(analyzers);
