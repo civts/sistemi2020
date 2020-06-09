@@ -54,7 +54,7 @@ separatedArgs splitArgv(int argc, char **argv) {
   separatedArgs m;
   int i = 1;
   int posSeparatore;
-  const char separatore[] = "magico";
+  const char separatore[] = "---";
   m.argv1 = malloc(sizeof(char *) * (argc + 1));
   checkNotNull(m.argv1);
   m.argv2 = malloc(sizeof(char *) * (argc + 1));
