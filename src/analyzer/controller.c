@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h> // pid_t -> in crawler I use pid_t without types.h
+
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -556,7 +557,7 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
         // assign the file to a P process and divide it into M portions
         nodeFileState->data->numOfRemainingPortionsToRead = instanceOfMySelf->currM;
         nodeFileState->data->pIndex = i % instanceOfMySelf->currN;
-        
+
         int successfulSend = sendNewFilePacketWithID(instanceOfMySelf->pInstances[nodeFileState->data->pIndex]->pipeCP,
                                 nodeFileState->data->idFile,
                                 nodeFileState->data->fileName);
@@ -612,7 +613,8 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
 
             // notify the used we have finished to analyze
             sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
-            printf("C - Finished analysis\n");
+            sleep(10);
+            printf("C - Finished analysis\n");            
         }
     } else {
         printf("Got file with old m\n");
