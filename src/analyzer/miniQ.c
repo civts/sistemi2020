@@ -13,8 +13,6 @@
 #include "../common/utils.h"
 #include "../common/datastructures/miniQlist.h"
 
-// IMPORTANT: compile this with -lm to make ceil works...
-
 // Principal core of a miniQ: it's goal is to detect char occurences
 // and send them back to its parent Q
 void miniQ(string fileName, miniQinfo *instanceOfMySelf){
@@ -24,7 +22,6 @@ void miniQ(string fileName, miniQinfo *instanceOfMySelf){
     signal(SIGKILL, sig_handler_miniQ);
     if (instanceOfMySelf->index >= instanceOfMySelf->currM){
         // should never come here: index of Q must always be less than M
-        fprintf(stderr, "Error, index of miniQ bigger than its M value\n");
         exitCode = sendErrorOnFileToReport(instanceOfMySelf);
     } else {
         // check if file exists and it has some data
@@ -43,9 +40,9 @@ void miniQ(string fileName, miniQinfo *instanceOfMySelf){
                 exitCode = sendOccurencesPacketToReport(instanceOfMySelf->pipeToQ, -1, instanceOfMySelf->fileId,
                                          instanceOfMySelf->currM, instanceOfMySelf->index, fileLength,
                                          numCharsInPortion, occurences);
-                if (exitCode == 0){
-                    printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
-                }
+                // if (exitCode == 0){
+                //     printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
+                // }
             } else {
                 exitCode = sendErrorOnFileToReport(instanceOfMySelf);
             }
@@ -120,6 +117,6 @@ long getFileLength(string fileName){
 }
 
 void sig_handler_miniQ(){
-    printf("\nMiniQ killed with signal\n");
+    // printf("\nMiniQ killed with signal\n");
     exit(0);
 }

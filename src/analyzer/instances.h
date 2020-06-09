@@ -6,8 +6,8 @@
 #include "../common/datastructures/namesList.h"
 #include "../common/datastructures/fileList.h"
 
-#define HISTORY 5
-#define MESSAGES 5
+#define HISTORY 5  // number of last commands to display in analyzer
+#define MESSAGES 5 // number of last text messages to display in analyzer (unused)
 
 typedef struct{
     pid_t pid;
@@ -53,14 +53,14 @@ typedef struct{
 } controllerInstance;
 
 typedef struct{
-    int  statusAnalisys;
+    int  statusAnalysis;
     int  completedFiles;
     int  totalFiles;
     int  n;
     int  m;
-    bool  hasMainOption;
-    string lastCommands[HISTORY];
-    string lastMessages[MESSAGES];
+    bool  hasMainOption; // has been called through -main option (unused)
+    string lastCommands[HISTORY]; // list of the last commands in analyzer
+    string lastMessages[MESSAGES]; // list of the last messages in analyzer (unused)
     char mode[50];
 } analyzerInstance;
 

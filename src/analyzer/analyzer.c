@@ -71,7 +71,7 @@ void initialize(){
     filePaths = constructorNamesList();
     instanceOfMySelf.completedFiles = 0;
     instanceOfMySelf.totalFiles = 0;
-    instanceOfMySelf.statusAnalisys = 0;
+    instanceOfMySelf.statusAnalysis = 0;
     instanceOfMySelf.n = instanceOfMySelf.m = 0;
     instanceOfMySelf.hasMainOption = false;
     int i;
@@ -235,7 +235,7 @@ int interactiveMode(){
 int staticMode(NamesList *listFilePaths){
     int returnCode = 0;
     strcpy(instanceOfMySelf.mode, "Static");
-    instanceOfMySelf.statusAnalisys = 1;
+    instanceOfMySelf.statusAnalysis = 1;
     sendNewNPacket(cInstance->pipeAC, instanceOfMySelf.n);
     sendNewMPacket(cInstance->pipeAC, instanceOfMySelf.m);
     sendAllFiles();
@@ -402,19 +402,17 @@ void waitAnalisysEnd(){
 void printScreen() {
     printf("================================================\n");
     printf("Analysis mode: %s\n", instanceOfMySelf.mode);
-    printf("Analysis status: %s\n", statuses[instanceOfMySelf.statusAnalisys]);
+    // printf("Analysis status: %s\n", statuses[instanceOfMySelf.statusAnalysis]);
     printf("===================Processing===================\n");
-    // if(instanceOfMySelf.statusAnalisys == 1){
-    // if(charmender){
-    //     printf("Completed files: %2d over %2d\n", instanceOfMySelf.completedFiles, instanceOfMySelf.totalFiles);
-    //     printf("================================================\n");
-    //     printf("============Messages from controller============\n");
-    //     int i;
-    //     for(i=0; i<MESSAGES; i++){
-    //         printf("Previous message -%d: %s\n", i, instanceOfMySelf.lastMessages[i]);
-    //     }
-    //     printf("================================================\n");
+    // if(instanceOfMySelf.statusAnalysis == 1){
+    // printf("Completed files: %2d over %2d\n", instanceOfMySelf.completedFiles, instanceOfMySelf.totalFiles);
+    // printf("================================================\n");
+    // printf("============Messages from controller============\n");
+    // int i;
+    // for(i=0; i<MESSAGES; i++){
+    //     printf("Previous message -%d: %s\n", i, instanceOfMySelf.lastMessages[i]);
     // }
+    // printf("================================================\n");
     int i;
     for(i=0; i<HISTORY; i++){
         printf("Previous command -%d: %s\n", i, instanceOfMySelf.lastCommands[i]);
@@ -559,7 +557,7 @@ int switchCommand(int commandCode, int numArgs, string *arguments){
                     //     waitEnter();
                     // }
                 } else {
-                    instanceOfMySelf.statusAnalisys = 1;
+                    instanceOfMySelf.statusAnalysis = 1;
                     pid_t myPid = getpid();
                     sendStartAnalysisPacket(cInstance->pipeAC, myPid);
                 }
