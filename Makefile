@@ -150,7 +150,7 @@ build: $(mainFile)
 
 .PHONY: help
 help:
-	#TODO
+	less README
 
 .PHONY: clean
 clean:
