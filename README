@@ -32,7 +32,7 @@ Il progetto è costituito da tre componenti principali:
 
 - Main
   1. È possibile utilizzarlo per avviare l'analyzer in modalità statica
-  2. Visualizza il report in modalità verbosa di default
+  2. Visualizza il report in modalità tabella di default
   3. Permette di interagire con il report durante l'esecuzione
 
 ------------------------Limitazioni------------------------
@@ -40,13 +40,13 @@ Il progetto è costituito da tre componenti principali:
 - Il sistema analyzer e il report necessitano di una FIFO per comunicare; se qualche altro processo (che non sia un analyzer) scrive sulla FIFO o l'utente crea situazioni per cui analyzer o report non possono accedervi il corretto funzionamento del programma viene precluso.
 - È supportata solamente la codifica extended ASCII.
 - Il sistema di input utilizzato in fase d'esecuzione sfrutta la libreria termios.h per dare la possibilità di poter inserire comandi da parte dell'utente e contemporaneamente aggiornare l'utente sullo svolgimento dell'analisi. Questo impedisce all'utente di cancellare un comando che sta inserendo e di muoversi correttamente con le freccie sul terminale.
-- Sempre a causa di termios nel caso la schermata da visualizzare è più grande dello schermo disponibile non si potrà scrollare e la vissualizzazione risulterà deformata.
+- Sempre a causa di termios nel caso la schermata da visualizzare è più grande dello schermo disponibile non si potrà scrollare e la visualizzazione risulterà deformata.
 - Se all'analyzer non viene inserito nessun file valido, allora ci sono dei problemi di sincronizzazione col report.
 - Possiamo processare file di al massimo 4,294,967,295 bytes per motivi di efficienza.
 - Se si esegue main è necessario che si trovi nella cartella corrente di lavoro. Questo non è necessario nel caso in cui si eseguano analyzer e report separatamente.
 - Report quando avviato resta in attesa di dati dall'analyzer prima di iniziare a stampare comandi a schermo
-- Analyzer al momento dell'avvio tenta di aprire la fifo verso il Report, l'analisi non può iniziare fino a che il Report non apre la pipe.
-- In modalità interattiva è ossibile cambiare la visualizzazione solo durante l'esecuzione oppure nel caso in cui l'Analyzer venga chiuso o inizi una nuova analisi.
+- Analyzer al momento dell'avvio tenta di aprire la fifo verso il Report, l'analisi non può iniziare fino a che il Report non apre la pipe. In maniera analoga, il Report non avvia se non è presente una pipe.
+- In modalità interattiva è possibile cambiare la visualizzazione solo durante l'esecuzione oppure nel caso in cui l'Analyzer venga chiuso o inizi una nuova analisi.
 - In rari casi alcuni elementi della struttura crashando hanno creato processi zombie, non siamo riusciti a replicare il comportamento irregolare e di conseguenza ad identificare la causa.
 
 ---------------------Istruzioni rapide---------------------
@@ -69,7 +69,7 @@ Il progetto è costituito da tre componenti principali:
   -t      visualizzazione in "tabella"
   -v      visualizzazione "verbosa"
   -c      visualizzazione "compatta"
-  --only  Questo flag, seguito da una lista di percorsi permette di vedere le statistiche relative a tutti e soli i files
+  --only  Questo flag, seguito da una lista di percorsi permette di vedere le statistiche relative a tutti e soli i files specificati. 
   Di default le statistiche sono raggruppate per minuscole, maiuscole, numeri, punteggiatura e spazi ma aggiungendo il l'opzione -e al comando -v è possibile visualizzare le statistiche dei singoli caratteri.
   Infine sono disponibili dei comandi:
   -h		help: mostra questa schermata
