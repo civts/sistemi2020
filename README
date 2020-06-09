@@ -46,6 +46,7 @@ Il progetto è costituito da tre componenti principali:
 - Se si esegue main è necessario che si trovi nella cartella corrente di lavoro. Questo non è necessario nel caso in cui si eseguano analyzer e report separatamente.
 - Report quando avviato resta in attesa di dati dall'analyzer prima di iniziare a stampare comandi a schermo
 - Analyzer al momento dell'avvio tenta di aprire la fifo verso il Report, l'analisi non può iniziare fino a che il Report non apre la pipe.
+- In rari casi alcuni elementi della struttura crashando hanno creato processi zombie, non siamo riusciti a replicare il comportamento irregolare e di conseguenza ad identificare la causa.
 
 ---------------------Istruzioni rapide---------------------
 
