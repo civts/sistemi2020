@@ -17,21 +17,31 @@ separatedArgs splitArgv(int argc, char **argv) {
   separatedArgs m;
   int i = 1;
   int posSeparatore;
-  const char separatore[] = "magico";
-  m.argv1 = malloc(sizeof(char *) * (argc + 1));
+  const char separatore[] = "---";
+  m.argv1 = malloc(sizeof(char *) * (argc + 2));
   //checkNotNull(m.argv1);
   m.argv2 = malloc(sizeof(char *) * (argc + 1));
-  // checkNotNull(m.argv2);
+  //checkNotNull(m.argv2);
+  bool containsS = false;
   while (i < argc) {
-    if (streq(argv[i], separatore)) {
+    if (!strcmp(argv[i], separatore)) {
       break;
     } else {
+      if (streq(argv[i], "-s")) {
+        containsS = true;
+      }
       m.argv1[i] = argv[i];
       i++;
     }
   }
+  if (!containsS) {
+    char *s = malloc(sizeof("-s"));
+    //checkNotNull(s);
+    strcpy(s, "-s");
+    m.argv1[i] = s;
+  }
   posSeparatore = i;
-  m.argv1[i] = NULL;
+  m.argv1[posSeparatore + (containsS ? 0 : 1)] = NULL;
   m.argc1 = i + 1;
   if (i < argc) {
     i++;

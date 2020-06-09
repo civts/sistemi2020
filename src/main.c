@@ -1,3 +1,4 @@
+#include "./common/utils.h"
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
@@ -27,7 +28,7 @@ int main(int argc, char **argv) {
   pipe2(pipeAnalyzerOUT, O_NONBLOCK);
   pipe2(pipeAnalyzerIN, O_NONBLOCK);
   separatedArgs argomenti = splitArgv(argc, argv);
-  //primo analyzer, secondo report
+  // primo analyzer, secondo report
   analyzer = fork();
   if (analyzer < 0) {
     fprintf(stderr, "Found an error creating the Analyzer\n");
@@ -41,10 +42,10 @@ int main(int argc, char **argv) {
       perror("dup2");
       exit(EXIT_FAILURE);
     }
-    argomenti.argv1[0]="analyzer";
+    argomenti.argv1[0] = "analyzer";
     execv("./bin/analyzer", argomenti.argv1);
   } else {
-    argomenti.argv2[0]="report";
+    argomenti.argv2[0] = "report";
     execv("./bin/report", argomenti.argv2);
     return 0;
   }
@@ -55,20 +56,30 @@ separatedArgs splitArgv(int argc, char **argv) {
   int i = 1;
   int posSeparatore;
   const char separatore[] = "---";
-  m.argv1 = malloc(sizeof(char *) * (argc + 1));
+  m.argv1 = malloc(sizeof(char *) * (argc + 2));
   checkNotNull(m.argv1);
   m.argv2 = malloc(sizeof(char *) * (argc + 1));
   checkNotNull(m.argv2);
+  bool containsS = false;
   while (i < argc) {
     if (streq(argv[i], separatore)) {
       break;
     } else {
+      if (streq(argv[i], "-s")) {
+        containsS = true;
+      }
       m.argv1[i] = argv[i];
       i++;
     }
   }
+  if (!containsS) {
+    char *s = malloc(sizeof("-s"));
+    checkNotNull(s);
+    strcpy(s, "-s");
+    m.argv1[i] = s;
+  }
   posSeparatore = i;
-  m.argv1[i] = NULL;
+  m.argv1[posSeparatore + (containsS ? 0 : 1)] = NULL;
   m.argc1 = i + 1;
   if (i < argc) {
     i++;
