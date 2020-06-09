@@ -612,9 +612,10 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
             instanceOfMySelf->isAnalysing = false;
 
             // notify the used we have finished to analyze
-            sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
             sleep(10);
             printf("C - Finished analysis\n");            
+            printf("FINITO DIOSANCHU\n");
+            sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
         }
     } else {
         printf("Got file with old m\n");

@@ -891,7 +891,7 @@ void printMessages(){
  *          2 if something went wrong with the message
  */
 int waitForMessagesInAFromC(){
-    int numBytesRead, ret;
+    int numBytesRead, ret=4;
     byte packetHeader[1 + INT_SIZE];
     numBytesRead = read(cInstance->pipeCA[READ], packetHeader, 1 + INT_SIZE);
     if (numBytesRead > 0){

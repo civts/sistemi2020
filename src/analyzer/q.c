@@ -25,7 +25,9 @@ void q(qInstance *instanceOfMySelf){
 // parent P and its children miniQ
 void waitForMessagesInQ(qInstance *instanceOfMySelf){
     while (true){
+        printf("----------Wait from P-----------\n");
         waitForMessagesInQFromP(instanceOfMySelf);
+        printf("----------Wait from miniQ-----------\n");
         waitForMessagesInQFromMiniQ(instanceOfMySelf);
     }
 }
@@ -67,7 +69,9 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
 
     int i;
     NodeMiniQ *currElement = miniQs->first;
+    NodeMiniQ *nextElement = NULL;
     while(currElement != NULL){
+        nextElement = currElement->next;
         numBytesRead = read(currElement->data->pipeToQ[READ], packetHeader, 1 + INT_SIZE);
         if (numBytesRead > 0){
             printf("Ho letto qualcosa\n");
@@ -79,9 +83,14 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
             numBytesRead = read(currElement->data->pipeToQ[READ], packetData, dataSectionSize);
             printf("Got packet %d in Q from miniQ\n", packetHeader[0]);
             processMessageInQFromMiniQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
+            printf("boiadio %d\n", miniQs->counter);
+            printMiniQlist(miniQs);
         }
-        currElement = currElement->next;
+        printf("ciao\n");
+        currElement = nextElement;
     }
+
+    printf("Terminato il ciclo\n");
 }
 
 int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize, qInstance *instanceOfMySelf){
