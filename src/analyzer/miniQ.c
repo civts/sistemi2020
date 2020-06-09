@@ -53,7 +53,7 @@ void miniQ(string fileName, miniQinfo *instanceOfMySelf){
             exitCode = sendErrorOnFileToReport(instanceOfMySelf);
         }
     }
-    sleep(6);
+    // sleep(6);
     exit(exitCode);
 }
 
