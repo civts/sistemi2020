@@ -378,8 +378,10 @@ int processExit(){
     // restore termios
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     // Start the waterfall effect
-    sendDeathPacket(cInstance->pipeAC);
-    // kill(cInstance->pid, SIGKILL);
+    if(sendDeathPacket(cInstance->pipeAC) != 0){
+        kill(cInstance->pid, SIGKILL);
+    }
+    
     // free occupied memory:
     free(cInstance);
     deleteNamesList(filePaths);
@@ -388,7 +390,6 @@ int processExit(){
         clear();
         printf("Cleanup complete, see you next time!\n");
     }
-    sleep(1);
     exit(9); // to exit from infinite loop
 }
 
@@ -723,14 +724,18 @@ void removeFiles(int numFiles, string *fileNames){
     for(i=0; i<numFiles; i++){
         // Management of removal of file or folder
         char *absolutePath;
-        absolutePath = realpath(fileNames[i], absolutePath);
-
+        char actualPath[BUFFER_SIZE];
+        absolutePath = realpath(fileNames[i], actualPath);
+        printf("ABSOLUTE PATH: %s\n", absolutePath);
+        waitEnter();
         if(absolutePath != NULL){
             // int numOfFilesInFolder; // used in case it's a folder
             int pathType = inspectPath(absolutePath);
 
             if (pathType == 0){
                 // it's an existing file
+                printf("About to send remove packet %s\n", absolutePath);
+                waitEnter();
                 if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
                     char message[BUFFER_SIZE] = "Removing file ";
                     char copy[BUFFER_SIZE];
@@ -756,6 +761,23 @@ void removeFiles(int numFiles, string *fileNames){
                 }                
             } else if (pathType == 1){
                 // it's an existing folder
+                // printf("About to send remove folder %s\n", absolutePath);
+                // waitEnter();
+                // NamesList *containedFiles = constructorNamesList();
+                // int numFilesContained;
+                // crawler(absolutePath, containedFiles, &numFilesContained);
+                // printf("Folder contains %d files\nGoin' to delete them\n", numFilesContained);
+                // string lista[numFilesContained];
+                // NodeName *elm = containedFiles->first;
+                // int i=0;
+                // while(elm != NULL){
+                //     lista[i] = (string)malloc(sizeof(elm->name)+1);
+                //     strcpy(lista[i], elm->name);
+                //     elm = elm->next;
+                //     i++;
+                // }
+                // removeFiles(numFilesContained, lista);
+                // DEOSANCHU
                 if (removeFileByNamePacket(cInstance->pipeAC, absolutePath) != -1){
                     char message[BUFFER_SIZE] = "Removing folder ";
                     char copy[BUFFER_SIZE];
