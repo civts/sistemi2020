@@ -402,6 +402,7 @@ int main(int argc, char * argv[]){
 
 
 void sig_handler() {
+  clear();
   // clean up analyzers
   if (analyzers != NULL)
     destructoraAnalyzerList(analyzers);
