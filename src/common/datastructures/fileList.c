@@ -42,14 +42,12 @@ NodeFileState *constructorFileNode(FileState *newFileState){
 }
 
 void printNode(NodeFileState *node){
-    // printf("NodeFileState: %p\n", node);
     printFileState(node->data);
 }
 
 void deleteNode(NodeFileState *node){
     deleteFileState(node->data);
     free(node);
-    // printf("node destroyed\n");
 }
 
 
@@ -158,7 +156,6 @@ int removeNode(FileList *list, char *name){
     NodeFileState *toRemove = getNodeByName(list, name);
     
     if(toRemove == NULL){
-        // printf("No node found with name %s\n", name);
     } else {
         idRemovedFile = toRemove->data->idFile;
         if(list->first == toRemove){
@@ -185,16 +182,13 @@ int removeNode(FileList *list, char *name){
  * file was not found
  */
 int decrementRemainingPortionsById(FileList *list, int idFile){
-    int newValue=-1;
+    int newValue = -1;
     NodeFileState *node = getNodeById(list, idFile);
     if (node == NULL){
-        // printf("Cannot decrement, idFile not found\n");
+
     } else {
         newValue = --node->data->numOfRemainingPortionsToRead;
-        if (newValue < 0){
-            // printf("numOfRemainingPortionsToRead del file: \"%s\"", node->data->fileName);
-            // printf(" e sceso sotto zero!!!\n");
-        } 
+        if (newValue < 0){} 
     }
 
     return newValue;
@@ -224,17 +218,15 @@ bool isAnalisiFinita(FileList *list){
  * Il nome della cartella deve essere in percorso assoluto.
  */
 void deleteFolderFileList(string folder, FileList *previousList, FileList *deletedList){
-    if(deletedList == NULL){
+    if (deletedList == NULL){
         deletedList = constructorFileNameList();
     }
     NodeFileState *tempNode = previousList->first;
     NodeFileState *nextNode;
     while(tempNode != NULL){
         nextNode = tempNode->next;
-        // printf("File %s\n", tempNode->data->fileName);
-        if(isInFolder(tempNode->data->fileName, folder)){
+        if (isInFolder(tempNode->data->fileName, folder)){
             // aggiorno nodo precedente
-            // printf("in folder\n");
             if(tempNode->prev!=NULL){
                 tempNode->prev->next = tempNode->next;
             } else {
@@ -253,7 +245,6 @@ void deleteFolderFileList(string folder, FileList *previousList, FileList *delet
             tempNode->next = tempNode->prev = NULL;
             appendFileState(deletedList, tempNode);
         } else {
-            // printf("not in folder\n");
         }
         tempNode = nextNode;
     }
