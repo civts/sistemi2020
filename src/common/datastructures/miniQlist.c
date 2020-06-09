@@ -182,7 +182,7 @@ pid_t removeMiniQByFileId(miniQlist *list, int fileId){
     pid_t result = -1;
     NodeMiniQ *toRemove = getNodeMiniQByFileId(list, fileId);
     
-    if(toRemove == NULL){
+    if (toRemove == NULL){
         printf("No node found with fileId %3d\n", fileId);
     } else {
         if (list->first == toRemove){

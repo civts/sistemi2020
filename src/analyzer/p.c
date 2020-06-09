@@ -45,22 +45,29 @@ int generateNewQInstance(qInstance *newQ, int index, int mValue){
         fcntl(newQ->pipePQ[READ], F_SETFL, O_NONBLOCK);
         fcntl(newQ->pipeQP[READ], F_SETFL, O_NONBLOCK);
 
+        qInstance qChild = *newQ;
         newQ->pid = fork();
         newQ->currM = mValue;
         newQ->index = index;
+
+        qChild.pid = newQ->pid;
+        qChild.currM = mValue;
+        qChild.index = index;
 
         if (newQ->pid < 0){
             fprintf(stderr, "Found an error creating Q%d\n", index);
             returnCode = 2;
         } else if (newQ->pid == 0){
             // child: new instance of Q
-            qInstance qChild = *newQ;
+            
             fprintf(stderr, "New Q%d created\n", index);
             // close(newQ->pipePQ[WRITE]);
             // close(newQ->pipeQP[READ]);
             // q(newQ);
             close(qChild.pipePQ[WRITE]);
             close(qChild.pipeQP[READ]);
+
+            qChild.pid = getpid();
             q(&qChild);
             exit(0); // just to be sure... it should not be necessary
         } else {
@@ -162,7 +169,7 @@ int processMessageInPFromController(byte packetCode, byte *packetData, int packe
             returnCode = processPRemoveFilePacket(packetData, packetDataSize);
             break;
         case 2:
-            returnCode = processPDeathPacket();
+            // returnCode = processPDeathPacket();
             break;
         case 3:
             returnCode = processPNewValueForM(packetData, instanceOfMySelf);

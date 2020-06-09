@@ -11,7 +11,7 @@ Giacomo Zanolli, 202363 giacomo.zanolli@studenti.unitn.it
 Il progetto è costituito da tre componenti principali:
 
 - Analyzer:
-  //TODO
+  Permette all'utente di gestire un'analisi dati dei file specificati.
 - Report:
   Programma che permette all'utente di visualizzare lo stato dell'analisi e i suoi risultati.
 - Main:
@@ -27,8 +27,9 @@ Il progetto è costituito da tre componenti principali:
 
 ------------------------Limitazioni------------------------
 
-- Il sistema analyzer e il report necessitano di una FIFO per comunicare; Se qualche altro porcesso scrive sulla FIFO o l'utente crea situazioni per cui analyzer o report non possono accedervi il corretto funzionamento del programma viene precluso.
+- Il sistema analyzer e il report necessitano di una FIFO per comunicare; Se qualche altro processo scrive sulla FIFO o l'utente crea situazioni per cui analyzer o report non possono accedervi il corretto funzionamento del programma viene precluso.
 - È supportata solamente la codifica extended ASCII.
+- Se l'utente crea un file nella posizione /tmp/fifo con permessi di superuser, allora la comunicazione fra Analyzer e Report non può avvenire.
 
 
 ---------------------Istruzioni rapide---------------------

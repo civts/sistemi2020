@@ -54,7 +54,7 @@ void printNamesList(NamesList *list){
 }
 
 void deleteNamesList(NamesList *list){
-    if(list != NULL){
+    if (list != NULL){
         if(list->counter > 0){
             struct NodeName *element = list->first; 
             int i;

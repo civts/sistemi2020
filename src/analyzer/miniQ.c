@@ -43,7 +43,9 @@ void miniQ(string fileName, miniQinfo *instanceOfMySelf){
                 exitCode = sendOccurencesPacketToReport(instanceOfMySelf->pipeToQ, -1, instanceOfMySelf->fileId,
                                          instanceOfMySelf->currM, instanceOfMySelf->index, fileLength,
                                          numCharsInPortion, occurences);
-                printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
+                if (exitCode == 0){
+                    printf("I've analyzed %d chars in %s\n", numCharsInPortion, fileName);
+                }
             } else {
                 exitCode = sendErrorOnFileToReport(instanceOfMySelf);
             }

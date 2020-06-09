@@ -69,6 +69,9 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
     NodeMiniQ *currElement = miniQs->first;
     for (i = 0; i < miniQs->counter; i++){
         numBytesRead = read(currElement->data->pipeToQ[READ], packetHeader, 1 + INT_SIZE);
+        if (numBytesRead > 0){
+            printf("Ho letto qualcosa\n");
+        }
         if (numBytesRead == (1 + INT_SIZE)){
             dataSectionSize = fromBytesToInt(packetHeader + 1);
             byte packetData[dataSectionSize];
@@ -84,14 +87,6 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
 int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize, qInstance *instanceOfMySelf){
     int returnCode;
     switch (packetCode){
-        // case 0:
-        //     returnCode = processQNewFilePacket(packetData, packetDataSize, instanceOfMySelf);
-        //     break;
-        // case 1:
-        //     // TODO: remove this message after official release
-        //     printf("Stai tentando di eliminare un file per nome in q.c! Elimina solo per pid!\n");
-        //     exit(0);
-        //     break;
         case 2:
             returnCode = processQDeathPacket();
             break;
@@ -102,7 +97,6 @@ int processMessageInQFromP(byte packetCode, byte *packetData, int packetDataSize
             returnCode = processQRemoveFilePacket(packetData, packetDataSize);
             break;
         case 15:
-            // printf("Q received new file packet\n");
             returnCode = processQNewFilePacketWithID(packetData, packetDataSize, instanceOfMySelf);
             break;
         default:
@@ -141,15 +135,17 @@ int processQNewFilePacketWithID(byte packetData[], int packetDataSize, qInstance
     pipe(pipeMiniQQ);
     fcntl(pipeMiniQQ[READ], F_SETFL, O_NONBLOCK);
     miniQinfo *newMiniQ = constructorMiniQinfo(0, idFile, pipeMiniQQ, instanceOfMySelf->currM, instanceOfMySelf->index);
-
+    int currentM = instanceOfMySelf->currM;
+    miniQinfo miniQCopy = *newMiniQ;
     // create miniQ process
     pid_t f;
     f = fork();
     if (f < 0){
         fprintf(stderr, "Error, creating miniQ\n");
     } else if (f == 0){
-        printf("Created miniQ with m=%d\n", instanceOfMySelf->currM);
-        miniQ(pathName, newMiniQ);
+        printf("Created miniQ with m=%d\n", currentM);
+        miniQCopy.pid = getpid();
+        miniQ(pathName, &miniQCopy);
         exit(0);
     } else {
         newMiniQ->pid = f;
@@ -165,12 +161,13 @@ int processQRemoveFilePacket(byte packetData[], int packetDataSize){
     printf("fileID read from packet: %d\n", fileId);
     
     pid_t miniQPid = removeMiniQByFileId(miniQs, fileId);
-    if(miniQPid != -1){
+    if (miniQPid != -1){
         printf("Removed miniQ with pid: %d\n", miniQPid);
         kill(miniQPid, SIGKILL);
     } else {
         printf("No miniQ had that fileId\n");
     }
+
     return 0;
 }
 
@@ -227,8 +224,9 @@ int processQFileResults(byte packetData[], int packetDataSize, qInstance *instan
     } else {
         returnCode = 2;
     }
-
+    printf("NONO\n");
     removeMiniQByFileId(miniQs, idFile);
+    printf("OKOK\n");
     return returnCode;
 }
 

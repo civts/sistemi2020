@@ -118,6 +118,8 @@ int generateNewPInstance(pInstance *newP, int index, int newM){
             fprintf(stderr, "New P%d created\n", index);
             close(pChild.pipeCP[WRITE]);
             close(pChild.pipePC[READ]);
+
+            pChild.pid = getpid();
             p(&pChild, newM);
 
             exit(0); // just to be sure... it should not be necessary
@@ -193,27 +195,27 @@ int processMessageInControllerFromAnalyzer(byte packetCode, byte *packetData, in
     switch (packetCode){
         case 0:
             returnCode = processCNewFilePacket(packetData, packetDataSize, instanceOfMySelf);
-            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Pacchetto nuovo file\n");
+            // sendTextMessageToReport(instanceOfMySelf->pipeCA, "Pacchetto nuovo file\n");
             break;
         case 1:
             returnCode = processCRemoveFilePacket(packetData, packetDataSize, instanceOfMySelf);
-            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Pacchetto rimozione file\n");
+            // sendTextMessageToReport(instanceOfMySelf->pipeCA, "Pacchetto rimozione file\n");
             break;
         case 2:
             returnCode = processCDeathPacket(instanceOfMySelf);
-            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Pacchetto della morte\n");
+            // sendTextMessageToReport(instanceOfMySelf->pipeCA, "Pacchetto della morte\n");
             break;
         case 3:
+            // sendTextMessageToReport(instanceOfMySelf->pipeCA, "Nuovo M\n");
             returnCode = processCNewValueForM(packetData, instanceOfMySelf);
-            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Nuovo M\n");
             break;
         case 4:
+            // sendTextMessageToReport(instanceOfMySelf->pipeCA, "Nuovo N\n");
             returnCode = processCNewValueForN(packetData, instanceOfMySelf);
-            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Nuovo N\n");
             break;
         case 5:
+            // sendTextMessageToReport(instanceOfMySelf->pipeCA, "Inizia analisi\n");
             returnCode = processCStartAnalysis(instanceOfMySelf);
-            sendTextMessageToReport(instanceOfMySelf->pipeCA, "Inizia analisi\n");
             break;
         default:
             fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
@@ -284,7 +286,7 @@ int processCNewFilePacket(byte packetData[], int packetDataSize, controllerInsta
 
         int numberOfFilesCompleted = getNumOfCompletedFiles(instanceOfMySelf);
         // sendFinishedFilePacket(instanceOfMySelf->pipeCA, numberOfFilesCompleted, instanceOfMySelf->fileList->number_of_nodes);
-        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 8, 10);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA, 8, 10);
     }
 
     return returnCode;
@@ -313,7 +315,7 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerIn
             deleteFolderNamesList(buffer, instanceOfMySelf->fileNameList, instanceOfMySelf->fileNameList);
             appendNameToNamesList(instanceOfMySelf->foldersToRemove, buffer);
         }
-        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 9, 10);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA, 9, 10);
         // sendFinishedFilePacket(instanceOfMySelf->pipeCA, 0, instanceOfMySelf->fileNameList->counter);
     } else {
         if (pathType == 0){
@@ -354,7 +356,7 @@ int processCRemoveFilePacket(byte packetData[], int packetDataSize, controllerIn
         }
 
         int numberOfFilesCompleted = getNumOfCompletedFiles(instanceOfMySelf);
-        sendFinishedFilePacket(instanceOfMySelf->pipeCA,11, 10);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA,11, 10);
         // sendFinishedFilePacket(instanceOfMySelf->pipeCA, numberOfFilesCompleted, instanceOfMySelf->fileList->number_of_nodes);
     }
 
@@ -371,7 +373,7 @@ int processCDeathPacket(controllerInstance *instanceOfMySelf){
     }
 
     deleteList(instanceOfMySelf->fileList);
-    deleteNamesList(instanceOfMySelf->fileNameList);
+    // deleteNamesList(instanceOfMySelf->fileNameList);
     deleteNamesList(instanceOfMySelf->removedFileNames);
     deleteNamesList(instanceOfMySelf->foldersToRemove);
     free(instanceOfMySelf->pInstances);
@@ -592,15 +594,15 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
         // update status in file list
         if (decrementRemainingPortionsById(instanceOfMySelf->fileList, idFile) != -1){
             #ifdef REPORT
-            printf("Occurences packet with charsread %d\n", fromBytesToInt(packetData + 5*INT_SIZE));
+            // printf("Occurences packet with charsread %d\n", fromBytesToInt(packetData + 5*INT_SIZE));
             forwardPacket(instanceOfMySelf->pipeToReport, 6, packetDataSize, packetData);
             #endif
         }
         
         instanceOfMySelf->filesFinished++;
-        sendFinishedFilePacket(instanceOfMySelf->pipeCA, 5, 10);
+        // sendFinishedFilePacket(instanceOfMySelf->pipeCA, 5, 10);
         // sendFinishedFilePacket(instanceOfMySelf->pipeCA, instanceOfMySelf->filesFinished, instanceOfMySelf->fileList->number_of_nodes);
-
+        // sendTextMessageToReport(instanceOfMySelf->pipeCA, "Occorrenze\n");
         // check if we have analyzed everything
         if (isAnalisiFinita(instanceOfMySelf->fileList)){
             instanceOfMySelf->isAnalysing = false;
@@ -648,7 +650,7 @@ int processCErrorOnFilePacket(byte packetData[], int packetDataSize, controllerI
     
     printf("C - got error on file packet\n");
     // sendFinishedFilePacket(instanceOfMySelf->pipeCA, getNumOfCompletedFiles(instanceOfMySelf), instanceOfMySelf->fileList->number_of_nodes);
-    sendFinishedFilePacket(instanceOfMySelf->pipeCA, 6, 10);
+    // sendFinishedFilePacket(instanceOfMySelf->pipeCA, 6, 10);
     return returnCode;
 }
 

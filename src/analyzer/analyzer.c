@@ -296,13 +296,13 @@ int generateNewControllerInstance(){
     cInstance = (controllerInstance*) malloc(sizeof(cInstance));
     cInstance->pidAnalyzer = getpid();
     
-    if(instanceOfMySelf.hasMainOption){
+    if (instanceOfMySelf.hasMainOption){
         cInstance->hasMainOption = true;
     } else {
         cInstance->hasMainOption = false;
     }
 
-    if (pipe(cInstance->pipeAC) != -1 && pipe(cInstance->pipeCA) != -1){
+    if ((pipe(cInstance->pipeAC) != -1) && (pipe(cInstance->pipeCA) != -1)){
         // TODO: check for error -1 for fcntl
         // make the pipes non blocking
         fcntl(cInstance->pipeAC[READ], F_SETFL, O_NONBLOCK);
@@ -325,6 +325,7 @@ int generateNewControllerInstance(){
             close(newInstance.pipeAC[WRITE]);
             close(newInstance.pipeCA[READ]);
             // while(true);
+            newInstance.pid = getpid();
             controller(&newInstance);
             exit(0);
         } else {
@@ -894,15 +895,15 @@ int waitForMessagesInAFromC(){
     int numBytesRead, ret;
     byte packetHeader[1 + INT_SIZE];
     numBytesRead = read(cInstance->pipeCA[READ], packetHeader, 1 + INT_SIZE);
-    if(numBytesRead > 0){
-        if(packetHeader[0] == 16){
+    if (numBytesRead > 0){
+        if (packetHeader[0] == 16){
             ret = 0;
-        } else if(packetHeader[0] == 17){
+        } else if (packetHeader[0] == 17){
             // nuovo file completato
             int messageSize = fromBytesToInt(packetHeader+1); 
             byte packetData[messageSize];
             numBytesRead = read(cInstance->pipeCA[READ], packetData, messageSize);
-            if(numBytesRead == 2*INT_SIZE){
+            if (numBytesRead == 2*INT_SIZE){
                 int completed  = fromBytesToInt(packetData );
                 int total      = fromBytesToInt(packetData + INT_SIZE);
                 instanceOfMySelf.totalFiles = total;
@@ -925,7 +926,7 @@ int waitForMessagesInAFromC(){
                 
                 char message[messageSize];
                 memcpy(message, packetData, messageSize);
-                message[messageSize] = '\0';
+                // message[messageSize] = '\0';
                 updateMessages(message);
                 if(!instanceOfMySelf.hasMainOption){
                     staticAnalisysScreen();
@@ -936,7 +937,7 @@ int waitForMessagesInAFromC(){
             }
         } else {
             if(!instanceOfMySelf.hasMainOption){
-                printf("Analyzer recieved wrong packet code from controller! %c\n", packetHeader[0]);
+                printf("Analyzer received wrong packet code from controller! %c\n", packetHeader[0]);
             }
             ret = 2;
         }

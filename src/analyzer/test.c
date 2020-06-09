@@ -14,7 +14,7 @@ controllerInstance *cInstance;
 
 int generateNewControllerInstance();
 
-int m = 8;
+int m = 1;
 int n = 1;
 
 int main(int argc, char *argv[]){
@@ -23,10 +23,22 @@ int main(int argc, char *argv[]){
     sendNewMPacket(cInstance->pipeAC, m);
 
     sendNewFilePacket(cInstance->pipeAC, "q.c");
+    sendNewFilePacket(cInstance->pipeAC, "p.c");
+    sendNewFilePacket(cInstance->pipeAC, "analyzer.c");
+    sendNewFilePacket(cInstance->pipeAC, "controller.c");
+    sendNewFilePacket(cInstance->pipeAC, "q.h");
+    sendNewFilePacket(cInstance->pipeAC, "p.h");
+    sendNewFilePacket(cInstance->pipeAC, "analyzer.c");
+    sendNewFilePacket(cInstance->pipeAC, "controller.h");
+    sendNewFilePacket(cInstance->pipeAC, "instances.h");
+    sendNewFilePacket(cInstance->pipeAC, "miniQ.h");
+    // sendNewFilePacket(cInstance->pipeAC, "miniQ.c");
+    // sendNewFilePacket(cInstance->pipeAC, "test.c");
+    // sendNewFilePacket(cInstance->pipeAC, "crawler.h");
     // sendNewFilePacket(cInstance->pipeAC, "file2.txt");
     sendStartAnalysisPacket(cInstance->pipeAC, -1);
     // sendNewNPacket(cInstance->pipeAC, 2);
-    sleep(4);
+    sleep(10);
 
     sendDeathPacket(cInstance->pipeAC);
     sleep(2);
