@@ -360,11 +360,9 @@ int main(int argc, char * argv[]){
             if(settedFlags[help])
                 printHelp();
             if(settedFlags[quit]){
-                byte l[1] = "\0";
+                byte l[1];
                 int ex = read(pipe,l,1);
-                printf("%c",l[0]);
-                while (ex>0){ ex = read(pipe,l,1); printf("%c",l[0]);};
-                printf("\n");
+                while (ex>0){ ex = read(pipe,l,1);}
                 if(pipe!=-1){
                     ex = close(pipe);
                     if(ex!=0) perror("Pipe non chiusa\n");
