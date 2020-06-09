@@ -67,7 +67,7 @@ void waitForMessagesInQFromMiniQ(qInstance *instanceOfMySelf){
 
     int i;
     NodeMiniQ *currElement = miniQs->first;
-    for (i = 0; i < miniQs->counter; i++){
+    while(currElement != NULL){
         numBytesRead = read(currElement->data->pipeToQ[READ], packetHeader, 1 + INT_SIZE);
         if (numBytesRead > 0){
             printf("Ho letto qualcosa\n");
@@ -175,8 +175,9 @@ int processQDeathPacket(){
     // kill all miniQs
     NodeMiniQ *node = miniQs->first;
     int i;
-    for (i = 0; i < miniQs->counter; i++){
+    while(node != NULL){
         kill(node->data->pid, SIGKILL);
+        node = node->next;
     }
 
     // erase miniQ list
@@ -196,9 +197,10 @@ int processQNewValueForM(byte packetData[], qInstance* instanceOfMySelf){
         // kill all existing miniQ since their M is deprecated
         NodeMiniQ *node = miniQs->first;
         int i;
-        for (i = 0; i < miniQs->counter; i++){
+        while(node!=NULL){
             printf("MiniQ killed\n");
             kill(node->data->pid, SIGKILL);
+            node = node->next;
         }
 
         // erase miniQ list

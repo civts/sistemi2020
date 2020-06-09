@@ -12,8 +12,10 @@ bin/
 *.a
 *.s
 *.out
+*.gch
 
 #our fifo
 myfifo
+
 #dumps
 analyzer_*_dump.txt

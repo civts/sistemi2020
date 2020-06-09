@@ -379,7 +379,7 @@ int processExit(){
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     // Start the waterfall effect
     sendDeathPacket(cInstance->pipeAC);
-    kill(cInstance->pid, SIGKILL);
+    // kill(cInstance->pid, SIGKILL);
     // free occupied memory:
     free(cInstance);
     deleteNamesList(filePaths);
@@ -403,7 +403,6 @@ void waitAnalisysEnd(){
     // TODO declare analisys finished
     if(!instanceOfMySelf.hasMainOption){
         printf("Analisys finished!\n");
-        waitEnter();
     }
 }
 
