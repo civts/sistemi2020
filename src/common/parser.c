@@ -1,6 +1,5 @@
 #include "parser.h"
 
-
 void clear(){
     system("clear");
 }
@@ -19,7 +18,7 @@ bool checkArguments(int argc,char * argv[],char **possibleFlags,bool* flagsWithA
                     while(i<argc && serving ){
                         if(argv[i][0]!='-'){
                             if(arguments[j]==NULL){
-                                arguments[j] = malloc(strlen(argv[i]+1));
+                                arguments[j] = malloc(strlen(argv[i])+1);
                                 strcpy(arguments[j],argv[i]);
                                 settedFlags[j]=true;
                                 valid = true;
