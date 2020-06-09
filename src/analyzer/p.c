@@ -19,11 +19,13 @@ int p(pInstance *instanceOfMySelf, int _currM){
     qInstances = (qInstance*) realloc(qInstances, sizeof(qInstance) * _currM);
 
     if (qInstances == NULL){
-        fprintf(stderr, "Error allocating Q table inside P\n");
+        // fprintf(stderr, "Error allocating Q table inside P\n");
         returnCode = 1;
     } else {
         for (i = 0; i < _currM; i++){
-            generateNewQInstance(qInstances + i, i, _currM);
+            if (generateNewQInstance(qInstances + i, i, _currM) != 0){
+                i--;
+            }
         }
     }
 
@@ -40,7 +42,6 @@ int generateNewQInstance(qInstance *newQ, int index, int mValue){
     int returnCode = 0;
 
     if (pipe(newQ->pipePQ) != -1 && pipe(newQ->pipeQP) != -1){
-        // TODO check for error code
         // make the pipes non blocking
         fcntl(newQ->pipePQ[READ], F_SETFL, O_NONBLOCK);
         fcntl(newQ->pipeQP[READ], F_SETFL, O_NONBLOCK);
@@ -55,15 +56,12 @@ int generateNewQInstance(qInstance *newQ, int index, int mValue){
         qChild.index = index;
 
         if (newQ->pid < 0){
-            fprintf(stderr, "Found an error creating Q%d\n", index);
+            // fprintf(stderr, "Found an error creating Q%d\n", index);
             returnCode = 2;
         } else if (newQ->pid == 0){
             // child: new instance of Q
             
-            fprintf(stderr, "New Q%d created\n", index);
-            // close(newQ->pipePQ[WRITE]);
-            // close(newQ->pipeQP[READ]);
-            // q(newQ);
+            // fprintf(stderr, "New Q%d created\n", index);
             close(qChild.pipePQ[WRITE]);
             close(qChild.pipeQP[READ]);
 
@@ -76,7 +74,7 @@ int generateNewQInstance(qInstance *newQ, int index, int mValue){
             close(newQ->pipeQP[WRITE]);
         }
     } else {
-        fprintf(stderr, "Found an error creting pipes to Q%d\n", index);
+        // fprintf(stderr, "Found an error creting pipes to Q%d\n", index);
         returnCode = 1;
     }
 
@@ -107,7 +105,7 @@ void waitForMessagesInPFromQ(pInstance *instanceOfMySelf){
             byte packetData[dataSectionSize];
 
             numBytesRead = read(qInstances[i].pipeQP[READ], packetData, dataSectionSize);
-            printf("Got packet %d in P from Q\n", packetHeader[0]);
+            // printf("Got packet %d in P from Q\n", packetHeader[0]);
             processMessageInPFromQ(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
         }
     }
@@ -133,11 +131,11 @@ void waitForMessagesInPFromController(pInstance *instanceOfMySelf){
             if (numBytesRead > 0){
                 offset += numBytesRead;
             } else if (numBytesRead < 0){
-                fprintf(stderr, "Error reading from pipe C->P\n");
+                // fprintf(stderr, "Error reading from pipe C->P\n");
             }
         }
 
-        printf("Got packet %d in P from C\n", packetHeader[0]);
+        // printf("Got packet %d in P from C\n", packetHeader[0]);
         processMessageInPFromController(packetHeader[0], packetData, dataSectionSize, instanceOfMySelf);
     }
 }
@@ -152,7 +150,7 @@ int processMessageInPFromQ(byte packetCode, byte *packetData, int packetDataSize
             returnCode = processPErrorOnFilePacket(packetData, packetDataSize, instanceOfMySelf);
             break;
         default:
-            fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
+            // fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
             returnCode = 1;
     }
 
@@ -175,7 +173,7 @@ int processMessageInPFromController(byte packetCode, byte *packetData, int packe
             returnCode = processPNewValueForM(packetData, instanceOfMySelf);
             break;
         default:
-            fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
+            // fprintf(stderr, "Error, P received from C an unknown packet type %d\n", packetCode);
             returnCode = 1;
     }
 
@@ -188,7 +186,7 @@ int processPNewFilePacket(byte packetData[], int packetDataSize){
     for (i = 0; i < currM; i++){
         returnCode = forwardPacket(qInstances[i].pipePQ, 15, packetDataSize, packetData);
         if (returnCode < 0){
-            fprintf(stderr, "Could not forward file packet to Q\n");
+            // fprintf(stderr, "Could not forward file packet to Q\n");
         }
     }
 
@@ -203,7 +201,7 @@ int processPRemoveFilePacket(byte packetData[], int packetDataSize){
     for (i = 0; i < currM; i++){
         if (forwardPacket(qInstances[i].pipePQ, 7, packetDataSize, packetData) < 0){
             returnCode = 1;
-            fprintf(stderr, "Error trying to remove file from P to Q\n");
+            // fprintf(stderr, "Error trying to remove file from P to Q\n");
         }
     }
 
@@ -222,16 +220,12 @@ int processPDeathPacket(){
             if (kill(qInstances[i].pid, SIGKILL) != 0){
                 returnCode = 1;
             }
-        } else {
-            printf("Funziona la pipe\n");
-            printf("Pipe %d %d\n", qInstances[i].pipePQ[0], qInstances[i].pipePQ[1]);
-            printf("Funziona la pipe2\n");
         }
 
     }
 
     free(qInstances);
-    printf("P is dead\n");
+    // printf("P is dead\n");
 
     exit(returnCode); // to exit from infinite loop in waitForMessagesInP()
 }
@@ -283,8 +277,9 @@ int processPNewValueForM(byte packetData[], pInstance *instanceOfMySelf){
     }
     
     for (i = currM; i < newM; i++){
-        printf("Seeee %d %d %d\n", i, currM, newM);
-        generateNewQInstance(qInstances + i, i, newM);
+        if (generateNewQInstance(qInstances + i, i, newM) != 0){
+            i--;
+        }
     }
     
     currM = newM;
@@ -295,7 +290,7 @@ int processPNewValueForM(byte packetData[], pInstance *instanceOfMySelf){
 }
 
 void sig_handler_P(){
-    printf("\nP killed with signal\n");
+    // printf("\nP killed with signal\n");
     processPDeathPacket();
     exit(0);
 }
