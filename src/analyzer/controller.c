@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h> // pid_t -> in crawler I use pid_t without types.h
+
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -490,7 +491,8 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     // 1a) remove the files inside instanceOfMySelf->removedFileNames from the file list
     int idRemovedFile = -1;
     NodeName *deleteFileNamePointer = instanceOfMySelf->removedFileNames->first;
-    for (i = 0; i < instanceOfMySelf->removedFileNames->counter; i++){
+    while(deleteFileNamePointer != NULL){
+        NodeName *next = deleteFileNamePointer->next;
         printf("Delete from file list %s\n", deleteFileNamePointer->name);
         idRemovedFile = removeNode(instanceOfMySelf->fileList, deleteFileNamePointer->name);
         // delete file from report
@@ -498,7 +500,7 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
         removeFileByIdPacket(instanceOfMySelf->pipeToReport, instanceOfMySelf->pidAnalyzer, idRemovedFile);
         #endif
 
-        deleteFileNamePointer = deleteFileNamePointer->next;
+        deleteFileNamePointer = next;
     }
 
     // remove all elements from removedFileNames list
@@ -510,7 +512,7 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     NamesList *filesNewToRemoveInsideFolder = NULL;
     FileList *filesOldToRemoveInsideFolder = NULL;
 
-    for (i = 0; i < instanceOfMySelf->foldersToRemove->counter; i++){
+    while(nodeFolderToRemove != NULL){
         constructorNamesList(filesNewToRemoveInsideFolder);
         deleteFolderNamesList(nodeFolderToRemove->name, instanceOfMySelf->fileNameList, filesNewToRemoveInsideFolder);
         deleteNamesList(filesNewToRemoveInsideFolder);
@@ -527,7 +529,7 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
 
     // 2) insert the files inside instanceOfMySelf->fileNameList inside the file list
     NodeName *newFileNamePointer = instanceOfMySelf->fileNameList->first;
-    for (i = 0; i < instanceOfMySelf->fileNameList->counter; i++){
+    while(newFileNamePointer != NULL){
         printf("Adding to file list %s\n", newFileNamePointer->name);
         FileState *newFileState = constructorFileState(newFileNamePointer->name, instanceOfMySelf->nextFileID, -1, -1);
         NodeFileState *newFileStateNode = constructorFileNode(newFileState);
@@ -550,7 +552,8 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
     // 3) assign the files in fileList to P
     NodeFileState *nodeFileState = instanceOfMySelf->fileList->first;
     NodeFileState *previousFileState = NULL;
-    for (i = 0; i < instanceOfMySelf->fileList->number_of_nodes; i++){
+    i = 0;
+    while(nodeFileState != NULL){
         // assign the file to a P process and divide it into M portions
         nodeFileState->data->numOfRemainingPortionsToRead = instanceOfMySelf->currM;
         nodeFileState->data->pIndex = i % instanceOfMySelf->currN;
@@ -573,6 +576,7 @@ int processCStartAnalysis(controllerInstance *instanceOfMySelf){
             instanceOfMySelf->pInstances[nodeFileState->data->pIndex]->workload--;
             i--;
         }
+        i++;
     }
 
     // printList(instanceOfMySelf->fileList);
@@ -609,7 +613,8 @@ int processCNewFileOccurrences(byte packetData[], int packetDataSize, controller
 
             // notify the used we have finished to analyze
             sendFinishedAnalysisPacket(instanceOfMySelf->pipeCA);
-            printf("C - Finished analysis\n");
+            sleep(10);
+            printf("C - Finished analysis\n");            
         }
     } else {
         printf("Got file with old m\n");
