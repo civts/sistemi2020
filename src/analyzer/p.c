@@ -29,6 +29,9 @@ int p(pInstance *instanceOfMySelf, int _currM){
 
     signal(SIGINT, sig_handler_P);
     signal(SIGKILL, sig_handler_P);
+    signal(SIGTERM, sig_handler_P);
+    signal(SIGQUIT, sig_handler_P);
+
 
     currM = _currM;
     waitForMessagesInP(instanceOfMySelf);

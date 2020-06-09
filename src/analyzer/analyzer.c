@@ -86,6 +86,8 @@ void initialize(){
     strcpy(instanceOfMySelf.mode, "Not set yet");
     signal(SIGINT, sig_handler_A);
     signal(SIGKILL, sig_handler_A);
+    signal(SIGTERM, sig_handler_A);
+    signal(SIGQUIT, sig_handler_A);
 }
 
 /**
@@ -283,8 +285,9 @@ bool checkParameters(){
 // Generate an "empty" instance of controller, this method is to be used everytime.
 int generateNewControllerInstance(){
     int returnCode = 0;
-    // TODO: check for null return from malloc
     cInstance = (controllerInstance*) malloc(sizeof(cInstance));
+    checkNotNull(cInstance);
+
     cInstance->pidAnalyzer = getpid();
     
     if (instanceOfMySelf.hasMainOption){
@@ -294,13 +297,11 @@ int generateNewControllerInstance(){
     }
 
     if ((pipe(cInstance->pipeAC) != -1) && (pipe(cInstance->pipeCA) != -1)){
-        // TODO: check for error -1 for fcntl
         // make the pipes non blocking
         fcntl(cInstance->pipeAC[READ], F_SETFL, O_NONBLOCK);
         fcntl(cInstance->pipeCA[READ], F_SETFL, O_NONBLOCK);
 
         controllerInstance newInstance = *cInstance;
-
         cInstance->pid = fork();
 
         if (cInstance->pid < 0){

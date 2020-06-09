@@ -19,24 +19,44 @@ Il progetto è costituito da tre componenti principali:
 
 ------------------------Peculiarità------------------------
 
+- Analyzer:
+  1. È possibile avviarlo in due modalità: statica e dinamica.
+     - modalità statica: permette di eseguire un'analisi di una lista di file/cartelle dopo aver specificato dei valori per n ed m. Una volta terminata un'analisi il programma termina.
+     - modalità dinamica: come per la modalità statica, ma permette di modifcare dinamicamente n, m e la lista dei file. Una volta terminata un'analisi si riparte dalla lista precedente dei file e dai vecchi n ed m (che possono essere modificati).
+  
 - Report
   1. È offerta la possibilità di specificare con vari flag la modalità di visualizzazione dei dati che si preferisce tra quelle disponibili. Questo è possibile anche durante l'esecuzione.
   2. Report è in grado di gestire anche più analisi eseguite in modo concorrente mostrando i dati di ciascuna (e distinguendole in base al rispettivo process id).
   3. Report è in grado di mostrare, in alcune visualizzazioni, il progresso delle analisi dei vari files che stanno venendo analizzati correntemente (es README.md analizzato al 36%).
   4. Specificando il flag --dump ogni analisi iniziata da quel momento in poi scriverà su un file di log eventuali messaggi provenienti dall'analyzer
 
+- Main
+  1. È possibile utilizzarlo per avviare l'analyzer in modalità statica
+  2. Visualizza il report in modalità verbosa
+
 ------------------------Limitazioni------------------------
 
-- Il sistema analyzer e il report necessitano di una FIFO per comunicare; Se qualche altro processo scrive sulla FIFO o l'utente crea situazioni per cui analyzer o report non possono accedervi il corretto funzionamento del programma viene precluso.
+- Il sistema analyzer e il report necessitano di una FIFO per comunicare; se qualche altro processo (che non sia un analyzer) scrive sulla FIFO o l'utente crea situazioni per cui analyzer o report non possono accedervi il corretto funzionamento del programma viene precluso.
 - È supportata solamente la codifica extended ASCII.
-- Se l'utente crea un file nella posizione /tmp/fifo con permessi di superuser, allora la comunicazione fra Analyzer e Report non può avvenire.
-
+- Il sistema di input utilizzato in fase d'esecuzione sfrutta la libreria termios.h per dare la possibilità di poter inserire comandi da parte dell'utente e contemporaneamente aggiornare l'utente sullo svolgimento dell'analisi.
+- Se all'analyzer non viene inserito nessun file valido, allora ci sono dei problemi di sincronizzazione col report.
+- Possiamo processare file di al massimo 4,294,967,295 bytes per motivi di efficienza.
 
 ---------------------Istruzioni rapide---------------------
-Uso:
-	1. Eseguire il main
-	2. Digitare i comandi
-	3. Se crasha riaprire e digitare comandi diversi
-	4. Cancellare questi 4 punti e riscriverlo serio
-Test:
-	Vorresti anche che ti dicessimo come testarlo? Sei un folle Naimoli
+
+- Analyzer: elenco dei comandi che è possibile specificare sia da linea di comando che all'interno del programma (se in modalità dinamica)
+  Per iniziare un'analisi bisogna inserire almeno: mode, n, m and at least one file/folder
+  -i: interactive mode
+  -s: static mode
+  -h: help mode
+  -add _name1_ _name2_ aggiunta di file/folder
+  -rem _names_ _name2_ rimozione di file/folder (in modalità interattiva)
+  -n   _value_         cambia il valore di n
+  -m   _value_         cambia il valore di m
+  -show                mostra i valori attuali di n ed m (in modalità interattiva)
+  -analyze             inizia il processo di analisi (in modalità interattiva)
+  -quit                chiudi il processo
+
+- Report
+
+- Main
