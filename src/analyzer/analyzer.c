@@ -609,9 +609,11 @@ int switchCommand(int commandCode, int numArgs, string *arguments){
             break;
         case flag_n:
             instanceOfMySelf.n = atoi(arguments[0]);
+            sendNewNPacket(cInstance->pipeAC, instanceOfMySelf.n);
             break;
         case flag_m:
             instanceOfMySelf.m = atoi(arguments[0]);
+            sendNewMPacket(cInstance->pipeAC, instanceOfMySelf.m);
             break;
         case flag_quit:
             returnCode = processExit();
