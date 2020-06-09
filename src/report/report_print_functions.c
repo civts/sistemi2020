@@ -374,7 +374,7 @@ void printRecapTabela(analyzerList *aList) {
         break;
       charGroupStats stats = statsForFile(f);
       char line[totWidth];
-      char trimmedPath[strlen(f->path)];
+      char trimmedPath[strlen(f->path) + 1];
       strcpy(trimmedPath, f->path);
       trimStringToLength(trimmedPath, firstColWidth);
       strcpy(line, trimmedPath);
