@@ -43,10 +43,10 @@ int main(int argc, char **argv) {
       exit(EXIT_FAILURE);
     }
     argomenti.argv1[0] = "analyzer";
-    execv("./bin/analyzer", argomenti.argv1);
+    execv("./analyzer", argomenti.argv1);
   } else {
     argomenti.argv2[0] = "report";
-    execv("./bin/report", argomenti.argv2);
+    execv("./report", argomenti.argv2);
     return 0;
   }
 }
