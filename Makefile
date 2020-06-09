@@ -139,9 +139,9 @@ report: createDest createTempCommonDs createTempRepDs createDest $(TMP_COM)/util
 	$(TMP_REP_DS)/file_with_stats_data_structure.o \
 	-o $(DESTFOLDER)/report
 
-build: $(mainFile) createDest
+build: $(mainFile) createDest report analyzer
 #	Compile main
-	@$(COMPILE) $(SOURCEFOLDER)/main.c -o $(DESTFOLDER)/main.o
+	@$(COMPILE) $(SOURCEFOLDER)/main.c $(DESTFOLDER)/analyzer $(DESTFOLDER)/report -o $(DESTFOLDER)/main
 
 .PHONY: help
 help:
@@ -159,3 +159,4 @@ rebuild: clean build
 .PHONY: run
 run: build
 	@$(DESTFOLDER)/main.o
+ 
