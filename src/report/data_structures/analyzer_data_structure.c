@@ -10,7 +10,6 @@ analyzer *constructorAnalyzer(uint pid, bool dumps) {
   a->incompletePathToDelete = NULL;
   a->errors = constructorFwsListEmpty();
   a->errorMessages = constructorNamesList();
-  a->filters = constructorNamesList();
   a->dumps = dumps;
   a->dumpFD = NULL;
   a->previousNode = NULL;
@@ -25,9 +24,10 @@ void destructorAnalyzer(analyzer *a) {
     free (a->incompletePathToDelete);
   destructorFwsList(a->errors);
   deleteNamesList(a->errorMessages);
-  deleteNamesList(a->filters);
-  fflush(a->dumpFD);
-  fclose(a->dumpFD);
+  if(a->dumpFD!=NULL){
+    fflush(a->dumpFD);
+    fclose(a->dumpFD);
+  }
   free(a);
 }
 
