@@ -30,7 +30,7 @@ void printScreenReport(int carattere) {
     printf("===================REPORT=======================\n");
     printf("%s\n", command);
     printf("================================================\n");
-    printf("> %s", buf);
+    printf(">REPORT %s*", buf);
     fflush(stdout);
 }
 
@@ -85,7 +85,7 @@ int main(int argc, char ** argv){
             }
         }
          
-        clear();
+        //clear();
         printScreenReport('a');
         // sleep(1);
     }                

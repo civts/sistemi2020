@@ -15,17 +15,27 @@ int counterAnalyzer = 0;
 
 void resetBuffer(char buffer[], int size);
 void clear();
+void clear(){
+    system("clear");
+}
+
+void resetBuffer(char buffer[], int size){
+    int i;
+    for (i = 0; i < BUFFER_SIZE; i++){
+        buffer[i] = 0;
+    }
+}
 void printScreenAnalyzer(int carattere) {
     printf("================================================\n");
     printf("%d\n", counterAnalyzer++);
     printf("===================ANALYZER=====================\n");
     printf("%s\n", command);
     printf("================================================\n");
-    printf("> %s", buf);
+    printf("> %s*", buf);
     fflush(stdout);
 }
 
-int analyzer_main(int argc, char ** argv){
+int main(int argc, char ** argv){
     int returnCode;
 
     int lenBuffer = 0, numReadCharacters = 0;
@@ -46,7 +56,7 @@ int analyzer_main(int argc, char ** argv){
     that means it will return if it sees a "\n" or an EOF or an EOL*/
     newt.c_lflag &= ~(ICANON);          
     newt.c_cc[VMIN] = 0;
-    newt.c_cc[VTIME] = 0;
+    newt.c_cc[VTIME] = 1;
 
     /*Those new settings will be set to STDIN
     TCSANOW tells tcsetattr to change attributes immediately. */
