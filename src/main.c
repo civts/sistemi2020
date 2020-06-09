@@ -80,7 +80,7 @@ separatedArgs splitArgv(int argc, char **argv) {
   }
   posSeparatore = i;
   m.argv1[posSeparatore + (containsS ? 0 : 1)] = NULL;
-  m.argc1 = i + 1;
+  m.argc1 = posSeparatore + (containsS ? 0 : 1) + 1;
   if (i < argc) {
     i++;
     while (i < argc) {
