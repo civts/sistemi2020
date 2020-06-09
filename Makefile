@@ -63,52 +63,52 @@ createTempAnalyzer: createTemp
 
 
 #Common folder
-namesList: createTempCommonDs
+$(TMP_COM_DS)/namesList.o: $(COMMONFOLDERDS)/namesList.c
 	@$(COMPILE) $(COMMONFOLDERDS)/namesList.c -c -o $(TMP_COM_DS)/namesList.o
-fileList: createTempCommonDs
+$(TMP_COM_DS)/fileList.o: $(COMMONFOLDERDS)/fileList.c
 	@$(COMPILE) $(COMMONFOLDERDS)/fileList.c -c -o $(TMP_COM_DS)/fileList.o
-miniQList: createTempCommon
+$(TMP_COM)/miniQlist.o:  $(COMMONFOLDERDS)/miniQlist.c
 	@$(COMPILE) $(COMMONFOLDERDS)/miniQlist.c -c -o $(TMP_COM)/miniQlist.o
-utils: createTempCommon
+$(TMP_COM)/utils.o:  $(COMMONFOLDER)/utils.c
 	@$(COMPILE) $(COMMONFOLDER)/utils.c -c -o $(TMP_COM)/utils.o
-parser: createTempCommon
+$(TMP_COM)/parser.o: $(COMMONFOLDER)/parser.c
 	@$(COMPILE) $(COMMONFOLDER)/parser.c -c -o $(TMP_COM)/parser.o
-packets:  createTempCommon
+$(TMP_COM)/packets.o: $(COMMONFOLDER)/packets.c
 	@$(COMPILE) $(COMMONFOLDER)/packets.c -c -o $(TMP_COM)/packets.o
-myMath: createTempCommon
+$(TMP_COM)/mymath.o: $(COMMONFOLDER)/mymath.c
 	@$(COMPILE) $(COMMONFOLDER)/mymath.c -c -o $(TMP_COM)/mymath.o
 
 
 #Analyzer folder
-q: createTempAnalyzer
+$(TMP_AN)/q.o: $(ANALYZERFOLDER)/q.c
 	@$(COMPILE) $(ANALYZERFOLDER)/q.c -c -o $(TMP_AN)/q.o
-p: createTempAnalyzer
+$(TMP_AN)/p.o: $(ANALYZERFOLDER)/p.c
 	@$(COMPILE) $(ANALYZERFOLDER)/p.c -c -o $(TMP_AN)/p.o
-crawler: createTempAnalyzer
+$(TMP_AN)/crawler.o: $(ANALYZERFOLDER)/crawler.c
 	@$(COMPILE) $(ANALYZERFOLDER)/crawler.c -c -o $(TMP_AN)/crawler.o
-miniQ: createTempAnalyzer
+$(TMP_AN)/miniQ.o: $(ANALYZERFOLDER)/miniQ.c
 	@$(COMPILE) $(ANALYZERFOLDER)/miniQ.c -c -o $(TMP_AN)/miniQ.o
-controller: createTempAnalyzer
+$(TMP_AN)/controller.o: $(ANALYZERFOLDER)/controller.c
 	@$(COMPILE) $(ANALYZERFOLDER)/controller.c -c -o $(TMP_AN)/controller.o
 
 
 #Report folder
-analyzerList: createTempRepDs
+$(TMP_REP_DS)/analyzer_list.o: $(REPORTFOLDERDS)/analyzer_list.c
 	@$(COMPILE) $(REPORTFOLDERDS)/analyzer_list.c -c -o $(TMP_REP_DS)/analyzer_list.o
-analyzerDataStruct:  createTempRepDs
+$(TMP_REP_DS)/analyzer_data_structure.o: $(REPORTFOLDERDS)/analyzer_data_structure.c
 	@$(COMPILE) $(REPORTFOLDERDS)/analyzer_data_structure.c -c -o $(TMP_REP_DS)/analyzer_data_structure.o
-fwsList: createTempRepDs
+$(TMP_REP_DS)/file_with_stats_list.o: $(REPORTFOLDERDS)/file_with_stats_list.c
 	@$(COMPILE) $(REPORTFOLDERDS)/file_with_stats_list.c -c -o $(TMP_REP_DS)/file_with_stats_list.o
-fwsDataStruct: createTempRepDs
+$(TMP_REP_DS)/file_with_stats_data_structure.o: $(REPORTFOLDERDS)/file_with_stats_data_structure.c
 	@$(COMPILE) $(REPORTFOLDERDS)/file_with_stats_data_structure.c -c -o $(TMP_REP_DS)/file_with_stats_data_structure.o
-packetHanlder: createTempReport
+$(TMP_REP)/packet_handler.o: $(REPORTFOLDER)/packet_handler.c
 	@$(COMPILE) $(REPORTFOLDER)/packet_handler.c -c -o $(TMP_REP)/packet_handler.o
-reportPrintFunctions: createTempReport
+$(TMP_REP)/report_print_functions.o: $(REPORTFOLDER)/report_print_functions.c
 	@$(COMPILE) $(REPORTFOLDER)/report_print_functions.c -c -o $(TMP_REP)/report_print_functions.o
 
 
 #Analyzer
-analyzer: parser myMath packets fileList miniQList namesList utils p q crawler miniQ controller
+analyzer: createTempCommonDs createTempAnalyzer $(TMP_COM)/parser.o $(TMP_COM)/mymath.o $(TMP_COM)/packets.o $(TMP_COM_DS)/fileList.o $(TMP_COM)/miniQlist.o $(TMP_COM_DS)/namesList.o $(TMP_COM)/utils.o $(TMP_AN)/p.o $(TMP_AN)/q.o $(TMP_AN)/crawler.o $(TMP_AN)/miniQ.o $(TMP_AN)/controller.o
 	@$(COMPILE) $(ANALYZERFOLDER)/analyzer.c \
 	$(TMP_COM)/parser.o \
 	$(TMP_COM)/mymath.o \
@@ -126,7 +126,7 @@ analyzer: parser myMath packets fileList miniQList namesList utils p q crawler m
 
 
 #Report
-report: createDest utils analyzerList packetHanlder reportPrintFunctions analyzerDataStruct fwsList namesList fwsDataStruct packets
+report: createTempCommonDs createTempRepDs createDest $(TMP_COM)/utils.o $(TMP_REP_DS)/analyzer_list.o $(TMP_REP)/packet_handler.o $(TMP_REP)/report_print_functions.o $(TMP_REP_DS)/analyzer_data_structure.o $(TMP_REP_DS)/file_with_stats_list.o $(TMP_COM_DS)/namesList.o $(TMP_REP_DS)/file_with_stats_data_structure.o $(TMP_COM)/packets.o
 	@$(COMPILE) $(REPORTFOLDER)/report.c \
 	$(TMP_COM)/utils.o \
 	$(TMP_COM)/packets.o \
@@ -139,12 +139,7 @@ report: createDest utils analyzerList packetHanlder reportPrintFunctions analyze
 	$(TMP_REP_DS)/file_with_stats_data_structure.o \
 	-o $(DESTFOLDER)/report
 
-
-build: $(mainFile)
-#	Create the build directory if needed
-	@if [ ! -d $(DESTFOLDER) ]; then \
-	mkdir $(DESTFOLDER); \
-	fi
+build: $(mainFile) createDest
 #	Compile main
 	@$(COMPILE) $(SOURCEFOLDER)/main.c -o $(DESTFOLDER)/main.o
 
